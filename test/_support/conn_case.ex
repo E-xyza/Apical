@@ -6,9 +6,9 @@ defmodule ApicalTest.ConnCase do
       # Use the endpoint module as the endpoint
       @endpoint __MODULE__.Endpoint
       @after_compile __MODULE__
+      use Phoenix.Controller
 
       # Import conveniences for testing with connections
-      import Plug.Conn
       import Phoenix.ConnTest
 
       Application.put_env(:apical, @endpoint, adapter: Bandit.PhoenixAdapter)
@@ -19,15 +19,18 @@ defmodule ApicalTest.ConnCase do
       end
 
       def __after_compile__(_, _) do
-        module = __MODULE__
-        endpoint = Module.concat(module, Endpoint)
-        Code.eval_quoted(quote do
-          defmodule unquote(endpoint) do
-            use Phoenix.Endpoint, otp_app: :apical
+        router = Module.concat(__MODULE__, Router)
+        endpoint = Module.concat(__MODULE__, Endpoint)
 
-            plug unquote(module)
+        Code.eval_quoted(
+          quote do
+            defmodule unquote(endpoint) do
+              use Phoenix.Endpoint, otp_app: :apical
+
+              plug(unquote(router))
+            end
           end
-        end)
+        )
       end
     end
   end
