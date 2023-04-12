@@ -30,6 +30,25 @@ defmodule ApicalTest.Parameters.QueryTest do
               - name: explode
                 in: query
                 explode: true
+              - name: style-default-array
+                in: query
+                schema:
+                  type: array
+              - name: style-form-array
+                in: query
+                style: form
+                schema:
+                  type: array
+              - name: style-spaceDelimited-array
+                in: query
+                style: spaceDelimited
+                schema:
+                  type: array
+              - name: style-pipeDelimited-array
+                in: query
+                style: pipeDelimited
+                schema:
+                  type: array
             responses:
               "200":
                 description: OK
@@ -98,10 +117,36 @@ defmodule ApicalTest.Parameters.QueryTest do
     test "it returns a 299 header", %{conn: conn} do
       response = get(conn, "/optional/?deprecated=foo")
 
-      assert {"warning", "299 - the query parameter `deprecated` is deprecated."} = List.keyfind(response.resp_headers, "warning", 0)
+      assert {"warning", "299 - the query parameter `deprecated` is deprecated."} =
+               List.keyfind(response.resp_headers, "warning", 0)
 
       assert %{"deprecated" => "foo"} = json_response(response, 200)
+    end
+  end
 
+  describe "for styled query parameters with array type" do
+    test "default works", %{conn: conn} do
+      response = get(conn, "/optional/?style-default-array=foo,bar")
+
+      assert %{"style-default-array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "form works", %{conn: conn} do
+      response = get(conn, "/optional/?style-form-array=foo,bar")
+
+      assert %{"style-form-array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "spaceDelimited works with space", %{conn: conn} do
+      response = get(conn, "/optional/?style-spaceDelimited-array=foo%20bar")
+
+      assert %{"style-spaceDelimited-array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "pipeDelimited works with pipe", %{conn: conn} do
+      response = get(conn, "/optional/?style-pipeDelimited-array=foo|bar")
+
+      assert %{"style-pipeDelimited-array" => ["foo", "bar"]} = json_response(response, 200)
     end
   end
 end
