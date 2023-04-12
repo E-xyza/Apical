@@ -3,6 +3,7 @@ defmodule ApicalTest.Verbs.OptionsTest do
     use Phoenix.Router
 
     require Apical
+
     Apical.router_from_string(
       """
       openapi: 3.1.0
@@ -31,8 +32,8 @@ defmodule ApicalTest.Verbs.OptionsTest do
 
   test "OPTIONS /", %{conn: conn} do
     assert %{
-      resp_body: "OK",
-      status: 200
-    } = options(conn, "/")
+             resp_body: "OK",
+             status: 200
+           } = options(conn, "/")
   end
 end

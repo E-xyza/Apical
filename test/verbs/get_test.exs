@@ -3,6 +3,7 @@ defmodule ApicalTest.Verbs.GetTest do
     use Phoenix.Router
 
     require Apical
+
     Apical.router_from_string(
       """
       openapi: 3.1.0
@@ -31,8 +32,8 @@ defmodule ApicalTest.Verbs.GetTest do
 
   test "GET /", %{conn: conn} do
     assert %{
-      resp_body: "OK",
-      status: 200
-    } = get(conn, "/")
+             resp_body: "OK",
+             status: 200
+           } = get(conn, "/")
   end
 end

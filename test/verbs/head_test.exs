@@ -3,6 +3,7 @@ defmodule ApicalTest.Verbs.HeadTest do
     use Phoenix.Router
 
     require Apical
+
     Apical.router_from_string(
       """
       openapi: 3.1.0
@@ -32,8 +33,8 @@ defmodule ApicalTest.Verbs.HeadTest do
   test "HEAD /", %{conn: conn} do
     # NB: HEAD requests should not have a response body
     assert %{
-      resp_body: "",
-      status: 200
-    } = head(conn, "/")
+             resp_body: "",
+             status: 200
+           } = head(conn, "/")
   end
 end

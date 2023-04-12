@@ -6,7 +6,8 @@ defmodule Apical.Paths do
   @verb_mapping Map.new(~w(get put post delete options head patch trace)a, &{"#{&1}", &1})
   @verbs Map.keys(@verb_mapping)
 
-  defp to_route(path, {verb, operation = %{"operationId" => operation_id}}, opts) when verb in @verbs do
+  defp to_route(path, {verb, operation = %{"operationId" => operation_id}}, opts)
+       when verb in @verbs do
     verb = Map.fetch!(@verb_mapping, verb)
     # TODO: resolve controller using controller options
     controller = opts[:controller]
@@ -40,7 +41,7 @@ defmodule Apical.Paths do
       case Map.fetch(@query_mappings, location) do
         {:ok, plug} ->
           quote do
-            plug unquote(plug), unquote(Macro.escape(parameters))
+            plug(unquote(plug), unquote(Macro.escape(parameters)))
           end
 
         _ ->
