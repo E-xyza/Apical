@@ -25,16 +25,20 @@ defmodule Apical.Plugs.Query do
 
   defp add_if_deprecated(operations, _parameters), do: operations
 
-  defp add_style_parsers(operations, %{
-         "style" => style,
-         "name" => name,
-         "schema" => %{"type" => "array"}
-       }) do
-    Map.update(operations, :array_styles, [{name, style}], &[{name, style} | &1])
-  end
+  @style_type_mappings %{"array" => :array_styles, "object" => :object_styles}
+  @style_types Map.keys(@style_type_mappings)
 
-  defp add_style_parsers(operations, %{"name" => name, "schema" => %{"type" => "array"}}) do
-    Map.update(operations, :array_styles, [{name, "default"}], &[{name, "default"} | &1])
+  defp add_style_parsers(
+         operations,
+         parameter = %{
+           "name" => name,
+           "schema" => %{"type" => type}
+         }
+       )
+       when type in @style_types do
+    type_key = Map.fetch!(@style_type_mappings, type)
+    style = Map.get(parameter, "style", "default")
+    Map.update(operations, type_key, [{name, style}], &[{name, style} | &1])
   end
 
   defp add_style_parsers(operations, _parameters), do: operations
@@ -46,6 +50,7 @@ defmodule Apical.Plugs.Query do
     |> filter_required(operations)
     |> warn_deprecated(operations)
     |> parse_array_style(operations)
+    |> parse_object_style(operations)
   end
 
   defp filter_required(conn, %{required: required}) do
@@ -98,4 +103,35 @@ defmodule Apical.Plugs.Query do
   end
 
   defp parse_array_style(conn, _), do: conn
+
+  defp parse_object_style(conn, %{object_styles: styles}) do
+    Enum.reduce(styles, conn, fn
+      {param, style}, conn = %{params: params}
+      when is_map_key(params, param) and style in @default_styles ->
+        delimiter = Map.fetch!(@style_delimiters, style)
+        %{conn | params: Map.update!(params, param, &pairs_to_object(&1, delimiter, param))}
+
+      _, conn ->
+        conn
+    end)
+  end
+
+  defp parse_object_style(conn, _), do: conn
+
+  defp pairs_to_object(string, delimiter, param) do
+    string
+    |> String.split(delimiter)
+    |> pairs_to_object_inner(%{}, param)
+  end
+
+  defp pairs_to_object_inner([], object, _), do: object
+
+  defp pairs_to_object_inner([_lone], _object, _param) do
+    # for now
+    raise "some sort of format error"
+  end
+
+  defp pairs_to_object_inner([key, value | rest], object, param) do
+    pairs_to_object_inner(rest, Map.put(object, key, value), param)
+  end
 end

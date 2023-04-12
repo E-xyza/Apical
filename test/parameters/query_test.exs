@@ -49,6 +49,25 @@ defmodule ApicalTest.Parameters.QueryTest do
                 style: pipeDelimited
                 schema:
                   type: array
+              - name: style-default-object
+                in: query
+                schema:
+                  type: object
+              - name: style-form-object
+                in: query
+                style: form
+                schema:
+                  type: object
+              - name: style-spaceDelimited-object
+                in: query
+                style: spaceDelimited
+                schema:
+                  type: object
+              - name: style-pipeDelimited-object
+                in: query
+                style: pipeDelimited
+                schema:
+                  type: object
             responses:
               "200":
                 description: OK
@@ -147,6 +166,32 @@ defmodule ApicalTest.Parameters.QueryTest do
       response = get(conn, "/optional/?style-pipeDelimited-array=foo|bar")
 
       assert %{"style-pipeDelimited-array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+  end
+
+  describe "for styled query parameters with object type" do
+    test "default works", %{conn: conn} do
+      response = get(conn, "/optional/?style-default-object=foo,bar")
+
+      assert %{"style-default-object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "form works", %{conn: conn} do
+      response = get(conn, "/optional/?style-form-object=foo,bar")
+
+      assert %{"style-form-object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "spaceDelimited works with space", %{conn: conn} do
+      response = get(conn, "/optional/?style-spaceDelimited-object=foo%20bar")
+
+      assert %{"style-spaceDelimited-object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "pipeDelimited works with pipe", %{conn: conn} do
+      response = get(conn, "/optional/?style-pipeDelimited-object=foo|bar")
+
+      assert %{"style-pipeDelimited-object" => %{"foo" => "bar"}} = json_response(response, 200)
     end
   end
 end
