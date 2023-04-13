@@ -96,9 +96,33 @@ defmodule ApicalTest.Parameters.QueryTest do
                 style: deepObject
                 schema:
                   type: boolean
+              - name: marshal-array
+                in: query
+                schema:
+                  type: array
+                  prefixItems:
+                    - type: integer
+                    - type: string
+                  items:
+                    type: integer
+              - name: marshal-object
+                in: query
+                schema:
+                  type: object
+                  properties:
+                    foo:
+                      type: integer
+                  patternProperties:
+                    "^b.*":
+                      type: boolean
+                  additionalProperties:
+                    type: integer
             responses:
               "200":
                 description: OK
+        "/unspecified":
+          get:
+            operationId: unspecified
       """,
       controller: ApicalTest.Parameters.QueryTest,
       content_type: "application/yaml"
@@ -114,6 +138,15 @@ defmodule ApicalTest.Parameters.QueryTest do
       |> Conn.put_resp_content_type("application/json")
       |> Conn.send_resp(200, Jason.encode!(params))
     end
+  end
+
+  def unspecified(conn = %{params: params}, params) do
+    conn
+    |> Conn.put_resp_content_type("application/json")
+    |> Conn.send_resp(
+      200,
+      Jason.encode!(%{"params" => params, "path_params" => conn.path_params})
+    )
   end
 
   describe "for a required query parameter" do
@@ -197,6 +230,14 @@ defmodule ApicalTest.Parameters.QueryTest do
     end
   end
 
+  describe "for arrays with inner types" do
+    test "marshalling works", %{conn: conn} do
+      response = get(conn, "/optional/?marshal-array=1,bar,2")
+
+      assert %{"marshal-array" => [1, "bar", 2]} = json_response(response, 200)
+    end
+  end
+
   describe "for styled query parameters with object type" do
     test "default works", %{conn: conn} do
       response = get(conn, "/optional/?style-default-object=foo,bar")
@@ -226,6 +267,15 @@ defmodule ApicalTest.Parameters.QueryTest do
       response = get(conn, "/optional/?style-deepObject[foo]=bar&style-deepObject[baz]=quux")
 
       assert %{"style-deepObject" => %{"foo" => "bar", "baz" => "quux"}} =
+               json_response(response, 200)
+    end
+  end
+
+  describe "for objects with inner types" do
+    test "marshalling works", %{conn: conn} do
+      response = get(conn, "/optional/?marshal-object=foo,1,bar,true,quux,3")
+
+      assert %{"marshal-object" => %{"foo" => 1, "bar" => true, "quux" => 3}} =
                json_response(response, 200)
     end
   end

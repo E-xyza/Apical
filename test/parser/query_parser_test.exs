@@ -121,14 +121,22 @@ defmodule ApicalTest.Parser.QueryParserTest do
     test "works with a parameter mapping" do
       assert {:ok, %{"foo" => %{"bar" => 1}}} =
                Query.parse("foo=bar,1", %{
-                 "foo" => %{type: [:object], style: :form, parameters: {%{"bar" => [:integer]}, %{}, [:string]}}
+                 "foo" => %{
+                   type: [:object],
+                   style: :form,
+                   parameters: {%{"bar" => [:integer]}, %{}, [:string]}
+                 }
                })
     end
 
     test "works with a regex mapping" do
       assert {:ok, %{"foo" => %{"bar" => 1}}} =
                Query.parse("foo=bar,1", %{
-                 "foo" => %{type: [:object], style: :form, parameters: {%{}, %{~r/b.*/ => [:integer]}, [:string]}}
+                 "foo" => %{
+                   type: [:object],
+                   style: :form,
+                   parameters: {%{}, %{~r/b.*/ => [:integer]}, [:string]}
+                 }
                })
     end
 

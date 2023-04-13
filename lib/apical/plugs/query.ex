@@ -82,8 +82,13 @@ defmodule Apical.Plugs.Query do
     end
   end
 
-  defp add_inner_marshal(operations, %{"schema" => schema, "name" => key}) when is_map_key(operations, key) do
-    outer_type = operations[key].type
+  defp add_inner_marshal(operations = %{query_context: context}, %{
+         "schema" => schema,
+         "name" => key
+       })
+       when is_map_key(context, key) do
+    outer_type = context[key].type
+
     cond do
       :array in outer_type ->
         prefix_items_type =
@@ -100,10 +105,36 @@ defmodule Apical.Plugs.Query do
             end
           )
 
-        %{operations | key => Map.put(operations[key], :elements, {prefix_items_type, items_type})}
+        new_key_spec =
+          Map.put(operations.query_context[key], :elements, {prefix_items_type, items_type})
+
+        put_in(operations, [:query_context, key], new_key_spec)
 
       :object in outer_type ->
-        operations
+        property_types =
+          schema
+          |> Map.get("properties", %{})
+          |> Map.new(fn {name, property} ->
+            {name, to_type_list(property["type"])}
+          end)
+
+        pattern_types =
+          schema
+          |> Map.get("patternProperties", %{})
+          |> Map.new(fn {regex, property} ->
+            {Regex.compile!(regex), to_type_list(property["type"])}
+          end)
+
+        additional_types =
+          schema
+          |> get_in(["additionalProperties", "type"])
+          |> Kernel.||("string")
+          |> to_type_list()
+
+        new_key_spec =
+          Map.put(operations.query_context[key], :properties, {property_types, pattern_types, additional_types})
+
+        put_in(operations, [:query_context, key], new_key_spec)
 
       true ->
         operations

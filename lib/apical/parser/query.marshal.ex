@@ -18,8 +18,8 @@ defmodule Apical.Parser.Query.Marshal do
     array_marshal(rest, rest_type, tail_type, [as_type(first, first_type) | so_far])
   end
 
-  def object(object, %{parameters: {parameter_types, pattern_types, additional_type}}) do
-    object_marshal(object, {parameter_types, pattern_types, additional_type})
+  def object(object, %{properties: {property_types, pattern_types, additional_type}}) do
+    object_marshal(object, {property_types, pattern_types, additional_type})
   end
 
   def object(object, _), do: Map.new(object)
@@ -31,13 +31,15 @@ defmodule Apical.Parser.Query.Marshal do
     Map.new(object, fn {k, v} -> {k, as_type(v, types)} end)
   end
 
-  defp object_marshal(object, {parameter_types, pattern_types, additional_type}) do
+  defp object_marshal(object, {property_types, pattern_types, additional_type}) do
     Map.new(object, fn {key, value} ->
       cond do
-        types = Map.get(parameter_types, key) ->
+        types = Map.get(property_types, key) ->
           {key, as_type(value, types)}
+
         types = Enum.find_value(pattern_types, &(Regex.match?(elem(&1, 0), key) and elem(&1, 1))) ->
           {key, as_type(value, types)}
+
         true ->
           {key, as_type(value, additional_type)}
       end
