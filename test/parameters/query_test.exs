@@ -183,7 +183,7 @@ defmodule ApicalTest.Parameters.QueryTest do
     end
 
     test "pipeDelimited works with pipe", %{conn: conn} do
-      response = get(conn, "/optional/?style-pipeDelimited-array=foo|bar")
+      response = get(conn, "/optional/?style-pipeDelimited-array=foo%7Cbar")
 
       assert %{"style-pipeDelimited-array" => ["foo", "bar"]} = json_response(response, 200)
     end
@@ -209,7 +209,7 @@ defmodule ApicalTest.Parameters.QueryTest do
     end
 
     test "pipeDelimited works with pipe", %{conn: conn} do
-      response = get(conn, "/optional/?style-pipeDelimited-object=foo|bar")
+      response = get(conn, "/optional/?style-pipeDelimited-object=foo%7Cbar")
 
       assert %{"style-pipeDelimited-object" => %{"foo" => "bar"}} = json_response(response, 200)
     end

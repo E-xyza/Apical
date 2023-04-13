@@ -98,11 +98,11 @@ defmodule Apical.Parser.Query do
   defcombinatorp(:ucschar, utf8_char(not: 0..255))
 
   defp handle_query_part(rest_str, [{:basic_query, [key]} | rest], context, _line, _offset) do
-    {rest_str, [{key, nil} | rest], context}
+    {rest_str, [{key, parse_empty_query(context, key)} | rest], context}
   end
 
   defp handle_query_part(rest_str, [{:basic_query, [key, value]} | rest], context, _line, _offset) do
-    {rest_str, [{key, value} | rest], context}
+    {rest_str, [{key, parse_query(value, context, key)} | rest], context}
   end
 
   defp handle_deep_object(rest_str, [value, value_key, key | rest], context, _line, _offset) do
@@ -118,6 +118,57 @@ defmodule Apical.Parser.Query do
       {:error, []}
     end
   end
+
+  defp parse_empty_query(context, key) do
+    if key_settings = Map.get(context, key) do
+      case List.wrap(key_settings[:type]) do
+        [:null | _] -> nil
+        [:boolean | _] -> true
+        _ -> ""
+      end
+    else
+      ""
+    end
+  end
+
+  defp parse_query(string, context, key) when is_map_key(context, key) do
+    if types = get_in(context, [key, :type]) do
+      parse_query_type(string, types)
+    end
+  end
+
+  defp parse_query(string, _, _), do: string
+
+  defp parse_query_type("", [:null | _]), do: nil
+  defp parse_query_type(string, [:null | rest]), do: parse_query_type(string, rest)
+  defp parse_query_type("true", [:boolean | _]), do: true
+  defp parse_query_type("false", [:boolean | _]), do: false
+  defp parse_query_type(string, [:boolean | rest]), do: parse_query_type(string, rest)
+
+  defp parse_query_type(string, [:integer, :number | rest]),
+    do: parse_query_type(string, [:number | rest])
+
+  defp parse_query_type(string, [:integer | rest]) do
+    case Integer.parse(string) do
+      {value, ""} -> value
+      _ -> parse_query_type(string, rest)
+    end
+  end
+
+  defp parse_query_type(string, [:number | rest]) do
+    case Integer.parse(string) do
+      {value, ""} ->
+        value
+
+      _ ->
+        case Float.parse(string) do
+          {value, ""} -> value
+          _ -> parse_query_type(string, rest)
+        end
+    end
+  end
+
+  defp parse_query_type(string, _), do: string
 
   defp percent_decode(rest_str, [a, b, "%" | rest], context, _line, _offset) do
     {rest_str, [List.to_integer([b, a], 16) | rest], context}
