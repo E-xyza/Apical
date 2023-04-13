@@ -11,6 +11,7 @@ defmodule Apical.Plugs.Query do
       |> add_if_deprecated(parameter)
       |> add_type(parameter)
       |> add_style(parameter)
+      |> add_inner_marshal(parameter)
     end)
   end
 
@@ -26,21 +27,23 @@ defmodule Apical.Plugs.Query do
 
   defp add_if_deprecated(operations, _parameters), do: operations
 
-  @types ~w(null boolean integer number string array object)a
-  @type_class Map.new(@types, &{"#{&1}", &1})
-  @type_order Map.new(Enum.with_index(@types))
-
   defp add_type(operations, %{"name" => name, "schema" => %{"type" => type}}) do
-    types =
-      type
-      |> List.wrap()
-      |> Enum.map(&Map.fetch!(@type_class, &1))
-      |> Enum.sort_by(&Map.fetch!(@type_order, &1))
-
+    types = to_type_list(type)
     Map.update!(operations, :query_context, &Map.put(&1, name, %{type: types}))
   end
 
   defp add_type(operations, _), do: operations
+
+  @types ~w(null boolean integer number string array object)a
+  @type_class Map.new(@types, &{"#{&1}", &1})
+  @type_order Map.new(Enum.with_index(@types))
+
+  defp to_type_list(type) do
+    type
+    |> List.wrap()
+    |> Enum.map(&Map.fetch!(@type_class, &1))
+    |> Enum.sort_by(&Map.fetch!(@type_order, &1))
+  end
 
   defp add_style(operations, %{"style" => "deepObject", "name" => name}) do
     update_in(operations, [:query_context, :deep_object_keys], &[name | List.wrap(&1)])
@@ -78,6 +81,36 @@ defmodule Apical.Plugs.Query do
       operations
     end
   end
+
+  defp add_inner_marshal(operations, %{"schema" => schema, "name" => key}) when is_map_key(operations, key) do
+    outer_type = operations[key].type
+    cond do
+      :array in outer_type ->
+        prefix_items_type =
+          List.wrap(
+            if prefix_items = schema["prefixItems"] do
+              Enum.map(prefix_items, &to_type_list(&1["type"]))
+            end
+          )
+
+        items_type =
+          List.wrap(
+            if items = schema["items"] || schema["additionalItems"] do
+              to_type_list(items["type"] || ["string"])
+            end
+          )
+
+        %{operations | key => Map.put(operations[key], :elements, {prefix_items_type, items_type})}
+
+      :object in outer_type ->
+        operations
+
+      true ->
+        operations
+    end
+  end
+
+  defp add_inner_marshal(operations, _), do: operations
 
   def call(conn, operations) do
     # TODO: refactor this out to the outside.

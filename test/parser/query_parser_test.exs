@@ -88,15 +88,55 @@ defmodule ApicalTest.Parser.QueryParserTest do
 
   describe "deep array type marshalling" do
     test "works with a generic" do
-      assert {:ok, %{"foo" => [1, 2, 3]}} = Query.parse("foo=1,2,3", %{"foo" => %{type: [:array], style: :form, elements: {[], [:integer]}}})
+      assert {:ok, %{"foo" => [1, 2, 3]}} =
+               Query.parse("foo=1,2,3", %{
+                 "foo" => %{type: [:array], style: :form, elements: {[], [:integer]}}
+               })
     end
 
     test "works with a tuple" do
-      assert {:ok, %{"foo" => [1, true, "3"]}} = Query.parse("foo=1,true,3", %{"foo" => %{type: [:array], style: :form, elements: {[[:integer], [:boolean]], [:string]}}})
+      assert {:ok, %{"foo" => [1, true, "3"]}} =
+               Query.parse("foo=1,true,3", %{
+                 "foo" => %{
+                   type: [:array],
+                   style: :form,
+                   elements: {[[:integer], [:boolean]], [:string]}
+                 }
+               })
     end
 
     test "works with a tuple and a generic" do
-      assert {:ok, %{"foo" => [1, true, 3]}} = Query.parse("foo=1,true,3", %{"foo" => %{type: [:array], style: :form, elements: {[[:integer], [:boolean]], [:integer]}}})
+      assert {:ok, %{"foo" => [1, true, 3]}} =
+               Query.parse("foo=1,true,3", %{
+                 "foo" => %{
+                   type: [:array],
+                   style: :form,
+                   elements: {[[:integer], [:boolean]], [:integer]}
+                 }
+               })
+    end
+  end
+
+  describe "deep object type marshalling" do
+    test "works with a parameter mapping" do
+      assert {:ok, %{"foo" => %{"bar" => 1}}} =
+               Query.parse("foo=bar,1", %{
+                 "foo" => %{type: [:object], style: :form, parameters: {%{"bar" => [:integer]}, %{}, [:string]}}
+               })
+    end
+
+    test "works with a regex mapping" do
+      assert {:ok, %{"foo" => %{"bar" => 1}}} =
+               Query.parse("foo=bar,1", %{
+                 "foo" => %{type: [:object], style: :form, parameters: {%{}, %{~r/b.*/ => [:integer]}, [:string]}}
+               })
+    end
+
+    test "works with a default mapping" do
+      assert {:ok, %{"foo" => %{"bar" => 1}}} =
+               Query.parse("foo=bar,1", %{
+                 "foo" => %{type: [:object], style: :form, parameters: {%{}, %{}, [:integer]}}
+               })
     end
   end
 end

@@ -157,7 +157,8 @@ defmodule Apical.Parser.Query do
 
   for type <- [:object, :array] do
     defp unquote(:"#{type}_guard")(rest_str, list, context = %{key: key}, _, _)
-         when is_map_key(context, key) and context_key_type(context, key) in [[unquote(type)], [:null, unquote(type)]] do
+         when is_map_key(context, key) and
+                context_key_type(context, key) in [[unquote(type)], [:null, unquote(type)]] do
       {rest_str, list, context}
     end
 
@@ -177,13 +178,15 @@ defmodule Apical.Parser.Query do
     {rest_str, [Marshal.array(list, Map.get(context, key)) | rest], Map.delete(context, :key)}
   end
 
-  defp finalize_object(rest_str, [{:object, object} | rest], context, _, _) do
-    {rest_str, [to_object(object) | rest], Map.delete(context, :key)}
+  defp finalize_object(rest_str, [{:object, object_list} | rest], context = %{key: key}, _, _) do
+    {rest_str, [Marshal.object(to_pairs(object_list), Map.get(context, key)) | rest], Map.delete(context, :key)}
   end
 
-  defp to_object(list, result \\ %{})
-  defp to_object([key, value | rest], result), do: to_object(rest, Map.put(result, key, value))
-  defp to_object([], result), do: result
+  defp to_pairs(object_list, so_far \\ [])
+  defp to_pairs([a, b | rest], so_far) do
+    to_pairs(rest, [{a, b} | so_far])
+  end
+  defp to_pairs([], so_far), do: so_far
 
   defparsecp(:parse_query, parsec(:query) |> eos)
 
