@@ -68,6 +68,26 @@ defmodule ApicalTest.Parameters.QueryTest do
                 style: pipeDelimited
                 schema:
                   type: object
+              - name: style-deepObject
+                in: query
+                style: deepObject
+                schema:
+                  type: object
+              - name: schema-number
+                in: query
+                style: deepObject
+                schema:
+                  type: number
+              - name: schema-integer
+                in: query
+                style: deepObject
+                schema:
+                  type: integer
+              - name: schema-boolean
+                in: query
+                style: deepObject
+                schema:
+                  type: boolean
             responses:
               "200":
                 description: OK
@@ -193,5 +213,47 @@ defmodule ApicalTest.Parameters.QueryTest do
 
       assert %{"style-pipeDelimited-object" => %{"foo" => "bar"}} = json_response(response, 200)
     end
+
+    test "deepObject works", %{conn: conn} do
+      response = get(conn, "/optional/?style-deepObject[foo]=bar&style-deepObject[baz]=quux")
+
+      assert %{"style-deepObject" => %{"foo" => "bar", "baz" => "quux"}} =
+               json_response(response, 200)
+    end
+  end
+
+  describe "for boolean schemas" do
+    test "true works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-boolean=true")
+      assert %{"schema-boolean" => true} = json_response(response, 200)
+    end
+
+    test "false works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-boolean=false")
+      assert %{"schema-boolean" => false} = json_response(response, 200)
+    end
+
+    test "flag is true", %{conn: conn} do
+      response = get(conn, "/optional/?schema-boolean")
+      assert %{"schema-boolean" => true} = json_response(response, 200)
+    end
+
+    test "nothing fails"
+
+    test "other string fails"
+  end
+
+  describe "for number schemas" do
+    test "floating point works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-number=4.5")
+      assert %{"schema-number" => 4.5} = json_response(response, 200)
+    end
+
+    test "integer works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-number=4")
+      assert %{"schema-number" => 4} = json_response(response, 200)
+    end
+
+    test "string fails"
   end
 end

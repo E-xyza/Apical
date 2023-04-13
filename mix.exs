@@ -23,6 +23,7 @@ defmodule Apical.MixProject do
 
   defp deps do
     [
+      {:pegasus, "~> 0.2"},
       {:bandit, ">= 0.7.6", only: :test},
       {:phoenix, "~> 1.7.2", only: :test},
       {:yaml_elixir, "~> 2.7", optional: true},
