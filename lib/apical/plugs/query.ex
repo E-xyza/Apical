@@ -47,7 +47,7 @@ defmodule Apical.Plugs.Query do
   end
 
   defp add_style(operations, parameters = %{"name" => name}) do
-    types = List.wrap(get_in(parameters, ["schema", "type"])) |> dbg(limit: 25)
+    types = List.wrap(get_in(parameters, ["schema", "type"]))
 
     if "array" in types or "object" in types do
       selected_style =

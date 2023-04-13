@@ -73,6 +73,14 @@ defmodule ApicalTest.Parameters.QueryTest do
                 style: deepObject
                 schema:
                   type: object
+              - name: schema-nullable-array
+                in: query
+                schema:
+                  type: ["null", array]
+              - name: schema-nullable-object
+                in: query
+                schema:
+                  type: ["null", object]
               - name: schema-number
                 in: query
                 style: deepObject
@@ -255,5 +263,39 @@ defmodule ApicalTest.Parameters.QueryTest do
     end
 
     test "string fails"
+  end
+
+  describe "for nullable object" do
+    test "basic object works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-nullable-object=foo,bar")
+      assert %{"schema-nullable-object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "null object works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-nullable-object")
+      assert %{"schema-nullable-object" => nil} = json_response(response, 200)
+    end
+
+    test "empty object works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-nullable-object=")
+      assert %{"schema-nullable-object" => %{}} = json_response(response, 200)
+    end
+  end
+
+  describe "for nullable array" do
+    test "basic array works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-nullable-array=foo,bar")
+      assert %{"schema-nullable-array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "null array works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-nullable-array")
+      assert %{"schema-nullable-array" => nil} = json_response(response, 200)
+    end
+
+    test "empty array works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-nullable-array=")
+      assert %{"schema-nullable-array" => []} = json_response(response, 200)
+    end
   end
 end

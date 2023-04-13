@@ -2,6 +2,8 @@ defmodule Apical.Parser.Query do
   require Pegasus
   import NimbleParsec
 
+  alias Apical.Parser.Query.Marshal
+
   Pegasus.parser_from_string(
     """
     # guards
@@ -133,42 +135,11 @@ defmodule Apical.Parser.Query do
 
   defp parse_query(string, context, key) when is_map_key(context, key) do
     if types = get_in(context, [key, :type]) do
-      parse_query_type(string, types)
+      Marshal.as_type(string, types)
     end
   end
 
   defp parse_query(string, _, _), do: string
-
-  defp parse_query_type("", [:null | _]), do: nil
-  defp parse_query_type(string, [:null | rest]), do: parse_query_type(string, rest)
-  defp parse_query_type("true", [:boolean | _]), do: true
-  defp parse_query_type("false", [:boolean | _]), do: false
-  defp parse_query_type(string, [:boolean | rest]), do: parse_query_type(string, rest)
-
-  defp parse_query_type(string, [:integer, :number | rest]),
-    do: parse_query_type(string, [:number | rest])
-
-  defp parse_query_type(string, [:integer | rest]) do
-    case Integer.parse(string) do
-      {value, ""} -> value
-      _ -> parse_query_type(string, rest)
-    end
-  end
-
-  defp parse_query_type(string, [:number | rest]) do
-    case Integer.parse(string) do
-      {value, ""} ->
-        value
-
-      _ ->
-        case Float.parse(string) do
-          {value, ""} -> value
-          _ -> parse_query_type(string, rest)
-        end
-    end
-  end
-
-  defp parse_query_type(string, _), do: string
 
   defp percent_decode(rest_str, [a, b, "%" | rest], context, _line, _offset) do
     {rest_str, [List.to_integer([b, a], 16) | rest], context}
@@ -186,7 +157,7 @@ defmodule Apical.Parser.Query do
 
   for type <- [:object, :array] do
     defp unquote(:"#{type}_guard")(rest_str, list, context = %{key: key}, _, _)
-         when is_map_key(context, key) and context_key_type(context, key) == [unquote(type)] do
+         when is_map_key(context, key) and context_key_type(context, key) in [[unquote(type)], [:null, unquote(type)]] do
       {rest_str, list, context}
     end
 
@@ -202,8 +173,8 @@ defmodule Apical.Parser.Query do
 
   defp style_guard(_rest_str, _list, _context, _, _, _), do: {:error, []}
 
-  defp finalize_array(rest_str, [{:array, list} | rest], context, _, _) do
-    {rest_str, [list | rest], Map.delete(context, :key)}
+  defp finalize_array(rest_str, [{:array, list} | rest], context = %{key: key}, _, _) do
+    {rest_str, [Marshal.array(list, Map.get(context, key)) | rest], Map.delete(context, :key)}
   end
 
   defp finalize_object(rest_str, [{:object, object} | rest], context, _, _) do

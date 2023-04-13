@@ -26,8 +26,8 @@ defmodule ApicalTest.Parser.QueryParserTest do
       assert {:ok, %{"foo" => ""}} = Query.parse("foo=")
     end
 
-    test "standalone value with no key defaults to nil" do
-      assert {:ok, %{"foo" => nil}} = Query.parse("foo")
+    test "standalone value with no key defaults to empty string" do
+      assert {:ok, %{"foo" => ""}} = Query.parse("foo")
     end
   end
 
@@ -83,6 +83,20 @@ defmodule ApicalTest.Parser.QueryParserTest do
 
       assert {:ok, %{"foo" => %{"bar" => "baz", "quux" => "mlem"}}} =
                Query.parse("foo[bar]=baz&foo[quux]=mlem", %{deep_object_keys: ["foo"]})
+    end
+  end
+
+  describe "deep array type marshalling" do
+    test "works with a generic" do
+      assert {:ok, %{"foo" => [1, 2, 3]}} = Query.parse("foo=1,2,3", %{"foo" => %{type: [:array], style: :form, elements: {[], [:integer]}}})
+    end
+
+    test "works with a tuple" do
+      assert {:ok, %{"foo" => [1, true, "3"]}} = Query.parse("foo=1,true,3", %{"foo" => %{type: [:array], style: :form, elements: {[[:integer], [:boolean]], [:string]}}})
+    end
+
+    test "works with a tuple and a generic" do
+      assert {:ok, %{"foo" => [1, true, 3]}} = Query.parse("foo=1,true,3", %{"foo" => %{type: [:array], style: :form, elements: {[[:integer], [:boolean]], [:integer]}}})
     end
   end
 end
