@@ -12,6 +12,12 @@ defmodule Apical.Plugs.Query do
       |> Map.put(:query_context, %{})
 
     Enum.reduce(parameters, operations, fn parameter = %{"name" => name}, operations_so_far ->
+      Tools.assert(
+        !parameter["allowEmptyValue"],
+        "allowEmptyValue is not supported for parameters due to ambiguity, see https://github.com/OAI/OpenAPI-Specification/issues/1573",
+        apical: true
+      )
+
       operations_so_far
       |> Map.update!(:query_context, &Map.put(&1, name, %{}))
       |> add_if_required(parameter)

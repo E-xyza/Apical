@@ -146,9 +146,10 @@ defmodule Apical.Parser.Query do
 
   defp merge_exploded_arrays(collected_parameters, context = %{exploded_arrays: arrays}) do
     Enum.reduce(arrays, collected_parameters, fn {key, value}, acc ->
-      array = value
-      |> Enum.reverse
-      |> Marshal.array(Map.get(context, key))
+      array =
+        value
+        |> Enum.reverse()
+        |> Marshal.array(Map.get(context, key))
 
       Map.put(acc, key, array)
     end)

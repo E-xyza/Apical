@@ -174,18 +174,21 @@ defmodule ApicalTest.Parser.QueryParserTest do
 
     test "works for type marshalling array" do
       assert {:ok, %{"foo" => [1, true, 2]}} =
-        Query.parse("foo=1&foo=true&foo=2", %{
-          "foo" => %{type: [:array], elements: {[[:integer], [:boolean]], [:integer]}},
-          exploded_array_keys: ["foo"]
-        })
+               Query.parse("foo=1&foo=true&foo=2", %{
+                 "foo" => %{type: [:array], elements: {[[:integer], [:boolean]], [:integer]}},
+                 exploded_array_keys: ["foo"]
+               })
     end
 
     test "works for type marshalling object" do
       assert {:ok, %{"foo" => %{"foo" => 1, "bar" => true, "quux" => 3}}} =
-        Query.parse("foo[foo]=1&foo[bar]=true&foo[quux]=3", %{
-          "foo" => %{type: [:object], properties: {%{"foo" => [:integer]}, %{~r/b.*/ => [:boolean]}, [:integer]}},
-          deep_object_keys: ["foo"]
-        })
+               Query.parse("foo[foo]=1&foo[bar]=true&foo[quux]=3", %{
+                 "foo" => %{
+                   type: [:object],
+                   properties: {%{"foo" => [:integer]}, %{~r/b.*/ => [:boolean]}, [:integer]}
+                 },
+                 deep_object_keys: ["foo"]
+               })
     end
   end
 end
