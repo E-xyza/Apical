@@ -26,4 +26,18 @@ defmodule Apical.Tools do
       quoted
     end
   end
+
+  def assert(condition, message, opts \\ []) do
+    # todo: consider adding jsonschema path information here.
+    unless condition do
+      explained =
+        if opts[:apical] do
+          "Apical does not recognize your schema: #{message}"
+        else
+          "Your schema violates OpenAPI: #{message}"
+        end
+
+      raise CompileError, description: explained
+    end
+  end
 end

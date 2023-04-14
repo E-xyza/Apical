@@ -9,7 +9,7 @@ defmodule Apical.Parser.Query do
     # guards
     empty           <- ""
     ARRAY_GUARD     <- empty
-    FORM_GUARD      <- empty
+    COMMA_GUARD     <- empty
     SPACE_GUARD     <- empty
     PIPE_GUARD      <- empty
     OBJECT_GUARD    <- empty
@@ -39,13 +39,13 @@ defmodule Apical.Parser.Query do
     ipchar_rs     <- ipchar / reserved
 
     # specialized array parsing
-    form_array    <- FORM_GUARD value? (comma value)*
+    form_array    <- COMMA_GUARD value? (comma value)*
     space_array   <- SPACE_GUARD value_ns? (space value_ns)*
     pipe_array    <- PIPE_GUARD value_np? (pipe value_np)*
     array_value   <- ARRAY_GUARD (form_array / space_array / pipe_array)
 
     # specialized object parsing
-    form_object   <- FORM_GUARD (value comma value)? (comma value comma value)*
+    form_object   <- COMMA_GUARD (value comma value)? (comma value comma value)*
     space_object  <- SPACE_GUARD (value_ns space value_ns)? (comma value_ns space value_ns)*
     pipe_object   <- PIPE_GUARD (value_np pipe value_np)? (comma value_np pipe value_np)*
     object_value  <- OBJECT_GUARD (form_object / space_object / pipe_object)
@@ -70,7 +70,7 @@ defmodule Apical.Parser.Query do
     empty: [ignore: true],
     ARRAY_GUARD: [post_traverse: :array_guard],
     OBJECT_GUARD: [post_traverse: :object_guard],
-    FORM_GUARD: [post_traverse: {:style_guard, [:form]}],
+    COMMA_GUARD: [post_traverse: {:style_guard, [:comma_delimited]}],
     SPACE_GUARD: [post_traverse: {:style_guard, [:space_delimited]}],
     PIPE_GUARD: [post_traverse: {:style_guard, [:pipe_delimited]}],
     RESERVED_GUARD: [post_traverse: :reserved_guard],
@@ -102,12 +102,76 @@ defmodule Apical.Parser.Query do
     deep_object: [post_traverse: :handle_deep_object]
   )
 
-  # reserved         <- IRI_gen_delims / IRI_sub_delims
-  # gen_delims       <- ":" / "/" / "?" / "#" / "[" / "]" / "@"
-
+  # fastlane combinators.   Note this supplants the bytewise combinator supplied in the RFC.
   defcombinatorp(:ucschar, utf8_char(not: 0..255))
 
-  defp handle_query_part(rest_str, [{:basic_query, [key]} | rest], context, _line, _offset) when is_map_key(context, key) do
+  defparsecp(:parse_query, parsec(:query) |> eos)
+
+  def parse(string, context \\ %{})
+
+  def parse(string, context) do
+    case parse_query(string, context: context) do
+      {:ok, result, "", context, _, _} ->
+        query_parameters =
+          result
+          |> Map.new()
+          |> merge_deep_objects(context)
+          |> merge_exploded_arrays(context)
+
+        case context do
+          %{warnings: warnings} ->
+            {:ok, query_parameters, warnings}
+
+          _ ->
+            {:ok, query_parameters}
+        end
+
+      {:ok, _, _, context, _, _} ->
+        # this should happen if we fail to eos.  Currently not enabled.
+        {:error, context.error}
+
+      {:error, _, _, _, _, _} ->
+        raise "not sure what's up here"
+    end
+  end
+
+  defp merge_deep_objects(collected_parameters, context = %{deep_objects: objects}) do
+    Enum.reduce(objects, collected_parameters, fn {key, value}, acc ->
+      object = Marshal.object(value, Map.get(context, key))
+      Map.put(acc, key, object)
+    end)
+  end
+
+  defp merge_deep_objects(parameters, _), do: parameters
+
+  defp merge_exploded_arrays(collected_parameters, context = %{exploded_arrays: arrays}) do
+    Enum.reduce(arrays, collected_parameters, fn {key, value}, acc ->
+      array = value
+      |> Enum.reverse
+      |> Marshal.array(Map.get(context, key))
+
+      Map.put(acc, key, array)
+    end)
+  end
+
+  defp merge_exploded_arrays(parameters, _), do: parameters
+
+  # UTILITY GUARDS
+
+  defguardp context_key_type(context, key)
+            when :erlang.map_get(:type, :erlang.map_get(key, context))
+
+  defguardp context_key_style(context)
+            when :erlang.map_get(:style, :erlang.map_get(:erlang.map_get(:key, context), context))
+
+  defguardp is_context_value_reserved(context)
+            when :erlang.map_get(
+                   :allow_reserved,
+                   :erlang.map_get(:erlang.map_get(:key, context), context)
+                 ) === true
+
+  defp handle_query_part(rest_str, [{:basic_query, [key]} | rest], context, _line, _offset)
+       when is_map_key(context, key) do
     value =
       context
       |> Map.get(key)
@@ -116,8 +180,30 @@ defmodule Apical.Parser.Query do
     {rest_str, [{key, value} | rest], context}
   end
 
-  defp handle_query_part(rest_str, [{:basic_query, [key, value]} | rest], context, _line, _offset) when is_map_key(context, key) do
-    {rest_str, [{key, parse_kv(value, Map.get(context, key))} | rest], context}
+  defp handle_query_part(rest_str, [{:basic_query, [key, value]} | rest], context, _line, _offset)
+       when is_map_key(context, key) do
+    case context do
+      %{exploded_array_keys: exploded} ->
+        if key in exploded do
+          new_list =
+            context
+            |> get_in([:exploded_arrays, key])
+            |> List.wrap()
+            |> List.insert_at(0, parse_kv(value, Map.get(context, key)))
+
+          new_exploded_arrays =
+            context
+            |> Map.get(:exploded_arrays, %{})
+            |> Map.put(key, new_list)
+
+          {rest_str, rest, Map.put(context, :exploded_arrays, new_exploded_arrays)}
+        else
+          {rest_str, [{key, parse_kv(value, Map.get(context, key))} | rest], context}
+        end
+
+      _ ->
+        {rest_str, [{key, parse_kv(value, Map.get(context, key))} | rest], context}
+    end
   end
 
   defp handle_query_part(rest_str, [{:basic_query, [key | _]} | rest], context, _line, _offset) do
@@ -172,15 +258,6 @@ defmodule Apical.Parser.Query do
     {rest_str, [key | rest], Map.put(context, :key, key)}
   end
 
-  defguardp context_key_type(context, key)
-            when :erlang.map_get(:type, :erlang.map_get(key, context))
-
-  defguardp context_key_style(context)
-            when :erlang.map_get(:style, :erlang.map_get(:erlang.map_get(:key, context), context))
-
-  defguardp is_context_value_reserved(context)
-            when :erlang.map_get(:allow_reserved, :erlang.map_get(:erlang.map_get(:key, context), context)) === true
-
   for type <- [:object, :array] do
     defp unquote(:"#{type}_guard")(rest_str, list, context = %{key: key}, _, _)
          when is_map_key(context, key) and
@@ -228,34 +305,4 @@ defmodule Apical.Parser.Query do
   end
 
   defp to_pairs([], so_far), do: so_far
-
-  defparsecp(:parse_query, parsec(:query) |> eos)
-
-  def parse(string, context \\ %{})
-
-  def parse(string, context) when is_map_key(context, :deep_object_keys) do
-    case parse_query(string, context: context) do
-      {:ok, result, _, context, _, _} ->
-        deep_params = Map.get(context, :deep_objects, %{})
-
-        params =
-          result
-          |> Map.new()
-          |> Map.merge(deep_params)
-
-        case context do
-          %{warnings: warnings = [_ | _]}->
-            {:ok, params, warnings}
-          _ ->
-            {:ok, params}
-        end
-    end
-  end
-
-  def parse(string, context) do
-    case parse_query(string, context: context) do
-      {:ok, result, _, _, _, _} ->
-        {:ok, Map.new(result)}
-    end
-  end
 end

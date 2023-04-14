@@ -2,6 +2,7 @@ defmodule Apical.Plugs.Query do
   @behaviour Plug
 
   alias Plug.Conn
+  alias Apical.Tools
 
   def init([parameters, plug_opts]) do
     # NOTE: parameter motion already occurs
@@ -47,7 +48,11 @@ defmodule Apical.Plugs.Query do
 
   defp add_type(operations, %{"name" => name, "schema" => %{"type" => type}}) do
     types = to_type_list(type)
-    %{operations | query_context: Map.update!(operations.query_context, name, &Map.put(&1, :type, types))}
+
+    %{
+      operations
+      | query_context: Map.update!(operations.query_context, name, &Map.put(&1, :type, types))
+    }
   end
 
   defp add_type(operations, _), do: operations
@@ -63,7 +68,12 @@ defmodule Apical.Plugs.Query do
     |> Enum.sort_by(&Map.fetch!(@type_order, &1))
   end
 
-  defp add_style(operations, %{"style" => "deepObject", "name" => name}) do
+  defp add_style(operations, parameter = %{"style" => "deepObject", "name" => name}) do
+    Tools.assert(
+      parameter["explode"] === true,
+      "for parameter `#{name}` deepObject style requires `explode: true`"
+    )
+
     update_in(operations, [:query_context, :deep_object_keys], &[name | List.wrap(&1)])
   end
 
@@ -83,37 +93,105 @@ defmodule Apical.Plugs.Query do
     %{operations | query_context: new_query_context}
   end
 
-  defp add_style(operations, parameters = %{"name" => name}) do
-    types = List.wrap(get_in(parameters, ["schema", "type"]))
+  @collection_types [
+    "array",
+    "object",
+    ["array"],
+    ["object"],
+    ["null", "array"],
+    ["null", "object"]
+  ]
 
-    if "array" in types or "object" in types do
-      selected_style =
-        case Map.fetch(parameters, "style") do
-          :error ->
-            :form
+  defp add_style(operations, parameters = %{"name" => name, "schema" => %{"type" => types}})
+       when types in @collection_types do
+    types = List.wrap(types)
 
-          {:ok, "form"} ->
-            :form
+    collection =
+      cond do
+        "array" in types -> :array
+        "object" in types -> :object
+        true -> nil
+      end
 
-          {:ok, "spaceDelimited"} ->
-            :space_delimited
+    case Map.fetch(parameters, "style") do
+      :error ->
+        # default style is "form"
 
-          {:ok, "pipeDelimited"} ->
-            :pipe_delimited
-            # we'll handle "other things" later.
+        case parameters["explode"] do
+          default when default in [nil, true] ->
+            Tools.assert(
+              collection === :array,
+              "for parameter `#{name}`, default (exploded) style requires schema type array.  Consider setting `explode: false`",
+              apical: true
+            )
+
+            update_in(operations, [:query_context, :exploded_array_keys], &[name | List.wrap(&1)])
+
+          false ->
+            put_in(
+              operations,
+              [:query_context, name, :style],
+              :comma_delimited
+            )
         end
 
-      new_query_context =
-        Map.update!(
-          operations.query_context,
-          name,
-          &Map.put(&1, :style, selected_style)
+      {:ok, "form"} ->
+        case parameters["explode"] do
+          default when default in [nil, true] ->
+            Tools.assert(
+              collection === :array,
+              "for parameter `#{name}`, form (exploded) style requires schema type array.  Consider setting `explode: false`",
+              apical: true
+            )
+
+            update_in(operations, [:query_context, :exploded_array_keys], &[name | List.wrap(&1)])
+
+          false ->
+            put_in(
+              operations,
+              [:query_context, name, :style],
+              :comma_delimited
+            )
+        end
+
+      {:ok, "spaceDelimited"} ->
+        Tools.assert(
+          not Map.get(parameters, "explode", false),
+          "for parameter `#{name}`, spaceDelimited style may not be `explode: true`.",
+          apical: true
         )
 
-      %{operations | query_context: new_query_context}
-    else
-      operations
+        put_in(
+          operations,
+          [:query_context, name, :style],
+          :space_delimited
+        )
+
+      {:ok, "pipeDelimited"} ->
+        Tools.assert(
+          not Map.get(parameters, "explode", false),
+          "for parameter `#{name}`, pipeDelimited style may not be `explode: true`.",
+          apical: true
+        )
+
+        put_in(
+          operations,
+          [:query_context, name, :style],
+          :pipe_delimited
+        )
     end
+  end
+
+  defp add_style(operations, parameters = %{"name" => name}) do
+    style = parameters["style"]
+
+    Tools.assert(
+      is_nil(style),
+      "for parameter #{name} the default style #{style} is not supported because the schema type must be a collection.",
+      apical: true
+    )
+
+    operations
   end
 
   defp add_inner_marshal(operations = %{query_context: context}, %{

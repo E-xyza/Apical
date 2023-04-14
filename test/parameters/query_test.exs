@@ -39,6 +39,17 @@ defmodule ApicalTest.Parameters.QueryTest do
                 style: form
                 schema:
                   type: array
+              - name: style-default-commaDelimited-array
+                in: query
+                explode: false
+                schema:
+                  type: array
+              - name: style-form-commaDelimited-array
+                in: query
+                style: form
+                explode: false
+                schema:
+                  type: array
               - name: style-spaceDelimited-array
                 in: query
                 style: spaceDelimited
@@ -49,13 +60,15 @@ defmodule ApicalTest.Parameters.QueryTest do
                 style: pipeDelimited
                 schema:
                   type: array
-              - name: style-default-object
+              - name: style-default-commaDelimited-object
                 in: query
+                explode: false
                 schema:
                   type: object
-              - name: style-form-object
+              - name: style-form-commaDelimited-object
                 in: query
                 style: form
+                explode: false
                 schema:
                   type: object
               - name: style-spaceDelimited-object
@@ -71,6 +84,7 @@ defmodule ApicalTest.Parameters.QueryTest do
               - name: style-deepObject
                 in: query
                 style: deepObject
+                explode: true
                 schema:
                   type: object
               - name: style-custom
@@ -78,29 +92,29 @@ defmodule ApicalTest.Parameters.QueryTest do
                 style: x-custom
               - name: schema-nullable-array
                 in: query
+                explode: false
                 schema:
                   type: ["null", array]
               - name: schema-nullable-object
                 in: query
+                explode: false
                 schema:
                   type: ["null", object]
               - name: schema-number
                 in: query
-                style: deepObject
                 schema:
                   type: number
               - name: schema-integer
                 in: query
-                style: deepObject
                 schema:
                   type: integer
               - name: schema-boolean
                 in: query
-                style: deepObject
                 schema:
                   type: boolean
               - name: marshal-array
                 in: query
+                explode: false
                 schema:
                   type: array
                   prefixItems:
@@ -110,6 +124,7 @@ defmodule ApicalTest.Parameters.QueryTest do
                     type: integer
               - name: marshal-object
                 in: query
+                explode: false
                 schema:
                   type: object
                   properties:
@@ -215,15 +230,28 @@ defmodule ApicalTest.Parameters.QueryTest do
 
   describe "for styled query parameters with array type" do
     test "default works", %{conn: conn} do
-      response = get(conn, "/optional/?style-default-array=foo,bar")
+      response = get(conn, "/optional/?style-default-array=foo&style-default-array=bar")
 
       assert %{"style-default-array" => ["foo", "bar"]} = json_response(response, 200)
     end
 
     test "form works", %{conn: conn} do
-      response = get(conn, "/optional/?style-form-array=foo,bar")
+      response = get(conn, "/optional/?style-form-array=foo&style-form-array=bar")
 
       assert %{"style-form-array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "default unexploded works", %{conn: conn} do
+      response = get(conn, "/optional/?style-default-commaDelimited-array=foo,bar")
+
+      assert %{"style-default-commaDelimited-array" => ["foo", "bar"]} =
+               json_response(response, 200)
+    end
+
+    test "form unexploded works", %{conn: conn} do
+      response = get(conn, "/optional/?style-form-commaDelimited-array=foo,bar")
+
+      assert %{"style-form-commaDelimited-array" => ["foo", "bar"]} = json_response(response, 200)
     end
 
     test "spaceDelimited works with space", %{conn: conn} do
@@ -249,15 +277,17 @@ defmodule ApicalTest.Parameters.QueryTest do
 
   describe "for styled query parameters with object type" do
     test "default works", %{conn: conn} do
-      response = get(conn, "/optional/?style-default-object=foo,bar")
+      response = get(conn, "/optional/?style-default-commaDelimited-object=foo,bar")
 
-      assert %{"style-default-object" => %{"foo" => "bar"}} = json_response(response, 200)
+      assert %{"style-default-commaDelimited-object" => %{"foo" => "bar"}} =
+               json_response(response, 200)
     end
 
     test "form works", %{conn: conn} do
-      response = get(conn, "/optional/?style-form-object=foo,bar")
+      response = get(conn, "/optional/?style-form-commaDelimited-object=foo,bar")
 
-      assert %{"style-form-object" => %{"foo" => "bar"}} = json_response(response, 200)
+      assert %{"style-form-commaDelimited-object" => %{"foo" => "bar"}} =
+               json_response(response, 200)
     end
 
     test "spaceDelimited works with space", %{conn: conn} do
@@ -377,7 +407,10 @@ defmodule ApicalTest.Parameters.QueryTest do
   describe "for unspecified content" do
     test "nothing appears the no parameters is unspecified", %{conn: conn} do
       response = get(conn, "/optional/?unspecified=abc")
-      assert {_, "299 - the key `unspecified` is not specified in the schema"} = List.keyfind(response.resp_headers, "warning", 0)
+
+      assert {_, "299 - the key `unspecified` is not specified in the schema"} =
+               List.keyfind(response.resp_headers, "warning", 0)
+
       assert %{} == json_response(response, 200)
     end
 
@@ -385,5 +418,9 @@ defmodule ApicalTest.Parameters.QueryTest do
       response = get(conn, "/unspecified/?unspecified=abc")
       assert %{"params" => %{}, "path_params" => %{}} == json_response(response, 200)
     end
+  end
+
+  describe "400 errors for parsing problems" do
+    test "when a reserved character appears"
   end
 end

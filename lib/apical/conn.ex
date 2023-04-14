@@ -7,9 +7,10 @@ defmodule Apical.Conn do
   def fetch_query_params(conn, settings) do
     case Query.parse(conn.query_string, settings) do
       {:ok, parse_result, warnings} ->
-        new_conn = conn
-        |> Map.put(:query_params, parse_result)
-        |> Map.update!(:params, &Map.merge(&1, parse_result))
+        new_conn =
+          conn
+          |> Map.put(:query_params, parse_result)
+          |> Map.update!(:params, &Map.merge(&1, parse_result))
 
         Enum.reduce(warnings, new_conn, fn warning, so_far ->
           Conn.put_resp_header(so_far, "warning", warning)

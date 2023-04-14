@@ -13,7 +13,8 @@ defmodule ApicalTest.Parser.QueryParserTest do
     end
 
     test "it works with basic multi key thing" do
-      assert {:ok, %{"foo" => "bar"}} = Query.parse("foo=bar&baz=quux", %{"foo" => %{}})
+      assert {:ok, %{"foo" => "bar"}} =
+               Query.parse("foo=bar&baz=quux", %{"foo" => %{}, "baz" => %{}})
     end
 
     test "percent encoding works" do
@@ -34,7 +35,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
   describe "array encoding" do
     test "with form encoding" do
       assert {:ok, %{"foo" => ["bar", "baz"]}} =
-               Query.parse("foo=bar,baz", %{"foo" => %{type: [:array], style: :form}})
+               Query.parse("foo=bar,baz", %{"foo" => %{type: [:array], style: :comma_delimited}})
     end
 
     test "with space delimited encoding" do
@@ -54,10 +55,12 @@ defmodule ApicalTest.Parser.QueryParserTest do
   describe "object encoding" do
     test "with form encoding" do
       assert {:ok, %{"foo" => %{"bar" => "baz"}}} =
-               Query.parse("foo=bar,baz", %{"foo" => %{type: [:object], style: :form}})
+               Query.parse("foo=bar,baz", %{"foo" => %{type: [:object], style: :comma_delimited}})
 
       assert {:ok, %{"foo" => %{"bar" => "baz", "quux" => "mlem"}}} =
-               Query.parse("foo=bar,baz,quux,mlem", %{"foo" => %{type: [:object], style: :form}})
+               Query.parse("foo=bar,baz,quux,mlem", %{
+                 "foo" => %{type: [:object], style: :comma_delimited}
+               })
     end
 
     test "with space delimited encoding" do
@@ -90,7 +93,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
     test "works with a generic" do
       assert {:ok, %{"foo" => [1, 2, 3]}} =
                Query.parse("foo=1,2,3", %{
-                 "foo" => %{type: [:array], style: :form, elements: {[], [:integer]}}
+                 "foo" => %{type: [:array], style: :comma_delimited, elements: {[], [:integer]}}
                })
     end
 
@@ -99,7 +102,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                Query.parse("foo=1,true,3", %{
                  "foo" => %{
                    type: [:array],
-                   style: :form,
+                   style: :comma_delimited,
                    elements: {[[:integer], [:boolean]], [:string]}
                  }
                })
@@ -110,7 +113,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                Query.parse("foo=1,true,3", %{
                  "foo" => %{
                    type: [:array],
-                   style: :form,
+                   style: :comma_delimited,
                    elements: {[[:integer], [:boolean]], [:integer]}
                  }
                })
@@ -123,7 +126,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                Query.parse("foo=bar,1", %{
                  "foo" => %{
                    type: [:object],
-                   style: :form,
+                   style: :comma_delimited,
                    properties: {%{"bar" => [:integer]}, %{}, [:string]}
                  }
                })
@@ -134,7 +137,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                Query.parse("foo=bar,1", %{
                  "foo" => %{
                    type: [:object],
-                   style: :form,
+                   style: :comma_delimited,
                    properties: {%{}, %{~r/b.*/ => [:integer]}, [:string]}
                  }
                })
@@ -143,8 +146,46 @@ defmodule ApicalTest.Parser.QueryParserTest do
     test "works with a default mapping" do
       assert {:ok, %{"foo" => %{"bar" => 1}}} =
                Query.parse("foo=bar,1", %{
-                 "foo" => %{type: [:object], style: :form, properties: {%{}, %{}, [:integer]}}
+                 "foo" => %{
+                   type: [:object],
+                   style: :comma_delimited,
+                   properties: {%{}, %{}, [:integer]}
+                 }
                })
+    end
+  end
+
+  describe "exploded types" do
+    test "works for array" do
+      assert {:ok, %{"foo" => ["bar", "baz"]}} =
+               Query.parse("foo=bar&foo=baz", %{
+                 "foo" => %{type: [:array]},
+                 exploded_array_keys: ["foo"]
+               })
+    end
+
+    test "works for object" do
+      assert {:ok, %{"foo" => %{"bar" => "baz", "quux" => "mlem"}}} =
+               Query.parse("foo[bar]=baz&foo[quux]=mlem", %{
+                 "foo" => %{type: [:object]},
+                 deep_object_keys: ["foo"]
+               })
+    end
+
+    test "works for type marshalling array" do
+      assert {:ok, %{"foo" => [1, true, 2]}} =
+        Query.parse("foo=1&foo=true&foo=2", %{
+          "foo" => %{type: [:array], elements: {[[:integer], [:boolean]], [:integer]}},
+          exploded_array_keys: ["foo"]
+        })
+    end
+
+    test "works for type marshalling object" do
+      assert {:ok, %{"foo" => %{"foo" => 1, "bar" => true, "quux" => 3}}} =
+        Query.parse("foo[foo]=1&foo[bar]=true&foo[quux]=3", %{
+          "foo" => %{type: [:object], properties: {%{"foo" => [:integer]}, %{~r/b.*/ => [:boolean]}, [:integer]}},
+          deep_object_keys: ["foo"]
+        })
     end
   end
 end
