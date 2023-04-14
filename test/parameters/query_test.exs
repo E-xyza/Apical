@@ -73,6 +73,9 @@ defmodule ApicalTest.Parameters.QueryTest do
                 style: deepObject
                 schema:
                   type: object
+              - name: style-custom
+                in: query
+                style: x-custom
               - name: schema-nullable-array
                 in: query
                 schema:
@@ -117,6 +120,9 @@ defmodule ApicalTest.Parameters.QueryTest do
                       type: boolean
                   additionalProperties:
                     type: integer
+              - name: allow-reserved
+                in: query
+                allowReserved: true
             responses:
               "200":
                 description: OK
@@ -125,8 +131,11 @@ defmodule ApicalTest.Parameters.QueryTest do
             operationId: unspecified
       """,
       controller: ApicalTest.Parameters.QueryTest,
-      content_type: "application/yaml"
+      content_type: "application/yaml",
+      styles: [{"x-custom", {__MODULE__, :x_custom}}]
     )
+
+    def x_custom("foo"), do: 47
   end
 
   use ApicalTest.ConnCase
@@ -346,6 +355,35 @@ defmodule ApicalTest.Parameters.QueryTest do
     test "empty array works", %{conn: conn} do
       response = get(conn, "/optional/?schema-nullable-array=")
       assert %{"schema-nullable-array" => []} = json_response(response, 200)
+    end
+  end
+
+  describe "for custom style" do
+    test "content is overloadable", %{conn: conn} do
+      response = get(conn, "/optional/?style-custom=foo")
+      assert %{"style-custom" => 47} = json_response(response, 200)
+    end
+  end
+
+  describe "for allowReserved" do
+    test "content is obtainable", %{conn: conn} do
+      # note that this is missing the # and & characters because these are ambiguous and can break
+      # decoding.
+      response = get(conn, "/optional/?allow-reserved=:/?[]@!$'()*+,;=")
+      assert %{"allow-reserved" => ":/?[]@!$'()*+,;="} = json_response(response, 200)
+    end
+  end
+
+  describe "for unspecified content" do
+    test "nothing appears the no parameters is unspecified", %{conn: conn} do
+      response = get(conn, "/optional/?unspecified=abc")
+      assert {_, "299 - the key `unspecified` is not specified in the schema"} = List.keyfind(response.resp_headers, "warning", 0)
+      assert %{} == json_response(response, 200)
+    end
+
+    test "nothing appears when no parameters are given", %{conn: conn} do
+      response = get(conn, "/unspecified/?unspecified=abc")
+      assert %{"params" => %{}, "path_params" => %{}} == json_response(response, 200)
     end
   end
 end

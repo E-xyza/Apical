@@ -9,25 +9,25 @@ defmodule ApicalTest.Parser.QueryParserTest do
     end
 
     test "it works with basic one key parameter" do
-      assert {:ok, %{"foo" => "bar"}} = Query.parse("foo=bar")
+      assert {:ok, %{"foo" => "bar"}} = Query.parse("foo=bar", %{"foo" => %{}})
     end
 
     test "it works with basic multi key thing" do
-      assert {:ok, %{"foo" => "bar"}} = Query.parse("foo=bar&baz=quux")
+      assert {:ok, %{"foo" => "bar"}} = Query.parse("foo=bar&baz=quux", %{"foo" => %{}})
     end
 
     test "percent encoding works" do
-      assert {:ok, %{"foo" => "bar baz"}} = Query.parse("foo=bar%20baz")
+      assert {:ok, %{"foo" => "bar baz"}} = Query.parse("foo=bar%20baz", %{"foo" => %{}})
     end
   end
 
   describe "exceptions with strange value strings" do
     test "value with no key defaults to empty string" do
-      assert {:ok, %{"foo" => ""}} = Query.parse("foo=")
+      assert {:ok, %{"foo" => ""}} = Query.parse("foo=", %{"foo" => %{}})
     end
 
     test "standalone value with no key defaults to empty string" do
-      assert {:ok, %{"foo" => ""}} = Query.parse("foo")
+      assert {:ok, %{"foo" => ""}} = Query.parse("foo", %{"foo" => %{}})
     end
   end
 
@@ -124,7 +124,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                  "foo" => %{
                    type: [:object],
                    style: :form,
-                   parameters: {%{"bar" => [:integer]}, %{}, [:string]}
+                   properties: {%{"bar" => [:integer]}, %{}, [:string]}
                  }
                })
     end
@@ -135,7 +135,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                  "foo" => %{
                    type: [:object],
                    style: :form,
-                   parameters: {%{}, %{~r/b.*/ => [:integer]}, [:string]}
+                   properties: {%{}, %{~r/b.*/ => [:integer]}, [:string]}
                  }
                })
     end
@@ -143,7 +143,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
     test "works with a default mapping" do
       assert {:ok, %{"foo" => %{"bar" => 1}}} =
                Query.parse("foo=bar,1", %{
-                 "foo" => %{type: [:object], style: :form, parameters: {%{}, %{}, [:integer]}}
+                 "foo" => %{type: [:object], style: :form, properties: {%{}, %{}, [:integer]}}
                })
     end
   end

@@ -15,9 +15,11 @@ defmodule Apical.Paths do
     # TODO: resolve function using operationId options
     function = operation_id
 
+    plug_opts = Keyword.take(opts, [:styles])
+
     quote do
       pipeline unquote(operation_id) do
-        unquote(plugs(operation))
+        unquote(plugs(operation, plug_opts))
       end
 
       scope unquote(path) do
@@ -34,14 +36,14 @@ defmodule Apical.Paths do
     "cookie" => Apical.Plugs.Cookie
   }
 
-  defp plugs(%{"parameters" => parameters}) do
+  defp plugs(%{"parameters" => parameters}, plug_opts) do
     parameters
     |> Enum.group_by(& &1["in"])
     |> Enum.map(fn {location, parameters} ->
       case Map.fetch(@query_mappings, location) do
         {:ok, plug} ->
           quote do
-            plug(unquote(plug), unquote(Macro.escape(parameters)))
+            plug(unquote(plug), unquote([Macro.escape(parameters), plug_opts]))
           end
 
         _ ->
@@ -50,5 +52,5 @@ defmodule Apical.Paths do
     end)
   end
 
-  defp plugs(_), do: []
+  defp plugs(_, _), do: []
 end

@@ -3,15 +3,33 @@ defmodule Apical.Plugs.Query do
 
   alias Plug.Conn
 
-  def init(parameters) do
+  def init([parameters, plug_opts]) do
     # NOTE: parameter motion already occurs
-    Enum.reduce(parameters, %{query_context: %{}}, fn parameter, operations ->
-      operations
+    operations =
+      plug_opts
+      |> opts_to_context
+      |> Map.put(:query_context, %{})
+
+    Enum.reduce(parameters, operations, fn parameter = %{"name" => name}, operations_so_far ->
+      operations_so_far
+      |> Map.update!(:query_context, &Map.put(&1, name, %{}))
       |> add_if_required(parameter)
       |> add_if_deprecated(parameter)
       |> add_type(parameter)
       |> add_style(parameter)
       |> add_inner_marshal(parameter)
+      |> add_allow_reserved(parameter)
+    end)
+  end
+
+  defp opts_to_context(plug_opts) do
+    Enum.reduce(~w(styles)a, %{}, fn
+      :styles, so_far ->
+        if styles = Keyword.get(plug_opts, :styles) do
+          Map.put(so_far, :styles, Map.new(styles))
+        else
+          so_far
+        end
     end)
   end
 
@@ -29,7 +47,7 @@ defmodule Apical.Plugs.Query do
 
   defp add_type(operations, %{"name" => name, "schema" => %{"type" => type}}) do
     types = to_type_list(type)
-    Map.update!(operations, :query_context, &Map.put(&1, name, %{type: types}))
+    %{operations | query_context: Map.update!(operations.query_context, name, &Map.put(&1, :type, types))}
   end
 
   defp add_type(operations, _), do: operations
@@ -47,6 +65,22 @@ defmodule Apical.Plugs.Query do
 
   defp add_style(operations, %{"style" => "deepObject", "name" => name}) do
     update_in(operations, [:query_context, :deep_object_keys], &[name | List.wrap(&1)])
+  end
+
+  @default_styles ~w(form spaceDelimited pipeDelimited deepObject)
+
+  defp add_style(operations, parameter = %{"style" => style}) when style not in @default_styles do
+    descriptor = get_in(operations, [:styles, style])
+
+    new_query_context =
+      Map.update(
+        operations.query_context,
+        parameter["name"],
+        %{style: descriptor},
+        &Map.put(&1, :style, descriptor)
+      )
+
+    %{operations | query_context: new_query_context}
   end
 
   defp add_style(operations, parameters = %{"name" => name}) do
@@ -132,7 +166,11 @@ defmodule Apical.Plugs.Query do
           |> to_type_list()
 
         new_key_spec =
-          Map.put(operations.query_context[key], :properties, {property_types, pattern_types, additional_types})
+          Map.put(
+            operations.query_context[key],
+            :properties,
+            {property_types, pattern_types, additional_types}
+          )
 
         put_in(operations, [:query_context, key], new_key_spec)
 
@@ -142,6 +180,12 @@ defmodule Apical.Plugs.Query do
   end
 
   defp add_inner_marshal(operations, _), do: operations
+
+  defp add_allow_reserved(operations, %{"name" => name, "allowReserved" => true}) do
+    put_in(operations, [:query_context, name, :allow_reserved], true)
+  end
+
+  defp add_allow_reserved(operations, _), do: operations
 
   def call(conn, operations) do
     # TODO: refactor this out to the outside.
