@@ -6,7 +6,7 @@ defmodule Apical do
 
     string
     |> Tools.decode(opts)
-    |> Apical.Phoenix.router(opts)
+    |> Apical.Phoenix.router(string, opts)
     |> Tools.maybe_dump(opts)
   end
 end

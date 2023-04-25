@@ -112,6 +112,14 @@ defmodule ApicalTest.Parameters.QueryTest do
                 in: query
                 schema:
                   type: boolean
+              - name: schema-string
+                in: query
+                schema:
+                  type: string
+              - name: schema-multitype
+                in: query
+                schema:
+                  type: [integer, number, string, "null", boolean]
               - name: marshal-array
                 in: query
                 explode: false
@@ -155,6 +163,7 @@ defmodule ApicalTest.Parameters.QueryTest do
 
   use ApicalTest.ConnCase
   alias Plug.Conn
+  alias Apical.Exceptions.ParameterError
 
   for ops <- ~w(queryParamRequired queryParamOptional)a do
     def unquote(ops)(conn, params) do
@@ -269,9 +278,9 @@ defmodule ApicalTest.Parameters.QueryTest do
 
   describe "for arrays with inner types" do
     test "marshalling works", %{conn: conn} do
-      response = get(conn, "/optional/?marshal-array=1,bar,2")
+      response = get(conn, "/optional/?marshal-array=1,bar,3")
 
-      assert %{"marshal-array" => [1, "bar", 2]} = json_response(response, 200)
+      assert %{"marshal-array" => [1, "bar", 3]} = json_response(response, 200)
     end
   end
 
@@ -335,9 +344,17 @@ defmodule ApicalTest.Parameters.QueryTest do
       assert %{"schema-boolean" => true} = json_response(response, 200)
     end
 
-    test "nothing fails"
+    test "nothing fails", %{conn: conn} do
+      assert_raise ParameterError, fn ->
+        get(conn, "/optional/?schema-boolean=")
+      end
+    end
 
-    test "other string fails"
+    test "other string fails", %{conn: conn} do
+      assert_raise ParameterError, fn ->
+        get(conn, "/optional/?schema-boolean=not-a-boolean")
+      end
+    end
   end
 
   describe "for number schemas" do
@@ -351,7 +368,43 @@ defmodule ApicalTest.Parameters.QueryTest do
       assert %{"schema-number" => 4} = json_response(response, 200)
     end
 
-    test "string fails"
+    test "string fails", %{conn: conn} do
+      assert_raise ParameterError, fn ->
+        get(conn, "/optional/?schema-number=foo")
+      end
+    end
+  end
+
+  describe "for multitype schemas" do
+    test "floating point works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-multitype=4.5")
+      assert %{"schema-multitype" => 4.5} = json_response(response, 200)
+    end
+
+    test "integer works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-multitype=4")
+      assert %{"schema-multitype" => 4} = json_response(response, 200)
+    end
+
+    test "boolean works", %{conn: conn} do
+      response = get(conn, "/optional/?schema-multitype=true")
+      assert %{"schema-multitype" => true} = json_response(response, 200)
+    end
+
+    test "null works with nothing", %{conn: conn} do
+      response = get(conn, "/optional/?schema-multitype=")
+      assert %{"schema-multitype" => nil} = json_response(response, 200)
+    end
+
+    test "null works with explicit null", %{conn: conn} do
+      response = get(conn, "/optional/?schema-multitype=null")
+      assert %{"schema-multitype" => nil} = json_response(response, 200)
+    end
+
+    test "null works with string", %{conn: conn} do
+      response = get(conn, "/optional/?schema-multitype=string")
+      assert %{"schema-multitype" => "string"} = json_response(response, 200)
+    end
   end
 
   describe "for nullable object" do
@@ -380,6 +433,11 @@ defmodule ApicalTest.Parameters.QueryTest do
     test "null array works", %{conn: conn} do
       response = get(conn, "/optional/?schema-nullable-array")
       assert %{"schema-nullable-array" => nil} = json_response(response, 200)
+    end
+
+    test "setting null will be treated as an array element", %{conn: conn} do
+      response = get(conn, "/optional/?schema-nullable-array=null")
+      assert %{"schema-nullable-array" => ["null"]} = json_response(response, 200)
     end
 
     test "empty array works", %{conn: conn} do
@@ -421,6 +479,11 @@ defmodule ApicalTest.Parameters.QueryTest do
   end
 
   describe "400 errors for parsing problems" do
-    test "when a reserved character appears"
+    test "when a reserved character appears", %{conn: conn} do
+      assert_raise ParameterError, fn ->
+        get(conn, "/optional/?schema-string=[")
+        |> dbg(limit: 50)
+      end
+    end
   end
 end

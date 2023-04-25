@@ -4,12 +4,12 @@ defmodule Apical.Plugs.Query do
   alias Plug.Conn
   alias Apical.Tools
 
-  def init([parameters, plug_opts]) do
-    # NOTE: parameter motion already occurs
+  def init([module, operation_id, parameters, plug_opts]) do
+    # TODO: document what we're doing with query context.
     operations =
       plug_opts
       |> opts_to_context
-      |> Map.put(:query_context, %{})
+      |> Map.put(:parser_context, %{})
 
     Enum.reduce(parameters, operations, fn parameter = %{"name" => name}, operations_so_far ->
       Tools.assert(
@@ -19,13 +19,14 @@ defmodule Apical.Plugs.Query do
       )
 
       operations_so_far
-      |> Map.update!(:query_context, &Map.put(&1, name, %{}))
+      |> Map.update!(:parser_context, &Map.put(&1, name, %{}))
       |> add_if_required(parameter)
       |> add_if_deprecated(parameter)
       |> add_type(parameter)
       |> add_style(parameter)
       |> add_inner_marshal(parameter)
       |> add_allow_reserved(parameter)
+      |> add_validations(module, operation_id, parameter)
     end)
   end
 
@@ -57,7 +58,7 @@ defmodule Apical.Plugs.Query do
 
     %{
       operations
-      | query_context: Map.update!(operations.query_context, name, &Map.put(&1, :type, types))
+      | parser_context: Map.update!(operations.parser_context, name, &Map.put(&1, :type, types))
     }
   end
 
@@ -80,7 +81,7 @@ defmodule Apical.Plugs.Query do
       "for parameter `#{name}` deepObject style requires `explode: true`"
     )
 
-    update_in(operations, [:query_context, :deep_object_keys], &[name | List.wrap(&1)])
+    update_in(operations, [:parser_context, :deep_object_keys], &[name | List.wrap(&1)])
   end
 
   @default_styles ~w(form spaceDelimited pipeDelimited deepObject)
@@ -88,15 +89,15 @@ defmodule Apical.Plugs.Query do
   defp add_style(operations, parameter = %{"style" => style}) when style not in @default_styles do
     descriptor = get_in(operations, [:styles, style])
 
-    new_query_context =
+    new_parser_context =
       Map.update(
-        operations.query_context,
+        operations.parser_context,
         parameter["name"],
         %{style: descriptor},
         &Map.put(&1, :style, descriptor)
       )
 
-    %{operations | query_context: new_query_context}
+    %{operations | parser_context: new_parser_context}
   end
 
   @collection_types [
@@ -131,12 +132,16 @@ defmodule Apical.Plugs.Query do
               apical: true
             )
 
-            update_in(operations, [:query_context, :exploded_array_keys], &[name | List.wrap(&1)])
+            update_in(
+              operations,
+              [:parser_context, :exploded_array_keys],
+              &[name | List.wrap(&1)]
+            )
 
           false ->
             put_in(
               operations,
-              [:query_context, name, :style],
+              [:parser_context, name, :style],
               :comma_delimited
             )
         end
@@ -150,12 +155,16 @@ defmodule Apical.Plugs.Query do
               apical: true
             )
 
-            update_in(operations, [:query_context, :exploded_array_keys], &[name | List.wrap(&1)])
+            update_in(
+              operations,
+              [:parser_context, :exploded_array_keys],
+              &[name | List.wrap(&1)]
+            )
 
           false ->
             put_in(
               operations,
-              [:query_context, name, :style],
+              [:parser_context, name, :style],
               :comma_delimited
             )
         end
@@ -169,7 +178,7 @@ defmodule Apical.Plugs.Query do
 
         put_in(
           operations,
-          [:query_context, name, :style],
+          [:parser_context, name, :style],
           :space_delimited
         )
 
@@ -182,7 +191,7 @@ defmodule Apical.Plugs.Query do
 
         put_in(
           operations,
-          [:query_context, name, :style],
+          [:parser_context, name, :style],
           :pipe_delimited
         )
     end
@@ -200,7 +209,7 @@ defmodule Apical.Plugs.Query do
     operations
   end
 
-  defp add_inner_marshal(operations = %{query_context: context}, %{
+  defp add_inner_marshal(operations = %{parser_context: context}, %{
          "schema" => schema,
          "name" => key
        })
@@ -210,23 +219,34 @@ defmodule Apical.Plugs.Query do
     cond do
       :array in outer_type ->
         prefix_items_type =
-          List.wrap(
-            if prefix_items = schema["prefixItems"] do
-              Enum.map(prefix_items, &to_type_list(&1["type"]))
-            end
-          )
+          case schema do
+            %{"prefixItems" => prefix_items} ->
+              Enum.map(prefix_items, &to_type_list(&1["type"] || ["string"]))
+
+
+            %{"items" => items} ->
+              Enum.map(items, &to_type_list(&1["type"] || ["string"]))
+
+            _ ->
+              []
+          end
 
         items_type =
-          List.wrap(
-            if items = schema["items"] || schema["additionalItems"] do
+          case schema do
+            %{"items" => items} when is_map(items) ->
               to_type_list(items["type"] || ["string"])
-            end
-          )
+
+            %{"additionalItems" => additional_items} ->
+              to_type_list(additional_items["type"] || ["string"])
+
+            _ ->
+              []
+          end
 
         new_key_spec =
-          Map.put(operations.query_context[key], :elements, {prefix_items_type, items_type})
+          Map.put(operations.parser_context[key], :elements, {prefix_items_type, items_type})
 
-        put_in(operations, [:query_context, key], new_key_spec)
+        put_in(operations, [:parser_context, key], new_key_spec)
 
       :object in outer_type ->
         property_types =
@@ -251,12 +271,12 @@ defmodule Apical.Plugs.Query do
 
         new_key_spec =
           Map.put(
-            operations.query_context[key],
+            operations.parser_context[key],
             :properties,
             {property_types, pattern_types, additional_types}
           )
 
-        put_in(operations, [:query_context, key], new_key_spec)
+        put_in(operations, [:parser_context, key], new_key_spec)
 
       true ->
         operations
@@ -266,17 +286,28 @@ defmodule Apical.Plugs.Query do
   defp add_inner_marshal(operations, _), do: operations
 
   defp add_allow_reserved(operations, %{"name" => name, "allowReserved" => true}) do
-    put_in(operations, [:query_context, name, :allow_reserved], true)
+    put_in(operations, [:parser_context, name, :allow_reserved], true)
   end
 
   defp add_allow_reserved(operations, _), do: operations
 
+  defp add_validations(operations, module, operation_id, %{"schema" => _schema, "name" => name}) do
+    fun = {module, :"#{operation_id}-#{name}"}
+
+    Map.update(operations, :validations, %{name => fun}, &Map.put(&1, name, fun))
+  end
+
+  defp add_validations(operations, _, _, _), do: operations
+
+  # CALL.  This code runs all of those things that we so painstakingly compiled, up above.
+
   def call(conn, operations) do
     # TODO: refactor this out to the outside.
     conn
-    |> Apical.Conn.fetch_query_params(operations.query_context)
+    |> Apical.Conn.fetch_query_params(operations.parser_context)
     |> filter_required(operations)
     |> warn_deprecated(operations)
+    |> validate(operations)
   end
 
   defp filter_required(conn, %{required: required}) do
@@ -307,4 +338,23 @@ defmodule Apical.Plugs.Query do
   end
 
   defp warn_deprecated(conn, _), do: conn
+
+  defp validate(conn, %{validations: validation_map}) do
+    Enum.reduce(validation_map, conn, fn
+      {param, {mod, fun}}, conn ->
+        with {:ok, content} <- Map.fetch(conn.query_params, param),
+             :ok <- apply(mod, fun, [content]) do
+          conn
+        else
+          :error ->
+            conn
+
+          {:error, reasons} ->
+            raise Apical.Exceptions.ParameterError,
+                  [operation_id: conn.private.operation_id, in: :query] ++ reasons
+        end
+    end)
+  end
+
+  defp validate(conn, _), do: conn
 end

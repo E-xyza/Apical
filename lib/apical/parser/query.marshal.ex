@@ -47,6 +47,7 @@ defmodule Apical.Parser.Query.Marshal do
   end
 
   def as_type("", [:null | _]), do: nil
+  def as_type("null", [:null | rest]), do: nil
   def as_type(string, [:null | rest]), do: as_type(string, rest)
   def as_type("true", [:boolean | _]), do: true
   def as_type("false", [:boolean | _]), do: false

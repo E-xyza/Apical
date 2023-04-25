@@ -20,6 +20,12 @@ defmodule Apical.Conn do
         conn
         |> Map.put(:query_params, parse_result)
         |> Map.update!(:params, &Map.merge(&1, parse_result))
+
+      {:error, char} ->
+        raise Apical.Exceptions.ParameterError,
+          operation_id: conn.private.operation_id,
+          in: "query",
+          misparsed: char
     end
   end
 end

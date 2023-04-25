@@ -126,12 +126,8 @@ defmodule Apical.Parser.Query do
             {:ok, query_parameters}
         end
 
-      {:ok, _, _, context, _, _} ->
-        # this should happen if we fail to eos.  Currently not enabled.
-        {:error, context.error}
-
-      {:error, _, _, _, _, _} ->
-        raise "not sure what's up here"
+      {:error, "expected end of string", char, _, _, _} ->
+        {:error, char}
     end
   end
 
