@@ -223,7 +223,6 @@ defmodule Apical.Plugs.Query do
             %{"prefixItems" => prefix_items} ->
               Enum.map(prefix_items, &to_type_list(&1["type"] || ["string"]))
 
-
             %{"items" => items} ->
               Enum.map(items, &to_type_list(&1["type"] || ["string"]))
 
@@ -302,7 +301,6 @@ defmodule Apical.Plugs.Query do
   # CALL.  This code runs all of those things that we so painstakingly compiled, up above.
 
   def call(conn, operations) do
-    # TODO: refactor this out to the outside.
     conn
     |> Apical.Conn.fetch_query_params(operations.parser_context)
     |> filter_required(operations)
@@ -310,6 +308,7 @@ defmodule Apical.Plugs.Query do
     |> validate(operations)
   end
 
+  # TODO: refactor this into a recursive call
   defp filter_required(conn, %{required: required}) do
     if Enum.all?(required, &is_map_key(conn.query_params, &1)) do
       conn

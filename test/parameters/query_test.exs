@@ -482,7 +482,6 @@ defmodule ApicalTest.Parameters.QueryTest do
     test "when a reserved character appears", %{conn: conn} do
       assert_raise ParameterError, fn ->
         get(conn, "/optional/?schema-string=[")
-        |> dbg(limit: 50)
       end
     end
   end

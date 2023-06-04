@@ -1,4 +1,7 @@
 defmodule Apical.Paths do
+  # see: https://datatracker.ietf.org/doc/html/rfc6570#section-3.2.3
+  #   to understand path expansion rules.
+
   def to_routes({path, methods}, opts) do
     base_pointer =
       "/paths"
@@ -13,6 +16,13 @@ defmodule Apical.Paths do
 
   defp to_route(path, {verb, operation = %{"operationId" => operation_id}}, base_pointer, opts)
        when verb in @verbs do
+    # TODO: check all path substitutions have corresponding parameters.
+    canonical_path = case path(path) do
+      {:ok, canonical, "", _, _, _} ->
+        "#{canonical}"
+      _ -> raise CompileError, description: "path #{path} is not a valid path template"
+    end
+
     verb_pointer = JsonPointer.join(base_pointer, verb)
     verb = Map.fetch!(@verb_mapping, verb)
     # TODO: resolve controller using controller options
@@ -43,7 +53,7 @@ defmodule Apical.Paths do
         unquote(plugs(operation, plug_opts))
       end
 
-      scope unquote(path) do
+      scope unquote(canonical_path) do
         pipe_through(unquote(operation_pipeline))
         unquote(verb)("/", unquote(controller), unquote(function))
       end
@@ -102,5 +112,85 @@ defmodule Apical.Paths do
         end
       end
     )
+  end
+
+  require Pegasus
+  import NimbleParsec
+
+  alias UriTemplateParser.Builder
+
+  Pegasus.parser_from_string(
+    """
+    # see https://datatracker.ietf.org/doc/html/rfc6570#section-2.1
+
+    ALPHA <- [A-Za-z]
+    DIGIT <- [0-9]
+    HEXDIG <- DIGIT / [A-Fa-f]
+    pct_encoded <- '%' HEXDIG HEXDIG
+
+    # see https://datatracker.ietf.org/doc/html/rfc6570#section-2.1
+
+    literal <- (ascii_literals / ucschar / pct_encoded)+
+
+    # expressions must be identifiers
+    identifiers <- [A-Za-z_] [A-Za-z0-9_]*
+
+    LBRACKET <- "{"
+    RBRACKET <- "}"
+    expression <- LBRACKET identifiers+ RBRACKET
+
+    path <- (expression / literal)+ eof
+    eof <- !.
+    """,
+    LBRACKET: [ignore: true],
+    RBRACKET: [ignore: true],
+    expression: [post_traverse: :to_colon_form],
+    path: [parser: true],
+  )
+
+  defcombinatorp(:unreserved_extra, ascii_char(~C'-._~'))
+
+  defcombinatorp(
+    :ucschar,
+    utf8_char([
+      0xA0..0xD7FF,
+      0xF900..0xFDCF,
+      0xFDF0..0xFFEF,
+      0x10000..0x1FFFD,
+      0x20000..0x2FFFD,
+      0x30000..0x3FFFD,
+      0x40000..0x4FFFD,
+      0x50000..0x5FFFD,
+      0x60000..0x6FFFD,
+      0x70000..0x7FFFD,
+      0x80000..0x8FFFD,
+      0x90000..0x9FFFD,
+      0xA0000..0xAFFFD,
+      0xB0000..0xBFFFD,
+      0xC0000..0xCFFFD,
+      0xD0000..0xDFFFD,
+      0xE1000..0xEFFFD
+    ])
+  )
+
+  defcombinatorp(
+    :ascii_literals,
+    ascii_char([
+      0x21,
+      0x23,
+      0x24,
+      0x26,
+      0x28..0x3B,
+      0x3D,
+      0x3F..0x5B,
+      0x5D,
+      0x5F,
+      0x61..0x7A,
+      0x7E
+    ])
+  )
+
+  defp to_colon_form(rest, var, context, _line, _offset) do
+    {rest, var ++ ~C':', context}
   end
 end
