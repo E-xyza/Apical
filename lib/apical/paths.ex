@@ -17,11 +17,14 @@ defmodule Apical.Paths do
   defp to_route(path, {verb, operation = %{"operationId" => operation_id}}, base_pointer, opts)
        when verb in @verbs do
     # TODO: check all path substitutions have corresponding parameters.
-    canonical_path = case path(path) do
-      {:ok, canonical, "", _, _, _} ->
-        "#{canonical}"
-      _ -> raise CompileError, description: "path #{path} is not a valid path template"
-    end
+    canonical_path =
+      case path(path) do
+        {:ok, canonical, "", _, _, _} ->
+          "#{canonical}"
+
+        _ ->
+          raise CompileError, description: "path #{path} is not a valid path template"
+      end
 
     verb_pointer = JsonPointer.join(base_pointer, verb)
     verb = Map.fetch!(@verb_mapping, verb)
@@ -145,7 +148,7 @@ defmodule Apical.Paths do
     LBRACKET: [ignore: true],
     RBRACKET: [ignore: true],
     expression: [post_traverse: :to_colon_form],
-    path: [parser: true],
+    path: [parser: true]
   )
 
   defcombinatorp(:unreserved_extra, ascii_char(~C'-._~'))

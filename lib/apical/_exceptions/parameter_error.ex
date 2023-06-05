@@ -14,6 +14,10 @@ defmodule Apical.Exceptions.ParameterError do
     plug_status: 400
   ]
 
+  def message(exception = %{reason: reason}) when is_binary(reason) do
+    "Parameter Error in operation #{exception.operation_id} (in #{exception.in}): #{reason}"
+  end
+
   def message(exception = %{misparsed: nil}) do
     "Parameter Error in operation #{exception.operation_id} (in #{exception.in}): #{describe_exonerate(exception)}"
   end

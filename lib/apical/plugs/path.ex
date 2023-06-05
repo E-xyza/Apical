@@ -1,54 +1,38 @@
 defmodule Apical.Plugs.Path do
   @behaviour Plug
+  @behaviour Apical.Plugs.Parameter
 
-  alias Plug.Conn
   alias Apical.Tools
+  alias Apical.Plugs.Common
 
-  def init([module, operation_id, parameters, plug_opts]) do
-    Enum.reduce(parameters, %{}, fn parameter = %{"name" => name}, operations_so_far ->
+  @impl Plug
+  def init(opts = [_module, operation_id, parameters, _plug_opts]) do
+    Enum.each(parameters, fn parameter = %{"name" => name} ->
       Tools.assert(
-        !parameter["allowEmptyValue"],
-        "allowEmptyValue is not supported for parameters due to ambiguity, see https://github.com/OAI/OpenAPI-Specification/issues/1573",
-        apical: true
+        parameter["required"],
+        "for parameter #{name} in operationId #{operation_id}: path parameters must be `required: true`"
       )
-
-      Tools.assert(parameter["required"], "for parameter #{name} in operationId #{operation_id}: path parameters must be `required: true`")
-
-      operations_so_far
-      |> add_if_deprecated(parameter)
-      # |> add_type(parameter)
-      # |> add_style(parameter)
-      # |> add_inner_marshal(parameter)
-      # |> add_allow_reserved(parameter)
-      # |> add_validations(module, operation_id, parameter)
     end)
+
+    Common.init([__MODULE__ | opts])
   end
 
-  defp add_if_deprecated(operations, %{"deprecated" => true, "name" => name}) do
-    Map.update(operations, :deprecated, [name], &[name | &1])
-  end
-
-  defp add_if_deprecated(operations, _parameters), do: operations
-
+  @impl Plug
   def call(conn, operations) do
+    params = Apical.Conn.fetch_path_params(conn, operations.parser_context)
+
     conn
-    |> warn_deprecated(operations)
-    # |> validate(operations)
+    |> Map.update!(:params, &Map.merge(&1, params))
+    |> Common.warn_deprecated(params, :path, operations)
+    |> Common.validate(params, :path, operations)
   end
 
-  defp warn_deprecated(conn, %{deprecated: deprecated}) do
-    Enum.reduce(deprecated, conn, fn param, conn ->
-      if is_map_key(conn.path_params, param) do
-        Conn.put_resp_header(
-          conn,
-          "warning",
-          "299 - the path parameter `#{param}` is deprecated."
-        )
-      else
-        conn
-      end
-    end)
-  end
+  @impl Apical.Plugs.Parameter
+  def name, do: :path
 
-  defp warn_deprecated(conn, _), do: conn
+  @impl Apical.Plugs.Parameter
+  def default_style, do: "simple"
+
+  @impl Apical.Plugs.Parameter
+  def style_allowed?(style), do: style in ~w(matrix label simple)
 end

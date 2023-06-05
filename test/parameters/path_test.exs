@@ -33,6 +33,56 @@ defmodule ApicalTest.Parameters.PathTest do
               - name: extension
                 in: path
                 required: true
+        "/style/default-array/:array":
+          get:
+            operationId: pathParamDefaultArray
+            parameters:
+              - name: array
+                in: path
+                required: true
+                schema:
+                  type: array
+        "/style/matrix-array/:array":
+          get:
+            operationId: pathParamMatrixArray
+            parameters:
+              - name: array
+                in: path
+                required: true
+                style: matrix
+                schema:
+                  type: array
+        "/style/matrix-array-explode/:array":
+          get:
+            operationId: pathParamMatrixArrayExplode
+            parameters:
+              - name: array
+                in: path
+                required: true
+                style: matrix
+                explode: true
+                schema:
+                  type: array
+        "/style/label-array/:array":
+          get:
+            operationId: pathParamLabelArray
+            parameters:
+              - name: array
+                in: path
+                required: true
+                style: label
+                schema:
+                  type: array
+        "/style/simple-array/:array":
+          get:
+            operationId: pathParamSimpleArray
+            parameters:
+              - name: array
+                in: path
+                required: true
+                style: simple
+                schema:
+                  type: array
       """,
       controller: ApicalTest.Parameters.PathTest,
       content_type: "application/yaml",
@@ -47,7 +97,9 @@ defmodule ApicalTest.Parameters.PathTest do
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
-  for ops <- ~w(pathParamBasic pathParamDeprecated pathParamPartial)a do
+  for ops <- ~w(pathParamBasic pathParamDeprecated pathParamPartial
+      pathParamDefaultArray pathParamMatrixArray pathParamMatrixArrayExplode
+      pathParamLabelArray pathParamSimpleArray)a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -57,7 +109,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
   test "for path, when not required, causes compilation error"
 
-  describe "for a required path parameter" do
+  describe "for a path parameter" do
     test "it serializes as expected", %{conn: conn} do
       assert %{"required" => "foo"} = json_response(get(conn, "/required/foo"), 200)
     end
@@ -69,7 +121,7 @@ defmodule ApicalTest.Parameters.PathTest do
     end
   end
 
-  describe "for a deprecated query parameter" do
+  describe "for a deprecated path parameter" do
     test "it returns a 299 header", %{conn: conn} do
       response = get(conn, "/deprecated/deprecated")
 
@@ -80,9 +132,48 @@ defmodule ApicalTest.Parameters.PathTest do
     end
   end
 
-  describe "for a partial query parameter" do
+  describe "for a partial path parameter" do
     test "it serializes as expected", %{conn: conn} do
       assert %{"extension" => "txt"} == json_response(get(conn, "/partial/base.txt"), 200)
+    end
+  end
+
+  describe "for styled path parameters with array type" do
+    test "default works", %{conn: conn} do
+      response = get(conn, "/style/default-array/foo,bar")
+
+      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "matrix works", %{conn: conn} do
+      response = get(conn, "/style/matrix-array/;array=foo,bar")
+
+      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "matrix fails if you don't match name", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMatrixArray (in path): matrix key `value` provided for array named `array`, use format: `;array=...`",
+                   fn ->
+                     response = get(conn, "/style/matrix-array/;value=foo,bar")
+                   end
+    end
+
+    test "matrix works when exploded", %{conn: conn} do
+      response = get(conn, "/style/matrix-array-explode/;array=foo;array=bar")
+      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "label works", %{conn: conn} do
+      response = get(conn, "/style/label-array/.foo.bar")
+
+      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "simple works", %{conn: conn} do
+      response = get(conn, "/style/simple-array/foo,bar")
+
+      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
     end
   end
 end
