@@ -83,6 +83,36 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: simple
                 schema:
                   type: array
+        "/style/default-object/:object":
+          get:
+            operationId: pathParamDefaultObject
+            parameters:
+              - name: object
+                in: path
+                required: true
+                schema:
+                  type: object
+        "/style/simple-object/:object":
+          get:
+            operationId: pathParamSimpleObject
+            parameters:
+              - name: object
+                in: path
+                required: true
+                style: simple
+                schema:
+                  type: object
+        "/style/simple-object-explode/:object":
+          get:
+            operationId: pathParamSimpleObjectExplode
+            parameters:
+              - name: object
+                in: path
+                required: true
+                explode: true
+                style: simple
+                schema:
+                  type: object
       """,
       controller: ApicalTest.Parameters.PathTest,
       content_type: "application/yaml",
@@ -99,7 +129,8 @@ defmodule ApicalTest.Parameters.PathTest do
 
   for ops <- ~w(pathParamBasic pathParamDeprecated pathParamPartial
       pathParamDefaultArray pathParamMatrixArray pathParamMatrixArrayExplode
-      pathParamLabelArray pathParamSimpleArray)a do
+      pathParamLabelArray pathParamSimpleArray
+      pathParamDefaultObject pathParamSimpleObject pathParamSimpleObjectExplode)a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -159,9 +190,17 @@ defmodule ApicalTest.Parameters.PathTest do
                    end
     end
 
-    test "matrix works when exploded", %{conn: conn} do
+    test "exploded matrix works", %{conn: conn} do
       response = get(conn, "/style/matrix-array-explode/;array=foo;array=bar")
       assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "exploded matrix fails if any entry don't match name", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMatrixArrayExplode (in path): matrix key `value` provided for array named `array`, use format: `;array=...;array=...`",
+                   fn ->
+                     response = get(conn, "/style/matrix-array-explode/;array=foo;value=bar")
+                   end
     end
 
     test "label works", %{conn: conn} do
@@ -170,10 +209,54 @@ defmodule ApicalTest.Parameters.PathTest do
       assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
     end
 
+    test "label errors if you forget the initial dot", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamLabelArray (in path): label parameter `foo.bar` for parameter `array` is missing a dot, use format: `.value1.value2.value3...`",
+                   fn ->
+                     response = get(conn, "/style/label-array/foo.bar")
+                   end
+    end
+
     test "simple works", %{conn: conn} do
       response = get(conn, "/style/simple-array/foo,bar")
 
       assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+  end
+
+  describe "for styled path parameters with object type" do
+    test "default works", %{conn: conn} do
+      response = get(conn, "/style/default-object/foo,bar")
+
+      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "simple works", %{conn: conn} do
+      response = get(conn, "/style/simple-object/foo,bar")
+
+      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "simple raises 400 on non-even number of values", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamSimpleObject (in query): comma delimited object parameter `foo,bar,baz` for parameter `object` has an odd number of entries",
+                   fn ->
+                     response = get(conn, "/style/simple-object/foo,bar,baz")
+                   end
+    end
+
+    test "simple exploded works", %{conn: conn} do
+      response = get(conn, "/style/simple-object-explode/foo=bar,baz=quux")
+
+      assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} = json_response(response, 200)
+    end
+
+    test "simple exploded raises 400 on malformed values", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamSimpleObjectExplode (in query): comma delimited object parameter `foo=bar=baz` for parameter `object` has a malformed entry: `foo=bar=baz`",
+                   fn ->
+                     response = get(conn, "/style/simple-object-explode/foo=bar=baz")
+                   end
     end
   end
 end
