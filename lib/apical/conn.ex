@@ -1,6 +1,7 @@
 defmodule Apical.Conn do
   # stuff to do with the Plug.Conn struct that is specialized for Apical.
 
+  alias Apical.Parser.Marshal
   alias Apical.Parser.Query
   alias Apical.Parser.Style
   alias Plug.Conn
@@ -31,10 +32,21 @@ defmodule Apical.Conn do
   end
 
   def fetch_path_params(conn, settings) do
-    Map.new(conn.path_params, fn
-      {key, value} ->
-        key_settings = Map.fetch!(settings, key)
-        Style.parse(conn, key, value, key_settings)
-    end)
+    Map.new(conn.path_params, &fetch_kv(&1, conn.private.operation_id, settings))
+  end
+
+  defp fetch_kv({key, value}, operation_id, settings) do
+    key_settings = Map.fetch!(settings, key)
+
+    with {:ok, parsed} <- Style.parse(value, key, key_settings),
+         {:ok, marshalled} <- Marshal.marshal(parsed, key_settings) do
+      {key, marshalled}
+    else
+      {:error, msg} ->
+        raise Apical.Exceptions.ParameterError,
+          operation_id: operation_id,
+          in: :path,
+          reason: msg
+    end
   end
 end

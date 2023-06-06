@@ -155,6 +155,21 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: simple
                 schema:
                   type: object
+        "/marshal/array/:array":
+          get:
+            operationId: pathParamMarshalArray
+            parameters:
+              - name: array
+                in: path
+                required: true
+                style: simple
+                schema:
+                  type: array
+                  prefixItems:
+                    - type: integer
+                    - type: string
+                  items:
+                    type: integer
       """,
       controller: ApicalTest.Parameters.PathTest,
       content_type: "application/yaml",
@@ -171,7 +186,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
   for ops <- ~w(pathParamBasic pathParamDeprecated pathParamPartial
       pathParamDefaultArray pathParamMatrixArray pathParamMatrixArrayExplode
-      pathParamLabelArray pathParamSimpleArray
+      pathParamLabelArray pathParamSimpleArray pathParamMarshalArray
       pathParamDefaultObject pathParamMatrixObject pathParamMatrixObjectExplode
       pathParamLabelObject pathParamLabelObjectExplode
       pathParamSimpleObject pathParamSimpleObjectExplode)a do
@@ -276,6 +291,14 @@ defmodule ApicalTest.Parameters.PathTest do
     end
   end
 
+  describe "for arrays with inner types" do
+    test "marshalling works", %{conn: conn} do
+      response = get(conn, "/marshal/array/1,bar,3")
+
+      assert %{"marshal-array" => [1, "bar", 3]} = json_response(response, 200)
+    end
+  end
+
   describe "for styled path parameters with object type" do
     test "default works", %{conn: conn} do
       response = get(conn, "/style/default-object/foo,bar")
@@ -307,7 +330,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "matrix fails if you don't have an even number of params", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
-                   "Parameter Error in operation pathParamMatrixObject (in query): comma delimited object parameter `object=foo,bar,baz` for parameter `object` has an odd number of entries",
+                   "Parameter Error in operation pathParamMatrixObject (in path): matrix object parameter `;object=foo,bar,baz` for parameter `object` has an odd number of entries",
                    fn ->
                      response = get(conn, "/style/matrix-object/;object=foo,bar,baz")
                    end
@@ -339,7 +362,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "label fails if you don't have an even number of params", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
-                   "Parameter Error in operation pathParamLabelObject (in query): label object parameter `foo.bar.baz` for parameter `object` has an odd number of entries",
+                   "Parameter Error in operation pathParamLabelObject (in path): label object parameter `.foo.bar.baz` for parameter `object` has an odd number of entries",
                    fn ->
                      response = get(conn, "/style/label-object/.foo.bar.baz")
                    end
@@ -353,7 +376,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "label exploded fails if you don't have an even number of params", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
-                   "Parameter Error in operation pathParamLabelObjectExplode (in query): label object parameter `foo=bar=baz` for parameter `object` has a malformed entry: `foo=bar=baz`",
+                   "Parameter Error in operation pathParamLabelObjectExplode (in path): label object parameter `.foo=bar=baz` for parameter `object` has a malformed entry: `foo=bar=baz`",
                    fn ->
                      response = get(conn, "/style/label-object-explode/.foo=bar=baz")
                    end
@@ -367,7 +390,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "simple raises 400 on non-even number of values", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
-                   "Parameter Error in operation pathParamSimpleObject (in query): comma delimited object parameter `foo,bar,baz` for parameter `object` has an odd number of entries",
+                   "Parameter Error in operation pathParamSimpleObject (in path): comma delimited object parameter `foo,bar,baz` for parameter `object` has an odd number of entries",
                    fn ->
                      response = get(conn, "/style/simple-object/foo,bar,baz")
                    end
@@ -381,7 +404,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "simple exploded raises 400 on malformed values", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
-                   "Parameter Error in operation pathParamSimpleObjectExplode (in query): comma delimited object parameter `foo=bar=baz` for parameter `object` has a malformed entry: `foo=bar=baz`",
+                   "Parameter Error in operation pathParamSimpleObjectExplode (in path): comma delimited object parameter `foo=bar=baz` for parameter `object` has a malformed entry: `foo=bar=baz`",
                    fn ->
                      response = get(conn, "/style/simple-object-explode/foo=bar=baz")
                    end

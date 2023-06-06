@@ -1,4 +1,8 @@
-defmodule Apical.Parser.Query.Marshal do
+defmodule Apical.Parser.Marshal do
+  def marshal(value, _settings) do
+    {:ok, value}
+  end
+
   def array(array, %{elements: {prefix_type, tail_type}}) do
     array_marshal(array, prefix_type, tail_type, [])
   end
@@ -47,7 +51,7 @@ defmodule Apical.Parser.Query.Marshal do
   end
 
   def as_type("", [:null | _]), do: nil
-  def as_type("null", [:null | rest]), do: nil
+  def as_type("null", [:null | _rest]), do: nil
   def as_type(string, [:null | rest]), do: as_type(string, rest)
   def as_type("true", [:boolean | _]), do: true
   def as_type("false", [:boolean | _]), do: false

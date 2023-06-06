@@ -2,7 +2,7 @@ defmodule Apical.Parser.Query do
   require Pegasus
   import NimbleParsec
 
-  alias Apical.Parser.Query.Marshal
+  alias Apical.Parser.Marshal
 
   Pegasus.parser_from_string(
     """
