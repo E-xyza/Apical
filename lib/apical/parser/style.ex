@@ -4,7 +4,7 @@ defmodule Apical.Parser.Style do
   # TODO: The API for this module needs to be revised once we know better what
   # is in common between path, cookie, and header parameters
 
-  def parse(value, key, settings = %{style: :comma_delimited, type: type}) do
+  def parse(value, key, :comma_delimited, type, explode?) do
     cond do
       :array in type ->
         {:ok, String.split(value, ",")}
@@ -12,7 +12,7 @@ defmodule Apical.Parser.Style do
       :object in type ->
         value
         |> String.split(",")
-        |> collect(settings)
+        |> collect(explode?)
         |> case do
           ok = {:ok, _} ->
             ok
@@ -28,16 +28,16 @@ defmodule Apical.Parser.Style do
     end
   end
 
-  def parse("." <> value, key, settings = %{style: :label, type: type}) do
+  def parse("." <> value, key, :label, type, explode?) do
     parsed =
       cond do
         :array in type ->
           {:ok, String.split(value, ".")}
 
-        Map.get(settings, :explode) && :object in type ->
+        explode? and :object in type ->
           value
           |> String.split(".")
-          |> collect(settings)
+          |> collect(explode?)
 
         :object in type ->
           value
@@ -59,12 +59,12 @@ defmodule Apical.Parser.Style do
     end
   end
 
-  def parse(value, key, %{style: :label}) do
+  def parse(value, key, :label, _, _) do
     {:error,
      "label style `#{value}` for parameter `#{key}` is missing a leading dot, use format: `.value1.value2.value3...`"}
   end
 
-  def parse(";" <> value, key, settings = %{style: :matrix, type: type}) do
+  def parse(";" <> value, key, :matrix, type, explode?) do
     split =
       value
       |> String.split(";")
@@ -82,10 +82,10 @@ defmodule Apical.Parser.Style do
 
     cond do
       :array in type ->
-        matrix_array_parse(split, key, Map.get(settings, :explode))
+        matrix_array_parse(split, key, explode?)
 
       :object in type ->
-        case matrix_object_parse(split, key, Map.get(settings, :explode)) do
+        case matrix_object_parse(split, key, explode?) do
           ok = {:ok, _} -> ok
           {:error, :odd} ->
             {:error,
@@ -95,12 +95,12 @@ defmodule Apical.Parser.Style do
     end
   end
 
-  def parse(value, key, %{style: :matrix}) do
+  def parse(value, key, :matrix, _, _explode?) do
     {:error,
      "matrix style `#{value}` for parameter `#{key}` is missing a leading semicolon, use format: `;#{key}=...`"}
   end
 
-  def parse(value, _key, %{}), do: {:ok, value}
+  def parse(value, _, _, _, _?), do: {:ok, value}
 
   defp matrix_array_parse(split, key, explode?) do
     if explode? do
@@ -145,7 +145,7 @@ defmodule Apical.Parser.Style do
     end
   end
 
-  defp collect(parts, %{explode: true}) do
+  defp collect(parts, true) do
     Enum.reduce_while(parts, {:ok, %{}}, fn
       part, {:ok, so_far} ->
         case String.split(part, "=") do
@@ -161,7 +161,7 @@ defmodule Apical.Parser.Style do
     end)
   end
 
-  defp collect(parts, _), do: into_map(parts, %{})
+  defp collect(parts, _explode?), do: into_map(parts, %{})
 
   defp into_map([k, v | rest], so_far), do: into_map(rest, Map.put(so_far, k, v))
   defp into_map([], so_far), do: {:ok, so_far}
