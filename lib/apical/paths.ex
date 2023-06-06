@@ -120,8 +120,6 @@ defmodule Apical.Paths do
   require Pegasus
   import NimbleParsec
 
-  alias UriTemplateParser.Builder
-
   Pegasus.parser_from_string(
     """
     # see https://datatracker.ietf.org/doc/html/rfc6570#section-2.1

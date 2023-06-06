@@ -113,6 +113,27 @@ defmodule ApicalTest.Parameters.PathTest do
                 explode: true
                 schema:
                   type: object
+        "/style/label-object/:object":
+          get:
+            operationId: pathParamLabelObject
+            parameters:
+              - name: object
+                in: path
+                required: true
+                style: label
+                schema:
+                  type: object
+        "/style/label-object-explode/:object":
+          get:
+            operationId: pathParamLabelObjectExplode
+            parameters:
+              - name: object
+                in: path
+                required: true
+                style: label
+                explode: true
+                schema:
+                  type: object
         "/style/simple-object/:object":
           get:
             operationId: pathParamSimpleObject
@@ -151,8 +172,9 @@ defmodule ApicalTest.Parameters.PathTest do
   for ops <- ~w(pathParamBasic pathParamDeprecated pathParamPartial
       pathParamDefaultArray pathParamMatrixArray pathParamMatrixArrayExplode
       pathParamLabelArray pathParamSimpleArray
-      pathParamDefaultObject pathParamMatrixObject pathParamMatrixObjectExplode pathParamSimpleObject
-      pathParamSimpleObjectExplode)a do
+      pathParamDefaultObject pathParamMatrixObject pathParamMatrixObjectExplode
+      pathParamLabelObject pathParamLabelObjectExplode
+      pathParamSimpleObject pathParamSimpleObjectExplode)a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -307,6 +329,34 @@ defmodule ApicalTest.Parameters.PathTest do
       response = get(conn, "/style/matrix-object-explode/;foo=bar;baz")
 
       assert %{"object" => %{"foo" => "bar", "baz" => ""}} = json_response(response, 200)
+    end
+
+    test "label works", %{conn: conn} do
+      response = get(conn, "/style/label-object/.foo.bar")
+
+      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "label fails if you don't have an even number of params", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamLabelObject (in query): label object parameter `foo.bar.baz` for parameter `object` has an odd number of entries",
+                   fn ->
+                     response = get(conn, "/style/label-object/.foo.bar.baz")
+                   end
+    end
+
+    test "label exploded works", %{conn: conn} do
+      response = get(conn, "/style/label-object-explode/.foo=bar.baz=quux")
+
+      assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} = json_response(response, 200)
+    end
+
+    test "label exploded fails if you don't have an even number of params", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamLabelObjectExplode (in query): label object parameter `foo=bar=baz` for parameter `object` has a malformed entry: `foo=bar=baz`",
+                   fn ->
+                     response = get(conn, "/style/label-object-explode/.foo=bar=baz")
+                   end
     end
 
     test "simple works", %{conn: conn} do
