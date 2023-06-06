@@ -92,6 +92,27 @@ defmodule ApicalTest.Parameters.PathTest do
                 required: true
                 schema:
                   type: object
+        "/style/matrix-object/:object":
+          get:
+            operationId: pathParamMatrixObject
+            parameters:
+              - name: object
+                in: path
+                required: true
+                style: matrix
+                schema:
+                  type: object
+        "/style/matrix-object-explode/:object":
+          get:
+            operationId: pathParamMatrixObjectExplode
+            parameters:
+              - name: object
+                in: path
+                required: true
+                style: matrix
+                explode: true
+                schema:
+                  type: object
         "/style/simple-object/:object":
           get:
             operationId: pathParamSimpleObject
@@ -130,7 +151,8 @@ defmodule ApicalTest.Parameters.PathTest do
   for ops <- ~w(pathParamBasic pathParamDeprecated pathParamPartial
       pathParamDefaultArray pathParamMatrixArray pathParamMatrixArrayExplode
       pathParamLabelArray pathParamSimpleArray
-      pathParamDefaultObject pathParamSimpleObject pathParamSimpleObjectExplode)a do
+      pathParamDefaultObject pathParamMatrixObject pathParamMatrixObjectExplode pathParamSimpleObject
+      pathParamSimpleObjectExplode)a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -182,6 +204,14 @@ defmodule ApicalTest.Parameters.PathTest do
       assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
     end
 
+    test "matrix fails if you don't have semicolon", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMatrixArray (in path): matrix style `array=foo,bar` for parameter `array` is missing a leading semicolon, use format: `;array=...`",
+                   fn ->
+                     response = get(conn, "/style/matrix-array/array=foo,bar")
+                   end
+    end
+
     test "matrix fails if you don't match name", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamMatrixArray (in path): matrix key `value` provided for array named `array`, use format: `;array=...`",
@@ -211,7 +241,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "label errors if you forget the initial dot", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
-                   "Parameter Error in operation pathParamLabelArray (in path): label parameter `foo.bar` for parameter `array` is missing a dot, use format: `.value1.value2.value3...`",
+                   "Parameter Error in operation pathParamLabelArray (in path): label style `foo.bar` for parameter `array` is missing a leading dot, use format: `.value1.value2.value3...`",
                    fn ->
                      response = get(conn, "/style/label-array/foo.bar")
                    end
@@ -229,6 +259,54 @@ defmodule ApicalTest.Parameters.PathTest do
       response = get(conn, "/style/default-object/foo,bar")
 
       assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "matrix works", %{conn: conn} do
+      response = get(conn, "/style/matrix-object/;object=foo,bar")
+
+      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "matrix fails without semicolon", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMatrixObject (in path): matrix style `object=foo,bar` for parameter `object` is missing a leading semicolon, use format: `;object=...`",
+                   fn ->
+                     response = get(conn, "/style/matrix-object/object=foo,bar")
+                   end
+    end
+
+    test "matrix fails if you don't match name", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMatrixObject (in path): matrix key `value` provided for array named `object`, use format: `;object=...`",
+                   fn ->
+                     response = get(conn, "/style/matrix-object/;value=foo,bar")
+                   end
+    end
+
+    test "matrix fails if you don't have an even number of params", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMatrixObject (in query): comma delimited object parameter `object=foo,bar,baz` for parameter `object` has an odd number of entries",
+                   fn ->
+                     response = get(conn, "/style/matrix-object/;object=foo,bar,baz")
+                   end
+    end
+
+    test "matrix exploded works", %{conn: conn} do
+      response = get(conn, "/style/matrix-object-explode/;foo=bar;baz=quux")
+
+      assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} = json_response(response, 200)
+    end
+
+    test "matrix exploded works with empty string", %{conn: conn} do
+      response = get(conn, "/style/matrix-object-explode/;foo=bar;baz=")
+
+      assert %{"object" => %{"foo" => "bar", "baz" => ""}} = json_response(response, 200)
+    end
+
+    test "matrix exploded works with empty string with no equals", %{conn: conn} do
+      response = get(conn, "/style/matrix-object-explode/;foo=bar;baz")
+
+      assert %{"object" => %{"foo" => "bar", "baz" => ""}} = json_response(response, 200)
     end
 
     test "simple works", %{conn: conn} do

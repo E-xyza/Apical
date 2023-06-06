@@ -55,12 +55,15 @@ defmodule Apical.Conn do
       raise Apical.Exceptions.ParameterError,
         operation_id: conn.private.operation_id,
         in: :query,
-        reason: "comma delimited object parameter `#{value}` for parameter `#{key}` has an odd number of entries"
+        reason:
+          "comma delimited object parameter `#{value}` for parameter `#{key}` has an odd number of entries"
+
     {:bad_form, str} ->
       raise Apical.Exceptions.ParameterError,
         operation_id: conn.private.operation_id,
         in: :query,
-        reason: "comma delimited object parameter `#{value}` for parameter `#{key}` has a malformed entry: `#{str}`"
+        reason:
+          "comma delimited object parameter `#{value}` for parameter `#{key}` has a malformed entry: `#{str}`"
   end
 
   defp parse(_conn, key, "." <> value, %{style: :label, type: type}) do
@@ -74,7 +77,7 @@ defmodule Apical.Conn do
       operation_id: conn.private.operation_id,
       in: :path,
       reason:
-        "label parameter `#{value}` for parameter `#{key}` is missing a dot, use format: `.value1.value2.value3...`"
+        "label style `#{value}` for parameter `#{key}` is missing a leading dot, use format: `.value1.value2.value3...`"
   end
 
   defp parse(conn, key, ";" <> value, settings = %{style: :matrix, type: type}) do
@@ -93,38 +96,75 @@ defmodule Apical.Conn do
           end
       end)
 
-    if :array in type do
-      {key, matrix_array_parse(conn, parsed, key, Map.get(settings, :explode))}
+    cond do
+      :array in type ->
+        {key, matrix_array_parse(conn, parsed, key, Map.get(settings, :explode))}
+
+      :object in type ->
+        {key, matrix_object_parse(conn, parsed, key, Map.get(settings, :explode))}
     end
+  catch
+    :object_odd ->
+      raise Apical.Exceptions.ParameterError,
+        operation_id: conn.private.operation_id,
+        in: :query,
+        reason:
+          "comma delimited object parameter `#{value}` for parameter `#{key}` has an odd number of entries"
+  end
+
+  defp parse(conn, key, value, %{style: :matrix}) do
+    raise Apical.Exceptions.ParameterError,
+      operation_id: conn.private.operation_id,
+      in: :path,
+      reason:
+        "matrix style `#{value}` for parameter `#{key}` is missing a leading semicolon, use format: `;#{key}=...`"
   end
 
   defp parse(_conn, key, value, %{}), do: {key, value}
 
-  defp matrix_array_parse(conn, parsed, key, true) do
-    Enum.map(parsed, fn
-      {^key, [v]} ->
-        v
+  defp matrix_array_parse(conn, parsed, key, explode?) do
+    if explode? do
+      Enum.map(parsed, fn
+        {^key, [v]} ->
+          v
 
-      {other, _} ->
-        raise Apical.Exceptions.ParameterError,
-          operation_id: conn.private.operation_id,
-          in: :path,
-          reason:
-            "matrix key `#{other}` provided for array named `#{key}`, use format: `;#{key}=...;#{key}=...`"
-    end)
+        {other, _} ->
+          raise Apical.Exceptions.ParameterError,
+            operation_id: conn.private.operation_id,
+            in: :path,
+            reason:
+              "matrix key `#{other}` provided for array named `#{key}`, use format: `;#{key}=...;#{key}=...`"
+      end)
+    else
+      case parsed do
+        [{^key, v}] ->
+          v
+
+        [{other, _}] ->
+          raise Apical.Exceptions.ParameterError,
+            operation_id: conn.private.operation_id,
+            in: :path,
+            reason:
+              "matrix key `#{other}` provided for array named `#{key}`, use format: `;#{key}=...`"
+      end
+    end
   end
 
-  defp matrix_array_parse(conn, parsed, key, _) do
-    case parsed do
-      [{^key, v}] ->
-        v
+  defp matrix_object_parse(conn, parsed, key, explode?) do
+    if explode? do
+      Map.new(parsed, fn {key, vals} -> {key, Enum.join(vals, ",")} end)
+    else
+      case parsed do
+        [{^key, values}] ->
+          into_map(values, %{})
 
-      [{other, _}] ->
-        raise Apical.Exceptions.ParameterError,
-          operation_id: conn.private.operation_id,
-          in: :path,
-          reason:
-            "matrix key `#{other}` provided for array named `#{key}`, use format: `;#{key}=...`"
+        [{other, _}] ->
+          raise Apical.Exceptions.ParameterError,
+            operation_id: conn.private.operation_id,
+            in: :path,
+            reason:
+              "matrix key `#{other}` provided for array named `#{key}`, use format: `;#{key}=...`"
+      end
     end
   end
 
@@ -133,7 +173,7 @@ defmodule Apical.Conn do
       case String.split(str, "=") do
         [key, val] -> {key, val}
         [key] -> {key, ""}
-        _ -> throw {:bad_form, str}
+        _ -> throw({:bad_form, str})
       end
     end)
   end
@@ -142,5 +182,5 @@ defmodule Apical.Conn do
 
   defp into_map([k, v | rest], so_far), do: into_map(rest, Map.put(so_far, k, v))
   defp into_map([], so_far), do: so_far
-  defp into_map(_, _), do: throw :object_odd
+  defp into_map(_, _), do: throw(:object_odd)
 end
