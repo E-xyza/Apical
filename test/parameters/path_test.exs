@@ -257,8 +257,7 @@ defmodule ApicalTest.Parameters.PathTest do
       """,
       controller: ApicalTest.Parameters.PathTest,
       content_type: "application/yaml",
-      styles: [{"x-custom", {__MODULE__, :x_custom}}],
-      dump: true
+      styles: [{"x-custom", {__MODULE__, :x_custom}}]
     )
 
     def x_custom("foo"), do: 47

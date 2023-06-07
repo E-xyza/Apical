@@ -8,36 +8,36 @@ defmodule ApicalTest.Parameters.PathTest do
       """
       openapi: 3.1.0
       info:
-        title: HeaderTest
+        title: CookieTest
         version: 1.0.0
       paths:
         "/required":
           get:
-            operationId: headerParamRequired
+            operationId: cookieParamRequired
             parameters:
               - name: required
                 in: header
                 required: true
         "/optional":
           get:
-            operationId: headerParamOptional
+            operationId: cookieParamOptional
             parameters:
               - name: optional
-                in: header
+                in: cookie
               - name: deprecated
-                in: header
+                in: cookie
                 deprecated: true
               - name: style-default-array
-                in: header
+                in: cookie
                 schema:
                   type: array
               - name: style-simple-array
-                in: header
+                in: cookie
                 style: simple
                 schema:
                   type: array
               - name: marshal-array
-                in: header
+                in: cookie
                 schema:
                   type: array
                   prefixItems:
@@ -46,22 +46,22 @@ defmodule ApicalTest.Parameters.PathTest do
                   items:
                     type: integer
               - name: style-default-object
-                in: header
+                in: cookie
                 schema:
                   type: object
               - name: style-simple-object
-                in: header
+                in: cookie
                 style: simple
                 schema:
                   type: object
               - name: style-simple-object-explode
-                in: header
+                in: cookie
                 style: simple
                 explode: true
                 schema:
                   type: object
               - name: marshal-object
-                in: header
+                in: cookie
                 schema:
                   type: object
                   properties:
@@ -73,11 +73,11 @@ defmodule ApicalTest.Parameters.PathTest do
                   additionalProperties:
                     type: integer
               - name: schema-boolean
-                in: header
+                in: cookie
                 schema:
                   type: boolean
               - name: schema-number
-                in: header
+                in: cookie
                 schema:
                   type: number
       """,
