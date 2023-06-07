@@ -1,6 +1,14 @@
 defmodule Apical.Parser.Marshal do
-  def marshal(value, _settings) do
-    {:ok, value}
+  def marshal(value, settings, _type) when is_list(value) do
+    {:ok, array(value, settings)}
+  end
+
+  def marshal(value, settings, _type) when is_map(value) do
+    {:ok, object(value, settings)}
+  end
+
+  def marshal(value, _, type) do
+    {:ok, as_type(value, type)}
   end
 
   def array(array, %{elements: {prefix_type, tail_type}}) do

@@ -33,7 +33,7 @@ defmodule ApicalTest.Parameters.PathTest do
               - name: extension
                 in: path
                 required: true
-        "/style/default-array/:array":
+        "/style/default-array/{array}":
           get:
             operationId: pathParamDefaultArray
             parameters:
@@ -42,7 +42,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 required: true
                 schema:
                   type: array
-        "/style/matrix-array/:array":
+        "/style/matrix-array/{array}":
           get:
             operationId: pathParamMatrixArray
             parameters:
@@ -52,7 +52,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: matrix
                 schema:
                   type: array
-        "/style/matrix-array-explode/:array":
+        "/style/matrix-array-explode/{array}":
           get:
             operationId: pathParamMatrixArrayExplode
             parameters:
@@ -63,7 +63,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 explode: true
                 schema:
                   type: array
-        "/style/label-array/:array":
+        "/style/label-array/{array}":
           get:
             operationId: pathParamLabelArray
             parameters:
@@ -73,7 +73,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: label
                 schema:
                   type: array
-        "/style/simple-array/:array":
+        "/style/simple-array/{array}":
           get:
             operationId: pathParamSimpleArray
             parameters:
@@ -83,7 +83,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: simple
                 schema:
                   type: array
-        "/style/default-object/:object":
+        "/style/default-object/{object}":
           get:
             operationId: pathParamDefaultObject
             parameters:
@@ -92,7 +92,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 required: true
                 schema:
                   type: object
-        "/style/matrix-object/:object":
+        "/style/matrix-object/{object}":
           get:
             operationId: pathParamMatrixObject
             parameters:
@@ -102,7 +102,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: matrix
                 schema:
                   type: object
-        "/style/matrix-object-explode/:object":
+        "/style/matrix-object-explode/{object}":
           get:
             operationId: pathParamMatrixObjectExplode
             parameters:
@@ -113,7 +113,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 explode: true
                 schema:
                   type: object
-        "/style/label-object/:object":
+        "/style/label-object/{object}":
           get:
             operationId: pathParamLabelObject
             parameters:
@@ -123,7 +123,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: label
                 schema:
                   type: object
-        "/style/label-object-explode/:object":
+        "/style/label-object-explode/{object}":
           get:
             operationId: pathParamLabelObjectExplode
             parameters:
@@ -134,7 +134,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 explode: true
                 schema:
                   type: object
-        "/style/simple-object/:object":
+        "/style/simple-object/{object}":
           get:
             operationId: pathParamSimpleObject
             parameters:
@@ -144,7 +144,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: simple
                 schema:
                   type: object
-        "/style/simple-object-explode/:object":
+        "/style/simple-object-explode/{object}":
           get:
             operationId: pathParamSimpleObjectExplode
             parameters:
@@ -155,7 +155,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: simple
                 schema:
                   type: object
-        "/marshal/array/:array":
+        "/marshal/array/{array}":
           get:
             operationId: pathParamMarshalArray
             parameters:
@@ -170,6 +170,52 @@ defmodule ApicalTest.Parameters.PathTest do
                     - type: string
                   items:
                     type: integer
+        "/marshal/object/{object}":
+          get:
+            operationId: pathParamMarshalObject
+            parameters:
+              - name: object
+                in: path
+                required: true
+                schema:
+                  type: object
+                  properties:
+                    foo:
+                      type: integer
+                  patternProperties:
+                    "^b.*":
+                      type: boolean
+                  additionalProperties:
+                    type: integer
+        "/marshal/boolean/{boolean}":
+          get:
+            operationId: pathParamMarshalBoolean
+            parameters:
+              - name: boolean
+                in: path
+                required: true
+                schema:
+                  type: boolean
+        "/style/boolean-matrix/{boolean}":
+          get:
+            operationId: pathParamBooleanMatrix
+            parameters:
+              - name: boolean
+                in: path
+                required: true
+                style: matrix
+                schema:
+                  type: boolean
+        "/style/boolean-label/{boolean}":
+          get:
+            operationId: pathParamBooleanLabel
+            parameters:
+              - name: boolean
+                in: path
+                required: true
+                style: label
+                schema:
+                  type: boolean
       """,
       controller: ApicalTest.Parameters.PathTest,
       content_type: "application/yaml",
@@ -189,7 +235,9 @@ defmodule ApicalTest.Parameters.PathTest do
       pathParamLabelArray pathParamSimpleArray pathParamMarshalArray
       pathParamDefaultObject pathParamMatrixObject pathParamMatrixObjectExplode
       pathParamLabelObject pathParamLabelObjectExplode
-      pathParamSimpleObject pathParamSimpleObjectExplode)a do
+      pathParamSimpleObject pathParamSimpleObjectExplode
+      pathParamMarshalObject pathParamMarshalBoolean pathParamBooleanMatrix pathParamBooleanLabel
+    )a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -295,7 +343,7 @@ defmodule ApicalTest.Parameters.PathTest do
     test "marshalling works", %{conn: conn} do
       response = get(conn, "/marshal/array/1,bar,3")
 
-      assert %{"marshal-array" => [1, "bar", 3]} = json_response(response, 200)
+      assert %{"array" => [1, "bar", 3]} = json_response(response, 200)
     end
   end
 
@@ -408,6 +456,74 @@ defmodule ApicalTest.Parameters.PathTest do
                    fn ->
                      response = get(conn, "/style/simple-object-explode/foo=bar=baz")
                    end
+    end
+  end
+
+  describe "for objects with inner types" do
+    test "marshalling works", %{conn: conn} do
+      response = get(conn, "/marshal/object/foo,1,bar,true,quux,3")
+
+      assert %{"object" => %{"foo" => 1, "bar" => true, "quux" => 3}} =
+               json_response(response, 200)
+    end
+  end
+
+  describe "for boolean schemas" do
+    test "true works", %{conn: conn} do
+      response = get(conn, "/marshal/boolean/true")
+      assert %{"boolean" => true} = json_response(response, 200)
+    end
+
+    test "false works", %{conn: conn} do
+      response = get(conn, "/marshal/boolean/false")
+      assert %{"boolean" => false} = json_response(response, 200)
+    end
+
+    test "other string fails", %{conn: conn} do
+      assert_raise ParameterError, "Parameter Error in operation pathParamMarshalBoolean (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1marshal~1boolean~1%7Bboolean%7D/get/parameters/0/schema/type`", fn ->
+        get(conn, "/marshal/boolean/not-a-boolean")
+      end
+    end
+  end
+
+  describe "for boolean-matrix schemas" do
+    test "true works", %{conn: conn} do
+      response = get(conn, "/style/boolean-matrix/;boolean=true")
+      assert %{"boolean" => true} = json_response(response, 200)
+    end
+
+    test "false works", %{conn: conn} do
+      response = get(conn, "/style/boolean-matrix/;boolean=false")
+      assert %{"boolean" => false} = json_response(response, 200)
+    end
+
+    test "tag is true", %{conn: conn} do
+      response = get(conn, "/style/boolean-matrix/;boolean")
+      assert %{"boolean" => true} = json_response(response, 200)
+    end
+
+    test "other string fails", %{conn: conn} do
+      assert_raise ParameterError, "Parameter Error in operation pathParamBooleanMatrix (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1style~1boolean-matrix~1%7Bboolean%7D/get/parameters/0/schema/type`", fn ->
+        get(conn, "/style/boolean-matrix/;boolean=not-a-boolean")
+      end
+    end
+  end
+
+  describe "for boolean-label schemas" do
+    test "true works", %{conn: conn} do
+      response = get(conn, "/style/boolean-label/.true")
+      assert %{"boolean" => true} = json_response(response, 200)
+    end
+
+    test "false works", %{conn: conn} do
+      response = get(conn, "/style/boolean-label/.false")
+      assert %{"boolean" => false} = json_response(response, 200)
+    end
+
+    test "other string fails", %{conn: conn} do
+      assert_raise ParameterError, "Parameter Error in operation pathParamBooleanLabel (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1style~1boolean-label~1%7Bboolean%7D/get/parameters/0/schema/type`", fn ->
+        get(conn, "/style/boolean-label/.not-a-boolean")
+      end
     end
   end
 end

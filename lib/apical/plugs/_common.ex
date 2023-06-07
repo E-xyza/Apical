@@ -121,7 +121,7 @@ defmodule Apical.Plugs.Common do
       "form" when explode? in [nil, true] ->
         Tools.assert(
           in_.style_allowed?("form"),
-          "form style is not allowed for #{in_} parameters"
+          "form style is not allowed for #{in_.name()} parameters"
         )
 
         Tools.assert(
@@ -139,14 +139,22 @@ defmodule Apical.Plugs.Common do
       style ->
         Tools.assert(
           in_.style_allowed?(style),
-          "#{style} style is not allowed for #{in_} parameters"
+          "#{style} style is not allowed for #{in_.name()} parameters"
         )
 
         apply_style(operations, name, style, explode?)
     end
   end
 
-  # TODO: matrix and label for primitive types
+  defp add_style(operations, in_, %{"name" => name, "style" => style})
+       when style in ~w(matrix label) do
+    Tools.assert(
+      in_.style_allowed?(style),
+      "#{style} style is not allowed for #{in_.name()} parameters"
+    )
+
+    apply_style(operations, name, style, false)
+  end
 
   defp add_style(operations, _in_, parameters = %{"name" => name}) do
     style = parameters["style"]

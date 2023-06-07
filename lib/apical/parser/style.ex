@@ -43,6 +43,13 @@ defmodule Apical.Parser.Style do
           value
           |> String.split(".")
           |> into_map(%{})
+
+        String.contains?(value, ".") ->
+          {:error,
+           "label object parameter `.#{value}` for parameter `#{key}` has multiple entries for a primitive type"}
+
+        true ->
+          {:ok, value}
       end
 
     case parsed do
@@ -86,12 +93,30 @@ defmodule Apical.Parser.Style do
 
       :object in type ->
         case matrix_object_parse(split, key, explode?) do
-          ok = {:ok, _} -> ok
+          ok = {:ok, _} ->
+            ok
+
           {:error, :odd} ->
             {:error,
              "matrix object parameter `;#{value}` for parameter `#{key}` has an odd number of entries"}
-          error = {:error, _} -> error
+
+          error = {:error, _} ->
+            error
         end
+
+      value === key ->
+        {:ok, (if :boolean in type, do:  "true", else: "")}
+
+      String.contains?(value, ";") ->
+        {:error,
+         "matrix object parameter `.#{value}` for parameter `#{key}` has multiple entries for a primitive type"}
+
+      String.starts_with?(value, "#{key}=") ->
+        {:ok, String.replace_leading(value, "#{key}=", "")}
+
+      true ->
+        {:error,
+         "matrix style `#{value}` for parameter `#{key}` is malformed, use format: `;#{key}=...`"}
     end
   end
 

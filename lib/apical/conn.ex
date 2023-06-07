@@ -39,14 +39,15 @@ defmodule Apical.Conn do
     key_settings = Map.fetch!(settings, key)
     style = Map.get(key_settings, :style)
 
-    type = key_settings
-    |> Map.get(:type)
-    |> List.wrap
+    type =
+      key_settings
+      |> Map.get(:type)
+      |> List.wrap()
 
     explode? = Map.get(key_settings, :explode, false)
 
     with {:ok, parsed} <- Style.parse(value, key, style, type, explode?),
-         {:ok, marshalled} <- Marshal.marshal(parsed, key_settings) do
+         {:ok, marshalled} <- Marshal.marshal(parsed, key_settings, type) do
       {key, marshalled}
     else
       {:error, msg} ->
