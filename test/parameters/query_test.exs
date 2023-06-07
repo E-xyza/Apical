@@ -480,7 +480,7 @@ defmodule ApicalTest.Parameters.QueryTest do
 
   describe "400 errors for parsing problems" do
     test "when a reserved character appears", %{conn: conn} do
-      assert_raise ParameterError, fn ->
+      assert_raise ParameterError, "", fn ->
         get(conn, "/optional/?schema-string=[")
       end
     end
