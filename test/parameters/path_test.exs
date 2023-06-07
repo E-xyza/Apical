@@ -332,7 +332,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamMatrixArray (in path): matrix style `array=foo,bar` for parameter `array` is missing a leading semicolon, use format: `;array=...`",
                    fn ->
-                     response = get(conn, "/style/matrix-array/array=foo,bar")
+                     get(conn, "/style/matrix-array/array=foo,bar")
                    end
     end
 
@@ -340,7 +340,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamMatrixArray (in path): matrix key `value` provided for array named `array`, use format: `;array=...`",
                    fn ->
-                     response = get(conn, "/style/matrix-array/;value=foo,bar")
+                     get(conn, "/style/matrix-array/;value=foo,bar")
                    end
     end
 
@@ -353,7 +353,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamMatrixArrayExplode (in path): matrix key `value` provided for array named `array`, use format: `;array=...;array=...`",
                    fn ->
-                     response = get(conn, "/style/matrix-array-explode/;array=foo;value=bar")
+                     get(conn, "/style/matrix-array-explode/;array=foo;value=bar")
                    end
     end
 
@@ -367,7 +367,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamLabelArray (in path): label style `foo.bar` for parameter `array` is missing a leading dot, use format: `.value1.value2.value3...`",
                    fn ->
-                     response = get(conn, "/style/label-array/foo.bar")
+                     get(conn, "/style/label-array/foo.bar")
                    end
     end
 
@@ -403,7 +403,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamMatrixObject (in path): matrix style `object=foo,bar` for parameter `object` is missing a leading semicolon, use format: `;object=...`",
                    fn ->
-                     response = get(conn, "/style/matrix-object/object=foo,bar")
+                     get(conn, "/style/matrix-object/object=foo,bar")
                    end
     end
 
@@ -411,7 +411,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamMatrixObject (in path): matrix key `value` provided for array named `object`, use format: `;object=...`",
                    fn ->
-                     response = get(conn, "/style/matrix-object/;value=foo,bar")
+                     get(conn, "/style/matrix-object/;value=foo,bar")
                    end
     end
 
@@ -419,7 +419,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamMatrixObject (in path): matrix object parameter `;object=foo,bar,baz` for parameter `object` has an odd number of entries",
                    fn ->
-                     response = get(conn, "/style/matrix-object/;object=foo,bar,baz")
+                     get(conn, "/style/matrix-object/;object=foo,bar,baz")
                    end
     end
 
@@ -451,7 +451,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamLabelObject (in path): label object parameter `.foo.bar.baz` for parameter `object` has an odd number of entries",
                    fn ->
-                     response = get(conn, "/style/label-object/.foo.bar.baz")
+                     get(conn, "/style/label-object/.foo.bar.baz")
                    end
     end
 
@@ -465,7 +465,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamLabelObjectExplode (in path): label object parameter `.foo=bar=baz` for parameter `object` has a malformed entry: `foo=bar=baz`",
                    fn ->
-                     response = get(conn, "/style/label-object-explode/.foo=bar=baz")
+                     get(conn, "/style/label-object-explode/.foo=bar=baz")
                    end
     end
 
@@ -479,7 +479,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamSimpleObject (in path): comma delimited object parameter `foo,bar,baz` for parameter `object` has an odd number of entries",
                    fn ->
-                     response = get(conn, "/style/simple-object/foo,bar,baz")
+                      get(conn, "/style/simple-object/foo,bar,baz")
                    end
     end
 
@@ -493,7 +493,7 @@ defmodule ApicalTest.Parameters.PathTest do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamSimpleObjectExplode (in path): comma delimited object parameter `foo=bar=baz` for parameter `object` has a malformed entry: `foo=bar=baz`",
                    fn ->
-                     response = get(conn, "/style/simple-object-explode/foo=bar=baz")
+                     get(conn, "/style/simple-object-explode/foo=bar=baz")
                    end
     end
   end
