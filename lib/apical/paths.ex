@@ -53,7 +53,8 @@ defmodule Apical.Paths do
 
       pipeline unquote(operation_pipeline) do
         plug(Apical.Plugs.SetOperationId, unquote(operation_pipeline))
-        unquote(plugs(operation, plug_opts))
+        unquote(parameter_plugs(operation, plug_opts))
+        unquote(request_body_plugs(operation, plug_opts))
       end
 
       scope unquote(canonical_path) do
@@ -70,16 +71,16 @@ defmodule Apical.Paths do
     "cookie" => Apical.Plugs.Cookie
   }
 
-  defp plugs(%{"parameters" => parameters, "operationId" => operation_id}, plug_opts) do
+  defp parameter_plugs(%{"parameters" => parameters, "operationId" => operation_id}, plug_opts) do
     parameters
     |> Enum.group_by(& &1["in"])
-    |> Enum.map(fn {location, parameters} ->
+    |> Enum.map(fn {location, parameter_opts} ->
       case Map.fetch(@query_mappings, location) do
         {:ok, plug} ->
           quote do
             plug(
               unquote(plug),
-              [__MODULE__] ++ unquote([operation_id, Macro.escape(parameters), plug_opts])
+              [__MODULE__] ++ unquote([operation_id, Macro.escape(parameter_opts), plug_opts])
             )
           end
 
@@ -89,7 +90,17 @@ defmodule Apical.Paths do
     end)
   end
 
-  defp plugs(_, _), do: []
+  defp parameter_plugs(_, _), do: []
+
+  defp request_body_plugs(%{"requestBody" => %{"content" => content}, "operationId" => operation_id}, plug_opts) do
+    Enum.map(content, fn {content_type, content_opts} ->
+      quote do
+        plug(Apical.Plugs.RequestBody, [__MODULE__] ++ unquote([operation_id, content_type, Macro.escape(content_opts), plug_opts]))
+      end
+    end)
+  end
+
+  defp request_body_plugs(_, _), do: []
 
   defp validators(parameter = %{"name" => name}, resource, pointer, operation_id, opts) do
     fn_name = :"#{operation_id}-#{name}"

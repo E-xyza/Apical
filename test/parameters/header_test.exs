@@ -1,4 +1,4 @@
-defmodule ApicalTest.Parameters.PathTest do
+defmodule ApicalTest.Parameters.HeaderTest do
   defmodule Router do
     use Phoenix.Router
 
@@ -81,7 +81,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 schema:
                   type: number
       """,
-      controller: ApicalTest.Parameters.PathTest,
+      controller: ApicalTest.Parameters.HeaderTest,
       content_type: "application/yaml"
     )
   end
