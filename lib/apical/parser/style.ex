@@ -88,24 +88,35 @@ defmodule Apical.Parser.Style do
       end)
 
     cond do
+      :null in type and value === key ->
+        {:ok, nil}
+
       :array in type ->
-        matrix_array_parse(split, key, explode?)
+        if match?([{_, [""]}], split) do
+          {:ok, []}
+        else
+          matrix_array_parse(split, key, explode?)
+        end
 
       :object in type ->
-        case matrix_object_parse(split, key, explode?) do
-          ok = {:ok, _} ->
-            ok
+        if match?([{_, [""]}], split) do
+          {:ok, %{}}
+        else
+          case matrix_object_parse(split, key, explode?) do
+            ok = {:ok, _} ->
+              ok
 
-          {:error, :odd} ->
-            {:error,
-             "matrix object parameter `;#{value}` for parameter `#{key}` has an odd number of entries"}
+            {:error, :odd} ->
+              {:error,
+               "matrix object parameter `;#{value}` for parameter `#{key}` has an odd number of entries"}
 
-          error = {:error, _} ->
-            error
+            error = {:error, _} ->
+              error
+          end
         end
 
       value === key ->
-        {:ok, (if :boolean in type, do:  "true", else: "")}
+        {:ok, if(:boolean in type, do: "true", else: "")}
 
       String.contains?(value, ";") ->
         {:error,

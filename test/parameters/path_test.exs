@@ -216,6 +216,44 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: label
                 schema:
                   type: boolean
+        "/marshal/number/{number}":
+          get:
+            operationId: pathParamNumber
+            parameters:
+              - name: number
+                in: path
+                required: true
+                schema:
+                  type: number
+        "/marshal/multitype/{multitype}":
+          get:
+            operationId: pathParamMultitype
+            parameters:
+              - name: multitype
+                in: path
+                required: true
+                schema:
+                  type: [integer, number, string, "null", boolean]
+        "/marshal/nullablearray/{array}":
+          get:
+            operationId: pathParamNullableArray
+            parameters:
+              - name: array
+                in: path
+                required: true
+                style: matrix
+                schema:
+                  type: ["null", array]
+        "/marshal/nullableobject/{object}":
+          get:
+            operationId: pathParamNullableObject
+            parameters:
+              - name: object
+                in: path
+                required: true
+                style: matrix
+                schema:
+                  type: ["null", object]
       """,
       controller: ApicalTest.Parameters.PathTest,
       content_type: "application/yaml",
@@ -237,6 +275,7 @@ defmodule ApicalTest.Parameters.PathTest do
       pathParamLabelObject pathParamLabelObjectExplode
       pathParamSimpleObject pathParamSimpleObjectExplode
       pathParamMarshalObject pathParamMarshalBoolean pathParamBooleanMatrix pathParamBooleanLabel
+      pathParamNumber pathParamMultitype pathParamNullableArray pathParamNullableObject
     )a do
     def unquote(ops)(conn, params) do
       conn
@@ -480,9 +519,11 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "other string fails", %{conn: conn} do
-      assert_raise ParameterError, "Parameter Error in operation pathParamMarshalBoolean (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1marshal~1boolean~1%7Bboolean%7D/get/parameters/0/schema/type`", fn ->
-        get(conn, "/marshal/boolean/not-a-boolean")
-      end
+      assert_raise ParameterError,
+                   "Parameter Error in operation pathParamMarshalBoolean (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1marshal~1boolean~1%7Bboolean%7D/get/parameters/0/schema/type`",
+                   fn ->
+                     get(conn, "/marshal/boolean/not-a-boolean")
+                   end
     end
   end
 
@@ -503,9 +544,11 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "other string fails", %{conn: conn} do
-      assert_raise ParameterError, "Parameter Error in operation pathParamBooleanMatrix (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1style~1boolean-matrix~1%7Bboolean%7D/get/parameters/0/schema/type`", fn ->
-        get(conn, "/style/boolean-matrix/;boolean=not-a-boolean")
-      end
+      assert_raise ParameterError,
+                   "Parameter Error in operation pathParamBooleanMatrix (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1style~1boolean-matrix~1%7Bboolean%7D/get/parameters/0/schema/type`",
+                   fn ->
+                     get(conn, "/style/boolean-matrix/;boolean=not-a-boolean")
+                   end
     end
   end
 
@@ -521,9 +564,95 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "other string fails", %{conn: conn} do
-      assert_raise ParameterError, "Parameter Error in operation pathParamBooleanLabel (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1style~1boolean-label~1%7Bboolean%7D/get/parameters/0/schema/type`", fn ->
-        get(conn, "/style/boolean-label/.not-a-boolean")
+      assert_raise ParameterError,
+                   "Parameter Error in operation pathParamBooleanLabel (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1style~1boolean-label~1%7Bboolean%7D/get/parameters/0/schema/type`",
+                   fn ->
+                     get(conn, "/style/boolean-label/.not-a-boolean")
+                   end
+    end
+  end
+
+  describe "for number schemas" do
+    test "floating point works", %{conn: conn} do
+      response = get(conn, "/marshal/number/4.5")
+      assert %{"number" => 4.5} = json_response(response, 200)
+    end
+
+    test "integer works", %{conn: conn} do
+      response = get(conn, "/marshal/number/4")
+      assert %{"number" => 4} = json_response(response, 200)
+    end
+
+    test "string fails", %{conn: conn} do
+      assert_raise ParameterError, fn ->
+        get(conn, "/marshal/number/foo")
       end
+    end
+  end
+
+  describe "for multitype schemas" do
+    test "floating point works", %{conn: conn} do
+      response = get(conn, "/marshal/multitype/4.5")
+      assert %{"multitype" => 4.5} = json_response(response, 200)
+    end
+
+    test "integer works", %{conn: conn} do
+      response = get(conn, "/marshal/multitype/4")
+      assert %{"multitype" => 4} = json_response(response, 200)
+    end
+
+    test "boolean works", %{conn: conn} do
+      response = get(conn, "/marshal/multitype/true")
+      assert %{"multitype" => true} = json_response(response, 200)
+    end
+
+    test "null works with explicit null", %{conn: conn} do
+      response = get(conn, "/marshal/multitype/null")
+      assert %{"multitype" => nil} = json_response(response, 200)
+    end
+
+    test "null works with string", %{conn: conn} do
+      response = get(conn, "/marshal/multitype/string")
+      assert %{"multitype" => "string"} = json_response(response, 200)
+    end
+  end
+
+  describe "for nullable object" do
+    test "basic object works", %{conn: conn} do
+      response = get(conn, "/marshal/nullableobject/;object=foo,bar")
+      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+    end
+
+    test "null object works", %{conn: conn} do
+      response = get(conn, "/marshal/nullableobject/;object")
+      assert %{"object" => nil} = json_response(response, 200)
+    end
+
+    test "empty object works", %{conn: conn} do
+      response = get(conn, "/marshal/nullableobject/;object=")
+      assert %{"object" => %{}} = json_response(response, 200)
+    end
+  end
+
+  describe "for nullable array" do
+    test "basic array works", %{conn: conn} do
+      response = get(conn, "/marshal/nullablearray/;array=foo,bar")
+      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+    end
+
+    test "null array works", %{conn: conn} do
+      response = get(conn, "/marshal/nullablearray/;array")
+      assert %{"array" => nil} = json_response(response, 200)
+    end
+
+    test "setting null will be treated as an array element", %{conn: conn} do
+      response = get(conn, "/marshal/nullablearray/;array=null")
+      assert %{"array" => ["null"]} = json_response(response, 200)
+    end
+
+    test "empty array works", %{conn: conn} do
+      response = get(conn, "/marshal/nullablearray/;array=")
+      assert %{"array" => []} = json_response(response, 200)
     end
   end
 end
