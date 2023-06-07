@@ -317,15 +317,17 @@ defmodule ApicalTest.Parameters.PathTest do
 
   describe "for styled path parameters with array type" do
     test "default works", %{conn: conn} do
-      response = get(conn, "/style/default-array/foo,bar")
-
-      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"array" => ["foo", "bar"]} =
+               conn
+               |> get("/style/default-array/foo,bar")
+               |> json_response(200)
     end
 
     test "matrix works", %{conn: conn} do
-      response = get(conn, "/style/matrix-array/;array=foo,bar")
-
-      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"array" => ["foo", "bar"]} =
+               conn
+               |> get("/style/matrix-array/;array=foo,bar")
+               |> json_response(200)
     end
 
     test "matrix fails if you don't have semicolon", %{conn: conn} do
@@ -345,8 +347,10 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "exploded matrix works", %{conn: conn} do
-      response = get(conn, "/style/matrix-array-explode/;array=foo;array=bar")
-      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"array" => ["foo", "bar"]} =
+               conn
+               |> get("/style/matrix-array-explode/;array=foo;array=bar")
+               |> json_response(200)
     end
 
     test "exploded matrix fails if any entry don't match name", %{conn: conn} do
@@ -358,9 +362,10 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "label works", %{conn: conn} do
-      response = get(conn, "/style/label-array/.foo.bar")
-
-      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"array" => ["foo", "bar"]} =
+               conn
+               |> get("/style/label-array/.foo.bar")
+               |> json_response(200)
     end
 
     test "label errors if you forget the initial dot", %{conn: conn} do
@@ -372,31 +377,35 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "simple works", %{conn: conn} do
-      response = get(conn, "/style/simple-array/foo,bar")
-
-      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"array" => ["foo", "bar"]} =
+               conn
+               |> get("/style/simple-array/foo,bar")
+               |> json_response(200)
     end
   end
 
   describe "for arrays with inner types" do
     test "marshalling works", %{conn: conn} do
-      response = get(conn, "/marshal/array/1,bar,3")
-
-      assert %{"array" => [1, "bar", 3]} = json_response(response, 200)
+      assert %{"array" => [1, "bar", 3]} =
+               conn
+               |> get("/marshal/array/1,bar,3")
+               |> json_response(200)
     end
   end
 
   describe "for styled path parameters with object type" do
     test "default works", %{conn: conn} do
-      response = get(conn, "/style/default-object/foo,bar")
-
-      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar"}} =
+               conn
+               |> get("/style/default-object/foo,bar")
+               |> json_response(200)
     end
 
     test "matrix works", %{conn: conn} do
-      response = get(conn, "/style/matrix-object/;object=foo,bar")
-
-      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar"}} =
+               conn
+               |> get("/style/matrix-object/;object=foo,bar")
+               |> json_response(200)
     end
 
     test "matrix fails without semicolon", %{conn: conn} do
@@ -424,27 +433,31 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "matrix exploded works", %{conn: conn} do
-      response = get(conn, "/style/matrix-object-explode/;foo=bar;baz=quux")
-
-      assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} =
+               conn
+               |> get("/style/matrix-object-explode/;foo=bar;baz=quux")
+               |> json_response(200)
     end
 
     test "matrix exploded works with empty string", %{conn: conn} do
-      response = get(conn, "/style/matrix-object-explode/;foo=bar;baz=")
-
-      assert %{"object" => %{"foo" => "bar", "baz" => ""}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar", "baz" => ""}} =
+               conn
+               |> get("/style/matrix-object-explode/;foo=bar;baz=")
+               |> json_response(200)
     end
 
     test "matrix exploded works with empty string with no equals", %{conn: conn} do
-      response = get(conn, "/style/matrix-object-explode/;foo=bar;baz")
-
-      assert %{"object" => %{"foo" => "bar", "baz" => ""}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar", "baz" => ""}} =
+               conn
+               |> get("/style/matrix-object-explode/;foo=bar;baz")
+               |> json_response(200)
     end
 
     test "label works", %{conn: conn} do
-      response = get(conn, "/style/label-object/.foo.bar")
-
-      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar"}} =
+               conn
+               |> get("/style/label-object/.foo.bar")
+               |> json_response(200)
     end
 
     test "label fails if you don't have an even number of params", %{conn: conn} do
@@ -456,9 +469,10 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "label exploded works", %{conn: conn} do
-      response = get(conn, "/style/label-object-explode/.foo=bar.baz=quux")
-
-      assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} =
+               conn
+               |> get("/style/label-object-explode/.foo=bar.baz=quux")
+               |> json_response(200)
     end
 
     test "label exploded fails if you don't have an even number of params", %{conn: conn} do
@@ -470,23 +484,25 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "simple works", %{conn: conn} do
-      response = get(conn, "/style/simple-object/foo,bar")
-
-      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar"}} =
+               conn
+               |> get("/style/simple-object/foo,bar")
+               |> json_response(200)
     end
 
     test "simple raises 400 on non-even number of values", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation pathParamSimpleObject (in path): comma delimited object parameter `foo,bar,baz` for parameter `object` has an odd number of entries",
                    fn ->
-                      get(conn, "/style/simple-object/foo,bar,baz")
+                     get(conn, "/style/simple-object/foo,bar,baz")
                    end
     end
 
     test "simple exploded works", %{conn: conn} do
-      response = get(conn, "/style/simple-object-explode/foo=bar,baz=quux")
-
-      assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} =
+               conn
+               |> get("/style/simple-object-explode/foo=bar,baz=quux")
+               |> json_response(200)
     end
 
     test "simple exploded raises 400 on malformed values", %{conn: conn} do
@@ -500,22 +516,26 @@ defmodule ApicalTest.Parameters.PathTest do
 
   describe "for objects with inner types" do
     test "marshalling works", %{conn: conn} do
-      response = get(conn, "/marshal/object/foo,1,bar,true,quux,3")
-
       assert %{"object" => %{"foo" => 1, "bar" => true, "quux" => 3}} =
-               json_response(response, 200)
+               conn
+               |> get("/marshal/object/foo,1,bar,true,quux,3")
+               |> json_response(200)
     end
   end
 
   describe "for boolean schemas" do
     test "true works", %{conn: conn} do
-      response = get(conn, "/marshal/boolean/true")
-      assert %{"boolean" => true} = json_response(response, 200)
+      assert %{"boolean" => true} =
+               conn
+               |> get("/marshal/boolean/true")
+               |> json_response(200)
     end
 
     test "false works", %{conn: conn} do
-      response = get(conn, "/marshal/boolean/false")
-      assert %{"boolean" => false} = json_response(response, 200)
+      assert %{"boolean" => false} =
+               conn
+               |> get("/marshal/boolean/false")
+               |> json_response(200)
     end
 
     test "other string fails", %{conn: conn} do
@@ -529,18 +549,24 @@ defmodule ApicalTest.Parameters.PathTest do
 
   describe "for boolean-matrix schemas" do
     test "true works", %{conn: conn} do
-      response = get(conn, "/style/boolean-matrix/;boolean=true")
-      assert %{"boolean" => true} = json_response(response, 200)
+      assert %{"boolean" => true} =
+               conn
+               |> get("/style/boolean-matrix/;boolean=true")
+               |> json_response(200)
     end
 
     test "false works", %{conn: conn} do
-      response = get(conn, "/style/boolean-matrix/;boolean=false")
-      assert %{"boolean" => false} = json_response(response, 200)
+      assert %{"boolean" => false} =
+               conn
+               |> get("/style/boolean-matrix/;boolean=false")
+               |> json_response(200)
     end
 
     test "tag is true", %{conn: conn} do
-      response = get(conn, "/style/boolean-matrix/;boolean")
-      assert %{"boolean" => true} = json_response(response, 200)
+      assert %{"boolean" => true} =
+               conn
+               |> get("/style/boolean-matrix/;boolean")
+               |> json_response(200)
     end
 
     test "other string fails", %{conn: conn} do
@@ -554,13 +580,17 @@ defmodule ApicalTest.Parameters.PathTest do
 
   describe "for boolean-label schemas" do
     test "true works", %{conn: conn} do
-      response = get(conn, "/style/boolean-label/.true")
-      assert %{"boolean" => true} = json_response(response, 200)
+      assert %{"boolean" => true} =
+               conn
+               |> get("/style/boolean-label/.true")
+               |> json_response(200)
     end
 
     test "false works", %{conn: conn} do
-      response = get(conn, "/style/boolean-label/.false")
-      assert %{"boolean" => false} = json_response(response, 200)
+      assert %{"boolean" => false} =
+               conn
+               |> get("/style/boolean-label/.false")
+               |> json_response(200)
     end
 
     test "other string fails", %{conn: conn} do
@@ -574,13 +604,17 @@ defmodule ApicalTest.Parameters.PathTest do
 
   describe "for number schemas" do
     test "floating point works", %{conn: conn} do
-      response = get(conn, "/marshal/number/4.5")
-      assert %{"number" => 4.5} = json_response(response, 200)
+      assert %{"number" => 4.5} =
+               conn
+               |> get("/marshal/number/4.5")
+               |> json_response(200)
     end
 
     test "integer works", %{conn: conn} do
-      response = get(conn, "/marshal/number/4")
-      assert %{"number" => 4} = json_response(response, 200)
+      assert %{"number" => 4} =
+               conn
+               |> get("/marshal/number/4")
+               |> json_response(200)
     end
 
     test "string fails", %{conn: conn} do
@@ -592,67 +626,99 @@ defmodule ApicalTest.Parameters.PathTest do
 
   describe "for multitype schemas" do
     test "floating point works", %{conn: conn} do
-      response = get(conn, "/marshal/multitype/4.5")
-      assert %{"multitype" => 4.5} = json_response(response, 200)
+      assert %{"multitype" => 4.5} =
+               conn
+               |> get("/marshal/multitype/4.5")
+               |> json_response(200)
     end
 
     test "integer works", %{conn: conn} do
-      response = get(conn, "/marshal/multitype/4")
-      assert %{"multitype" => 4} = json_response(response, 200)
+      assert %{"multitype" => 4} =
+               conn
+               |> get("/marshal/multitype/4")
+               |> json_response(200)
     end
 
     test "boolean works", %{conn: conn} do
-      response = get(conn, "/marshal/multitype/true")
-      assert %{"multitype" => true} = json_response(response, 200)
+      assert %{"multitype" => true} =
+               conn
+               |> get("/marshal/multitype/true")
+               |> json_response(200)
     end
 
     test "null works with explicit null", %{conn: conn} do
-      response = get(conn, "/marshal/multitype/null")
-      assert %{"multitype" => nil} = json_response(response, 200)
+      assert %{"multitype" => nil} =
+               conn
+               |> get("/marshal/multitype/null")
+               |> json_response(200)
     end
 
     test "null works with string", %{conn: conn} do
-      response = get(conn, "/marshal/multitype/string")
-      assert %{"multitype" => "string"} = json_response(response, 200)
+      assert %{"multitype" => "string"} =
+               conn
+               |> get("/marshal/multitype/string")
+               |> json_response(200)
     end
   end
 
   describe "for nullable object" do
     test "basic object works", %{conn: conn} do
-      response = get(conn, "/marshal/nullableobject/;object=foo,bar")
-      assert %{"object" => %{"foo" => "bar"}} = json_response(response, 200)
+      assert %{"object" => %{"foo" => "bar"}} =
+               conn
+               |> get("/marshal/nullableobject/;object=foo,bar")
+               |> json_response(200)
     end
 
     test "null object works", %{conn: conn} do
-      response = get(conn, "/marshal/nullableobject/;object")
-      assert %{"object" => nil} = json_response(response, 200)
+      assert %{"object" => nil} =
+               conn
+               |> get("/marshal/nullableobject/;object")
+               |> json_response(200)
     end
 
     test "empty object works", %{conn: conn} do
-      response = get(conn, "/marshal/nullableobject/;object=")
-      assert %{"object" => %{}} = json_response(response, 200)
+      assert %{"object" => %{}} =
+               conn
+               |> get("/marshal/nullableobject/;object=")
+               |> json_response(200)
     end
   end
 
   describe "for nullable array" do
     test "basic array works", %{conn: conn} do
-      response = get(conn, "/marshal/nullablearray/;array=foo,bar")
-      assert %{"array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"array" => ["foo", "bar"]} =
+               conn
+               |> get("/marshal/nullablearray/;array=foo,bar")
+               |> json_response(200)
     end
 
     test "null array works", %{conn: conn} do
-      response = get(conn, "/marshal/nullablearray/;array")
-      assert %{"array" => nil} = json_response(response, 200)
+      assert %{"array" => nil} =
+               conn
+               |> get("/marshal/nullablearray/;array")
+               |> json_response(200)
     end
 
     test "setting null will be treated as an array element", %{conn: conn} do
-      response = get(conn, "/marshal/nullablearray/;array=null")
-      assert %{"array" => ["null"]} = json_response(response, 200)
+      assert %{"array" => ["null"]} =
+               conn
+               |> get("/marshal/nullablearray/;array=null")
+               |> json_response(200)
     end
 
     test "empty array works", %{conn: conn} do
-      response = get(conn, "/marshal/nullablearray/;array=")
-      assert %{"array" => []} = json_response(response, 200)
+      assert %{"array" => []} =
+               conn
+               |> get("/marshal/nullablearray/;array=")
+               |> json_response(200)
     end
+  end
+
+  describe "for custom style" do
+    test "works"
+  end
+
+  describe "for schema" do
+    test "works"
   end
 end

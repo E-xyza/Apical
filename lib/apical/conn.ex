@@ -35,6 +35,12 @@ defmodule Apical.Conn do
     Map.new(conn.path_params, &fetch_kv(&1, conn.private.operation_id, settings))
   end
 
+  def fetch_header_params(conn, settings) do
+    conn.req_headers
+    |> Enum.filter(&is_map_key(settings, elem(&1, 0)))
+    |> Map.new(&fetch_kv(&1, conn.private.operation_id, settings))
+  end
+
   defp fetch_kv({key, value}, operation_id, settings) do
     key_settings = Map.fetch!(settings, key)
     style = Map.get(key_settings, :style)

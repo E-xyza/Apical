@@ -7,23 +7,32 @@ defmodule Apical.Parser.Style do
   def parse(value, key, :comma_delimited, type, explode?) do
     cond do
       :array in type ->
-        {:ok, String.split(value, ",")}
+        case value do
+          "" -> {:ok, []}
+          _ -> {:ok, String.split(value, ",")}
+        end
 
       :object in type ->
-        value
-        |> String.split(",")
-        |> collect(explode?)
-        |> case do
-          ok = {:ok, _} ->
-            ok
+        case value do
+          "" ->
+            {:ok, %{}}
 
-          {:error, :odd} ->
-            {:error,
-             "comma delimited object parameter `#{value}` for parameter `#{key}` has an odd number of entries"}
+          _ ->
+            value
+            |> String.split(",")
+            |> collect(explode?)
+            |> case do
+              ok = {:ok, _} ->
+                ok
 
-          {:error, item} when is_binary(item) ->
-            {:error,
-             "comma delimited object parameter `#{value}` for parameter `#{key}` has a malformed entry: `#{item}`"}
+              {:error, :odd} ->
+                {:error,
+                 "comma delimited object parameter `#{value}` for parameter `#{key}` has an odd number of entries"}
+
+              {:error, item} when is_binary(item) ->
+                {:error,
+                 "comma delimited object parameter `#{value}` for parameter `#{key}` has a malformed entry: `#{item}`"}
+            end
         end
     end
   end

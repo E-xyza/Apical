@@ -239,109 +239,122 @@ defmodule ApicalTest.Parameters.QueryTest do
 
   describe "for styled query parameters with array type" do
     test "default works", %{conn: conn} do
-      response = get(conn, "/optional/?style-default-array=foo&style-default-array=bar")
-
-      assert %{"style-default-array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"style-default-array" => ["foo", "bar"]} =
+               conn
+               |> get("/optional/?style-default-array=foo&style-default-array=bar")
+               |> json_response(200)
     end
 
     test "form works", %{conn: conn} do
-      response = get(conn, "/optional/?style-form-array=foo&style-form-array=bar")
-
-      assert %{"style-form-array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"style-form-array" => ["foo", "bar"]} =
+               conn
+               |> get("/optional/?style-form-array=foo&style-form-array=bar")
+               |> json_response(200)
     end
 
     test "default unexploded works", %{conn: conn} do
-      response = get(conn, "/optional/?style-default-commaDelimited-array=foo,bar")
-
       assert %{"style-default-commaDelimited-array" => ["foo", "bar"]} =
-               json_response(response, 200)
+               conn
+               |> get("/optional/?style-default-commaDelimited-array=foo,bar")
+               |> json_response(200)
     end
 
     test "form unexploded works", %{conn: conn} do
-      response = get(conn, "/optional/?style-form-commaDelimited-array=foo,bar")
-
-      assert %{"style-form-commaDelimited-array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"style-form-commaDelimited-array" => ["foo", "bar"]} =
+               conn
+               |> get("/optional/?style-form-commaDelimited-array=foo,bar")
+               |> json_response(200)
     end
 
     test "spaceDelimited works with space", %{conn: conn} do
-      response = get(conn, "/optional/?style-spaceDelimited-array=foo%20bar")
-
-      assert %{"style-spaceDelimited-array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"style-spaceDelimited-array" => ["foo", "bar"]} =
+               conn
+               |> get("/optional/?style-spaceDelimited-array=foo%20bar")
+               |> json_response(200)
     end
 
     test "pipeDelimited works with pipe", %{conn: conn} do
-      response = get(conn, "/optional/?style-pipeDelimited-array=foo%7Cbar")
-
-      assert %{"style-pipeDelimited-array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"style-pipeDelimited-array" => ["foo", "bar"]} =
+               conn
+               |> get("/optional/?style-pipeDelimited-array=foo%7Cbar")
+               |> json_response(200)
     end
   end
 
   describe "for arrays with inner types" do
     test "marshalling works", %{conn: conn} do
-      response = get(conn, "/optional/?marshal-array=1,bar,3")
-
-      assert %{"marshal-array" => [1, "bar", 3]} = json_response(response, 200)
+      assert %{"marshal-array" => [1, "bar", 3]} =
+               conn
+               |> get("/optional/?marshal-array=1,bar,3")
+               |> json_response(200)
     end
   end
 
   describe "for styled query parameters with object type" do
     test "default works", %{conn: conn} do
-      response = get(conn, "/optional/?style-default-commaDelimited-object=foo,bar")
-
       assert %{"style-default-commaDelimited-object" => %{"foo" => "bar"}} =
-               json_response(response, 200)
+               conn
+               |> get("/optional/?style-default-commaDelimited-object=foo,bar")
+               |> json_response(200)
     end
 
     test "form works", %{conn: conn} do
-      response = get(conn, "/optional/?style-form-commaDelimited-object=foo,bar")
-
       assert %{"style-form-commaDelimited-object" => %{"foo" => "bar"}} =
-               json_response(response, 200)
+               conn
+               |> get("/optional/?style-form-commaDelimited-object=foo,bar")
+               |> json_response(200)
     end
 
     test "spaceDelimited works with space", %{conn: conn} do
-      response = get(conn, "/optional/?style-spaceDelimited-object=foo%20bar")
-
-      assert %{"style-spaceDelimited-object" => %{"foo" => "bar"}} = json_response(response, 200)
+      assert %{"style-spaceDelimited-object" => %{"foo" => "bar"}} = conn
+      get(conn, "/optional/?style-spaceDelimited-object=foo%20bar")
+      json_response(response, 200)
     end
 
     test "pipeDelimited works with pipe", %{conn: conn} do
-      response = get(conn, "/optional/?style-pipeDelimited-object=foo%7Cbar")
-
-      assert %{"style-pipeDelimited-object" => %{"foo" => "bar"}} = json_response(response, 200)
+      assert %{"style-pipeDelimited-object" => %{"foo" => "bar"}} =
+               conn
+               |> get("/optional/?style-pipeDelimited-object=foo%7Cbar")
+               |> json_response(200)
     end
 
     test "deepObject works", %{conn: conn} do
-      response = get(conn, "/optional/?style-deepObject[foo]=bar&style-deepObject[baz]=quux")
-
       assert %{"style-deepObject" => %{"foo" => "bar", "baz" => "quux"}} =
-               json_response(response, 200)
+               conn
+               |> get("/optional/?style-deepObject[foo]=bar&style-deepObject[baz]=quux")
+               |> json_response(200)
     end
   end
 
   describe "for objects with inner types" do
     test "marshalling works", %{conn: conn} do
-      response = get(conn, "/optional/?marshal-object=foo,1,bar,true,quux,3")
-
       assert %{"marshal-object" => %{"foo" => 1, "bar" => true, "quux" => 3}} =
-               json_response(response, 200)
+               conn
+               |> get("/optional/?marshal-object=foo,1,bar,true,quux,3")
+               |> json_response(200)
     end
   end
 
   describe "for boolean schemas" do
     test "true works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-boolean=true")
-      assert %{"schema-boolean" => true} = json_response(response, 200)
+      assert %{"schema-boolean" => true} =
+               conn
+               |> get("/optional/?schema-boolean=true")
+               |> json_response(200)
     end
 
     test "false works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-boolean=false")
-      assert %{"schema-boolean" => false} = json_response(response, 200)
+      assert %{"schema-boolean" => false} =
+               conn
+               |> get("/optional/?schema-boolean=false")
+               |> json_response(200)
     end
 
     test "flag is true", %{conn: conn} do
-      response = get(conn, "/optional/?schema-boolean")
-      assert %{"schema-boolean" => true} = json_response(response, 200)
+      assert %{"schema-boolean" => true} =
+               conn
+               |> get("/optional/?schema-boolean")
+               |> json_response(200)
     end
 
     test "nothing fails", %{conn: conn} do
@@ -359,13 +372,17 @@ defmodule ApicalTest.Parameters.QueryTest do
 
   describe "for number schemas" do
     test "floating point works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-number=4.5")
-      assert %{"schema-number" => 4.5} = json_response(response, 200)
+      assert %{"schema-number" => 4.5} =
+               conn
+               |> get("/optional/?schema-number=4.5")
+               |> json_response(200)
     end
 
     test "integer works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-number=4")
-      assert %{"schema-number" => 4} = json_response(response, 200)
+      assert %{"schema-number" => 4} =
+               conn
+               |> get("/optional/?schema-number=4")
+               |> json_response(200)
     end
 
     test "string fails", %{conn: conn} do
@@ -377,88 +394,124 @@ defmodule ApicalTest.Parameters.QueryTest do
 
   describe "for multitype schemas" do
     test "floating point works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-multitype=4.5")
-      assert %{"schema-multitype" => 4.5} = json_response(response, 200)
+      assert %{"schema-multitype" => 4.5} =
+               conn
+               |> get("/optional/?schema-multitype=4.5")
+               |> json_response(200)
     end
 
     test "integer works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-multitype=4")
-      assert %{"schema-multitype" => 4} = json_response(response, 200)
+      assert %{"schema-multitype" => 4} =
+               conn
+               |> get("/optional/?schema-multitype=4")
+               |> json_response(200)
     end
 
     test "boolean works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-multitype=true")
-      assert %{"schema-multitype" => true} = json_response(response, 200)
+      assert %{"schema-multitype" => true} =
+               conn
+               |> get("/optional/?schema-multitype=true")
+               |> json_response(200)
     end
 
     test "null works with nothing", %{conn: conn} do
-      response = get(conn, "/optional/?schema-multitype=")
-      assert %{"schema-multitype" => nil} = json_response(response, 200)
+      assert %{"schema-multitype" => nil} =
+               conn
+               |> get("/optional/?schema-multitype=")
+               |> json_response(200)
     end
 
     test "null works with explicit null", %{conn: conn} do
-      response = get(conn, "/optional/?schema-multitype=null")
-      assert %{"schema-multitype" => nil} = json_response(response, 200)
+      %{"schema-multitype" => nil} =
+        conn
+        |> get("/optional/?schema-multitype=null")
+        |> json_response(200)
     end
 
     test "null works with string", %{conn: conn} do
-      response = get(conn, "/optional/?schema-multitype=string")
-      assert %{"schema-multitype" => "string"} = json_response(response, 200)
+      %{"schema-multitype" => "string"} =
+        conn
+        |> get("/optional/?schema-multitype=string")
+        |> json_response(200)
     end
   end
 
   describe "for nullable object" do
     test "basic object works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-nullable-object=foo,bar")
-      assert %{"schema-nullable-object" => %{"foo" => "bar"}} = json_response(response, 200)
+      %{"schema-nullable-object" => %{"foo" => "bar"}} =
+        conn
+        |> get("/optional/?schema-nullable-object=foo,bar")
+        |> json_response(200)
     end
 
     test "null object works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-nullable-object")
-      assert %{"schema-nullable-object" => nil} = json_response(response, 200)
+      %{"schema-nullable-object" => nil} =
+        conn
+        |> get("/optional/?schema-nullable-object")
+        |> json_response(200)
     end
 
     test "empty object works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-nullable-object=")
-      assert %{"schema-nullable-object" => %{}} = json_response(response, 200)
+      assert %{"schema-nullable-object" => %{}} =
+               conn
+               |> get("/optional/?schema-nullable-object=")
+               |> json_response(200)
     end
   end
 
   describe "for nullable array" do
     test "basic array works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-nullable-array=foo,bar")
-      assert %{"schema-nullable-array" => ["foo", "bar"]} = json_response(response, 200)
+      assert %{"schema-nullable-array" => ["foo", "bar"]} =
+               conn
+               |> get("/optional/?schema-nullable-array=foo,bar")
+               |> json_response(200)
     end
 
     test "null array works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-nullable-array")
-      assert %{"schema-nullable-array" => nil} = json_response(response, 200)
+      assert %{"schema-nullable-array" => nil} =
+               conn
+               |> get("/optional/?schema-nullable-array")
+               |> json_response(200)
     end
 
     test "setting null will be treated as an array element", %{conn: conn} do
-      response = get(conn, "/optional/?schema-nullable-array=null")
-      assert %{"schema-nullable-array" => ["null"]} = json_response(response, 200)
+      assert %{"schema-nullable-array" => ["null"]} =
+               conn
+               |> get(conn, "/optional/?schema-nullable-array=null")
+               |> json_response(response, 200)
     end
 
     test "empty array works", %{conn: conn} do
-      response = get(conn, "/optional/?schema-nullable-array=")
-      assert %{"schema-nullable-array" => []} = json_response(response, 200)
+      assert %{"schema-nullable-array" => []} =
+               conn
+               |> get("/optional/?schema-nullable-array=")
+               |> json_response(200)
     end
+  end
+
+  describe "for schema" do
+    test "works"
   end
 
   describe "for custom style" do
     test "content is overloadable", %{conn: conn} do
-      response = get(conn, "/optional/?style-custom=foo")
-      assert %{"style-custom" => 47} = json_response(response, 200)
+      assert %{"style-custom" => 47} =
+               conn
+               |> get("/optional/?style-custom=foo")
+               |> json_response(200)
     end
+
+    test "override can error"
   end
 
   describe "for allowReserved" do
     test "content is obtainable", %{conn: conn} do
       # note that this is missing the # and & characters because these are ambiguous and can break
       # decoding.
-      response = get(conn, "/optional/?allow-reserved=:/?[]@!$'()*+,;=")
-      assert %{"allow-reserved" => ":/?[]@!$'()*+,;="} = json_response(response, 200)
+      assert %{"allow-reserved" => ":/?[]@!$'()*+,;="} =
+               conn
+               |> get("/optional/?allow-reserved=:/?[]@!$'()*+,;=")
+               |> json_response(200)
     end
   end
 
@@ -472,9 +525,11 @@ defmodule ApicalTest.Parameters.QueryTest do
       assert %{} == json_response(response, 200)
     end
 
-    test "nothing appears when no parameters are given", %{conn: conn} do
-      response = get(conn, "/unspecified/?unspecified=abc")
-      assert %{"params" => %{}, "path_params" => %{}} == json_response(response, 200)
+    test "nothing appears anywhere when no parameters are given", %{conn: conn} do
+      assert %{"params" => %{}, "query_params" => :fixme} ==
+               conn
+               |> get("/unspecified/?unspecified=abc")
+               |> json_response(200)
     end
   end
 
