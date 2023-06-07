@@ -76,6 +76,10 @@ defmodule ApicalTest.Parameters.PathTest do
                 in: header
                 schema:
                   type: boolean
+              - name: schema-number
+                in: header
+                schema:
+                  type: number
       """,
       controller: ApicalTest.Parameters.PathTest,
       content_type: "application/yaml",
@@ -272,6 +276,84 @@ defmodule ApicalTest.Parameters.PathTest do
         |> Conn.put_req_header("schema-boolean", "not-a-boolean")
         |> get("/optional")
       end
+    end
+  end
+
+  describe "for number schemas" do
+    test "floating point works", %{conn: conn} do
+      assert %{"schema-number" => 4.5} =
+               conn
+               |> Conn.put_req_header("schema-number", "4.5")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "integer works", %{conn: conn} do
+      assert %{"schema-number" => 4} =
+               conn
+               |> Conn.put_req_header("schema-number", "4")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "string fails", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation headerParamOptional (in header): value \"foo\" at `/` fails schema criterion at `#/paths/~1optional/get/parameters/10/schema/type`",
+                   fn ->
+                     conn
+                     |> Conn.put_req_header("schema-number", "foo")
+                     |> get("/optional/")
+                   end
+    end
+  end
+
+  describe "for multitype schemas" do
+    test "floating point works", %{conn: conn} do
+      assert %{"schema-multitype" => 4.5} =
+               conn
+               |> Conn.put_req_header("schema-multitype", "4.5")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "integer works", %{conn: conn} do
+      assert %{"schema-multitype" => 4} =
+               conn
+               |> Conn.put_req_header("schema-multitype", "4")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "boolean works", %{conn: conn} do
+      assert %{"schema-multitype" => true} =
+               conn
+               |> Conn.put_req_header("schema-multitype", "true")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "null works with nothing", %{conn: conn} do
+      assert %{"schema-multitype" => nil} =
+               conn
+               |> Conn.put_req_header("schema-multitype", "")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "null works with explicit null", %{conn: conn} do
+      assert %{"schema-multitype" => nil} =
+               conn
+               |> Conn.put_req_header("schema-multitype", "null")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "null works with string", %{conn: conn} do
+      assert %{"schema-multitype" => "string"} =
+               conn
+               |> Conn.put_req_header("schema-multitype", "string")
+               |> get("/optional/")
+               |> json_response(200)
     end
   end
 

@@ -422,17 +422,17 @@ defmodule ApicalTest.Parameters.QueryTest do
     end
 
     test "null works with explicit null", %{conn: conn} do
-      %{"schema-multitype" => nil} =
-        conn
-        |> get("/optional/?schema-multitype=null")
-        |> json_response(200)
+      assert %{"schema-multitype" => nil} =
+               conn
+               |> get("/optional/?schema-multitype=null")
+               |> json_response(200)
     end
 
     test "null works with string", %{conn: conn} do
-      %{"schema-multitype" => "string"} =
-        conn
-        |> get("/optional/?schema-multitype=string")
-        |> json_response(200)
+      assert %{"schema-multitype" => "string"} =
+               conn
+               |> get("/optional/?schema-multitype=string")
+               |> json_response(200)
     end
   end
 
