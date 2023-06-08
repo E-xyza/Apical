@@ -53,7 +53,7 @@ defmodule ApicalTest.RequestBody.JsonTest do
     end
 
     test "passing wrong data", %{conn: conn} do
-      assert_raise ParameterError, "", fn ->
+      assert_raise ParameterError, "Parameter Error in operation requestBodyJsonObject (in body): value [\"foo\", \"bar\"] at `/` fails schema criterion at `#/paths/~1object/post/requestBody/content/application~1json/schema/type`", fn ->
         do_post(conn, "/object", ["foo", "bar"])
       end
     end

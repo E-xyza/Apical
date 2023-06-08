@@ -37,7 +37,7 @@ defmodule Apical.Paths do
     plug_opts = Keyword.take(opts, [:styles])
 
     # generate exonerate validators.
-    validators =
+    parameter_validators =
       operation
       |> Map.get("parameters")
       |> List.wrap()
@@ -48,8 +48,20 @@ defmodule Apical.Paths do
           validators(subschema, Keyword.fetch!(opts, :name), pointer, operation_id, opts)
       end)
 
+    body_validators =
+      operation
+      |> get_in(~w(requestBody content))
+      |> Kernel.||([])
+      |> dbg(limit: 25)
+      |> Enum.flat_map(fn
+        {mimetype, subschema} ->
+          pointer = JsonPointer.join(verb_pointer, ["requestBody", "content", mimetype])
+          body_validator(subschema, Keyword.fetch!(opts, :name), mimetype, pointer, operation_id, opts)
+      end)
+
     quote do
-      unquote(validators)
+      unquote(parameter_validators)
+      unquote(body_validators)
 
       pipeline unquote(operation_pipeline) do
         plug(Apical.Plugs.SetOperationId, unquote(operation_pipeline))
@@ -114,6 +126,34 @@ defmodule Apical.Paths do
 
     List.wrap(
       if Map.get(parameter, "schema") do
+        schema_pointer =
+          pointer
+          |> JsonPointer.join("schema")
+          |> JsonPointer.to_uri()
+          |> to_string
+          |> String.trim_leading("#")
+
+        opts = Keyword.put(opts, :entrypoint, schema_pointer)
+
+        quote do
+          Exonerate.function_from_resource(
+            :def,
+            unquote(fn_name),
+            unquote(resource),
+            unquote(opts)
+          )
+        end
+      end
+    )
+  end
+
+  defp body_validator(body, resource, mimetype, pointer, operation_id, opts) do
+    fn_name = :"body-#{operation_id}-#{mimetype}"
+    body |> dbg(limit: 25)
+    fn_name |> dbg(limit: 25)
+
+    List.wrap(
+      if Map.get(body, "schema") do
         schema_pointer =
           pointer
           |> JsonPointer.join("schema")

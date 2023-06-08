@@ -1,7 +1,6 @@
 defmodule Apical.Plugs.RequestBody do
   @behaviour Plug
 
-  alias Apical.Plugs.Common
   alias Plug.Conn
 
   @impl Plug
@@ -55,7 +54,7 @@ defmodule Apical.Plugs.RequestBody do
        when is_map_key(validations, mimetype) do
     {module, fun} = Map.fetch!(validations, mimetype)
 
-    case apply(module, fun, body_params) do
+    case apply(module, fun, [body_params]) do
       :ok ->
         conn
 
