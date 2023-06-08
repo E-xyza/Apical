@@ -92,10 +92,17 @@ defmodule Apical.Paths do
 
   defp parameter_plugs(_, _), do: []
 
-  defp request_body_plugs(%{"requestBody" => %{"content" => content}, "operationId" => operation_id}, plug_opts) do
+  defp request_body_plugs(
+         %{"requestBody" => %{"content" => content}, "operationId" => operation_id},
+         plug_opts
+       ) do
     Enum.map(content, fn {content_type, content_opts} ->
       quote do
-        plug(Apical.Plugs.RequestBody, [__MODULE__] ++ unquote([operation_id, content_type, Macro.escape(content_opts), plug_opts]))
+        plug(
+          Apical.Plugs.RequestBody,
+          [__MODULE__] ++
+            unquote([operation_id, content_type, Macro.escape(content_opts), plug_opts])
+        )
       end
     end)
   end

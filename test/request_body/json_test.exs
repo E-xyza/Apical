@@ -52,10 +52,18 @@ defmodule ApicalTest.RequestBody.JsonTest do
                |> json_response(200)
     end
 
-    test "passing wrong data"
+    test "passing wrong data", %{conn: conn} do
+      assert_raise ParameterError, "", fn ->
+        do_post(conn, "/object", ["foo", "bar"])
+      end
+    end
 
     test "passing data with the wrong content-type"
 
     test "passing data with no content-type"
+  end
+
+  describe "object with nest_all_json option" do
+    test "nests the json"
   end
 end
