@@ -11,7 +11,6 @@ defmodule Apical.Plugs.RequestBody do
 
   @impl Plug
   def call(conn, operations) do
-    operations |> dbg(limit: 25)
     mimetype = "application/json"
 
     with {:ok, body, conn} <- Conn.read_body(conn),

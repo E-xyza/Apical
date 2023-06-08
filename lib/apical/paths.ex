@@ -45,18 +45,20 @@ defmodule Apical.Paths do
       |> Enum.flat_map(fn
         {subschema, index} ->
           pointer = JsonPointer.join(verb_pointer, ["parameters", "#{index}"])
-          validators(subschema, Keyword.fetch!(opts, :name), pointer, operation_id, opts)
+          name = Map.fetch!(subschema, "name")
+          fn_name = :"#{operation_id}-#{name}"
+          validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
       end)
 
     body_validators =
       operation
       |> get_in(~w(requestBody content))
       |> Kernel.||([])
-      |> dbg(limit: 25)
       |> Enum.flat_map(fn
         {mimetype, subschema} ->
           pointer = JsonPointer.join(verb_pointer, ["requestBody", "content", mimetype])
-          body_validator(subschema, Keyword.fetch!(opts, :name), mimetype, pointer, operation_id, opts)
+          fn_name = :"body-#{operation_id}-#{mimetype}"
+          validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
       end)
 
     quote do
@@ -121,37 +123,7 @@ defmodule Apical.Paths do
 
   defp request_body_plugs(_, _), do: []
 
-  defp validators(parameter = %{"name" => name}, resource, pointer, operation_id, opts) do
-    fn_name = :"#{operation_id}-#{name}"
-
-    List.wrap(
-      if Map.get(parameter, "schema") do
-        schema_pointer =
-          pointer
-          |> JsonPointer.join("schema")
-          |> JsonPointer.to_uri()
-          |> to_string
-          |> String.trim_leading("#")
-
-        opts = Keyword.put(opts, :entrypoint, schema_pointer)
-
-        quote do
-          Exonerate.function_from_resource(
-            :def,
-            unquote(fn_name),
-            unquote(resource),
-            unquote(opts)
-          )
-        end
-      end
-    )
-  end
-
-  defp body_validator(body, resource, mimetype, pointer, operation_id, opts) do
-    fn_name = :"body-#{operation_id}-#{mimetype}"
-    body |> dbg(limit: 25)
-    fn_name |> dbg(limit: 25)
-
+  defp validator(body, resource, pointer, fn_name, opts) do
     List.wrap(
       if Map.get(body, "schema") do
         schema_pointer =

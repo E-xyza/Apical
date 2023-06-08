@@ -6,7 +6,6 @@ defmodule Apical.Plugs.Header do
 
   @impl Plug
   def init(opts) do
-    opts |> dbg(limit: 25)
     Common.init([__MODULE__ | opts])
   end
 
