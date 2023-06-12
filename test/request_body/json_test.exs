@@ -21,12 +21,12 @@ defmodule ApicalTest.RequestBody.JsonTest do
                     type: object
       """,
       controller: ApicalTest.RequestBody.JsonTest,
-      content_type: "application/yaml",
-      dump: true
+      content_type: "application/yaml"
     )
   end
 
   use ApicalTest.ConnCase
+  alias Plug.Parsers.UnsupportedMediaTypeError
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
@@ -60,7 +60,14 @@ defmodule ApicalTest.RequestBody.JsonTest do
                    end
     end
 
-    test "passing data with the wrong content-type"
+    # TODO: create a more meaningful apical error for this
+    test "passing data with the wrong content-type", %{conn: conn} do
+      assert_raise UnsupportedMediaTypeError,
+                   "unsupported media type text/csv",
+                   fn ->
+                     do_post(conn, "/object", %{}, "text/csv")
+                   end
+    end
 
     test "passing data with no content-type"
   end
