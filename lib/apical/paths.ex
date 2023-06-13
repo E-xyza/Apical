@@ -38,8 +38,7 @@ defmodule Apical.Paths do
 
     verb_pointer = JsonPointer.join(base_pointer, verb)
     verb = Map.fetch!(@verb_mapping, verb)
-    # TODO: resolve controller using controller options
-    controller = opts[:controller]
+    controller = resolve_controller(operation_id, opts)
     operation_pipeline = :"#{version}-#{operation_id}"
     # TODO: resolve function using operationId options
     function = String.to_atom(operation_id)
@@ -162,6 +161,26 @@ defmodule Apical.Paths do
         end
       end
     )
+  end
+
+  defp resolve_controller(operation_id, opts) do
+    operation_id = String.to_atom(operation_id)
+    controller_opts = case Keyword.fetch(opts, :controller) do
+      {:ok, controller_opts} ->
+        controller_opts
+
+      :error ->
+        raise "No controller specified in options"
+    end
+
+    by_operation_id = Keyword.get(controller_opts, :by_operation_id, [])
+
+    cond do
+      controller = by_operation_id[operation_id] -> controller
+      # TODO: controller by tag
+      true ->
+        Keyword.fetch!(controller_opts, :default)
+    end
   end
 
   require Pegasus
