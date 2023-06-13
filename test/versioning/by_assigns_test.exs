@@ -48,7 +48,6 @@ defmodule ApicalTest.Versioning.ByAssignsTest do
               "200":
                 description: OK
       """,
-      dump: true,
       controller: ApicalTest.Versioning.ByAssignsTest,
       content_type: "application/yaml"
     )

@@ -16,7 +16,7 @@ defmodule ApicalTest.Parameters.CookieTest do
             operationId: cookieParamRequired
             parameters:
               - name: required
-                in: header
+                in: cookie
                 required: true
         "/optional":
           get:
@@ -31,9 +31,9 @@ defmodule ApicalTest.Parameters.CookieTest do
                 in: cookie
                 schema:
                   type: array
-              - name: style-simple-array
+              - name: style-form-array
                 in: cookie
-                style: simple
+                style: form
                 schema:
                   type: array
               - name: marshal-array
@@ -49,14 +49,14 @@ defmodule ApicalTest.Parameters.CookieTest do
                 in: cookie
                 schema:
                   type: object
-              - name: style-simple-object
+              - name: style-form-object
                 in: cookie
-                style: simple
+                style: form
                 schema:
                   type: object
-              - name: style-simple-object-explode
+              - name: style-form-object-explode
                 in: cookie
-                style: simple
+                style: form
                 explode: true
                 schema:
                   type: object
@@ -91,7 +91,7 @@ defmodule ApicalTest.Parameters.CookieTest do
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
-  for ops <- ~w(headerParamRequired headerParamOptional)a do
+  for ops <- ~w(cookieParamRequired cookieParamOptional)a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -99,29 +99,33 @@ defmodule ApicalTest.Parameters.CookieTest do
     end
   end
 
-  describe "for a required header parameter" do
+  defp put_cookie(conn, key, value) do
+    %{conn | req_cookies: Map.put(conn.req_cookies, key, value)}
+  end
+
+  describe "for a required cookie parameter" do
     test "it serializes into required", %{conn: conn} do
       assert %{"required" => "foo"} =
                conn
-               |> Conn.put_req_header("required", "foo")
+               |> put_req_cookie("required", "foo")
                |> get("/required")
                |> json_response(200)
     end
 
     test "it fails when not present", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation headerParamRequired (in header): required header `required` not present",
+                   "Parameter Error in operation cookieParamRequired (in cookie): required cookie `required` not present",
                    fn ->
                      get(conn, "/required")
                    end
     end
   end
 
-  describe "for an optional header parameter" do
+  describe "for an optional cookie parameter" do
     test "it serializes into required", %{conn: conn} do
       assert %{"optional" => "foo"} =
                conn
-               |> Conn.put_req_header("optional", "foo")
+               |> put_req_cookie("optional", "foo")
                |> get("/optional")
                |> json_response(200)
     end
@@ -129,45 +133,45 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "it warns if deprecated", %{conn: conn} do
       response =
         conn
-        |> Conn.put_req_header("deprecated", "foo")
+        |> put_req_cookie("deprecated", "foo")
         |> get("/optional")
 
-      assert {"warning", "299 - the header parameter `deprecated` is deprecated."} =
-               List.keyfind(response.resp_headers, "warning", 0)
+      assert {"warning", "299 - the cookie parameter `deprecated` is deprecated."} =
+               List.keyfind(response.resp_cookies, "warning", 0)
 
       assert %{"deprecated" => "foo"} = json_response(response, 200)
     end
 
-    test "unlisted header doesn't appear in params", %{conn: conn} do
+    test "unlisted cookie doesn't appear in params", %{conn: conn} do
       assert %{} ==
                conn
-               |> Conn.put_req_header("unlisted", "foo")
+               |> put_req_cookie("unlisted", "foo")
                |> get("/optional")
                |> json_response(200)
     end
   end
 
-  describe "for styled header parameters with array type" do
+  describe "for styled cookie parameters with array type" do
     test "default works", %{conn: conn} do
       assert %{"style-default-array" => ["foo", "bar"]} =
                conn
-               |> Conn.put_req_header("style-default-array", "foo,bar")
+               |> put_req_cookie("style-default-array", "foo,bar")
                |> get("/optional")
                |> json_response(200)
     end
 
-    test "simple works", %{conn: conn} do
-      assert %{"style-simple-array" => ["foo", "bar"]} =
+    test "form works", %{conn: conn} do
+      assert %{"style-form-array" => ["foo", "bar"]} =
                conn
-               |> Conn.put_req_header("style-simple-array", "foo,bar")
+               |> put_req_cookie("style-form-array", "foo,bar")
                |> get("/optional")
                |> json_response(200)
     end
 
     test "empty array works", %{conn: conn} do
-      assert %{"style-simple-array" => []} =
+      assert %{"style-form-array" => []} =
                conn
-               |> Conn.put_req_header("style-simple-array", "")
+               |> put_req_cookie("style-form-array", "")
                |> get("/optional")
                |> json_response(200)
     end
@@ -177,67 +181,67 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "marshalling works", %{conn: conn} do
       assert %{"marshal-array" => [1, "bar", 3]} =
                conn
-               |> Conn.put_req_header("marshal-array", "1,bar,3")
+               |> put_req_cookie("marshal-array", "1,bar,3")
                |> get("/optional")
                |> json_response(200)
     end
   end
 
-  describe "for styled header parameters with object type" do
+  describe "for styled cookie parameters with object type" do
     test "default works", %{conn: conn} do
       assert %{"style-default-object" => %{"foo" => "bar"}} =
                conn
-               |> Conn.put_req_header("style-default-object", "foo,bar")
+               |> put_req_cookie("style-default-object", "foo,bar")
                |> get("/optional")
                |> json_response(200)
     end
 
-    test "simple works", %{conn: conn} do
-      assert %{"style-simple-object" => %{"foo" => "bar", "baz" => "quux"}} =
+    test "form works", %{conn: conn} do
+      assert %{"style-form-object" => %{"foo" => "bar", "baz" => "quux"}} =
                conn
-               |> Conn.put_req_header("style-simple-object", "foo,bar,baz,quux")
+               |> put_req_cookie("style-form-object", "foo,bar,baz,quux")
                |> get("/optional")
                |> json_response(200)
     end
 
-    test "simple errors when an odd number of terms", %{conn: conn} do
+    test "form errors when an odd number of terms", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
-                   "Parameter Error in operation headerParamOptional (in path): comma delimited object parameter `foo,bar,baz` for parameter `style-simple-object` has an odd number of entries",
+                   "Parameter Error in operation cookieParamOptional (in path): comma delimited object parameter `foo,bar,baz` for parameter `style-form-object` has an odd number of entries",
                    fn ->
                      conn
-                     |> Conn.put_req_header("style-simple-object", "foo,bar,baz")
+                     |> put_req_cookie("style-form-object", "foo,bar,baz")
                      |> get("/optional")
                    end
     end
 
-    test "simple empty object works", %{conn: conn} do
-      assert %{"style-simple-object" => %{}} =
+    test "form empty object works", %{conn: conn} do
+      assert %{"style-form-object" => %{}} =
                conn
-               |> Conn.put_req_header("style-simple-object", "")
+               |> put_req_cookie("style-form-object", "")
                |> get("/optional")
                |> json_response(200)
     end
 
-    test "simple explode works", %{conn: conn} do
-      assert %{"style-simple-object-explode" => %{"foo" => "bar", "baz" => "quux"}} =
+    test "form explode works", %{conn: conn} do
+      assert %{"style-form-object-explode" => %{"foo" => "bar", "baz" => "quux"}} =
                conn
-               |> Conn.put_req_header("style-simple-object-explode", "foo=bar,baz=quux")
+               |> put_req_cookie("style-form-object-explode", "foo=bar,baz=quux")
                |> get("/optional")
                |> json_response(200)
     end
 
-    test "simple explode manages empty strings", %{conn: conn} do
-      assert %{"style-simple-object-explode" => %{"foo" => "bar", "baz" => ""}} =
+    test "form explode manages empty strings", %{conn: conn} do
+      assert %{"style-form-object-explode" => %{"foo" => "bar", "baz" => ""}} =
                conn
-               |> Conn.put_req_header("style-simple-object-explode", "foo=bar,baz=")
+               |> put_req_cookie("style-form-object-explode", "foo=bar,baz=")
                |> get("/optional")
                |> json_response(200)
     end
 
-    test "simple explode manages very empty entry", %{conn: conn} do
-      assert %{"style-simple-object-explode" => %{"foo" => "bar", "baz" => ""}} =
+    test "form explode manages very empty entry", %{conn: conn} do
+      assert %{"style-form-object-explode" => %{"foo" => "bar", "baz" => ""}} =
                conn
-               |> Conn.put_req_header("style-simple-object-explode", "foo=bar,baz")
+               |> put_req_cookie("style-form-object-explode", "foo=bar,baz")
                |> get("/optional")
                |> json_response(200)
     end
@@ -247,7 +251,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "marshalling works", %{conn: conn} do
       assert %{"marshal-object" => %{"foo" => 1, "bar" => true, "quux" => 3}} =
                conn
-               |> Conn.put_req_header("marshal-object", "foo,1,bar,true,quux,3")
+               |> put_req_cookie("marshal-object", "foo,1,bar,true,quux,3")
                |> get("/optional")
                |> json_response(200)
     end
@@ -257,7 +261,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "true works", %{conn: conn} do
       assert %{"schema-boolean" => true} =
                conn
-               |> Conn.put_req_header("schema-boolean", "true")
+               |> put_req_cookie("schema-boolean", "true")
                |> get("/optional")
                |> json_response(200)
     end
@@ -265,7 +269,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "false works", %{conn: conn} do
       assert %{"schema-boolean" => false} =
                conn
-               |> Conn.put_req_header("schema-boolean", "false")
+               |> put_req_cookie("schema-boolean", "false")
                |> get("/optional")
                |> json_response(200)
     end
@@ -273,7 +277,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "other string fails", %{conn: conn} do
       assert_raise ParameterError, fn ->
         conn
-        |> Conn.put_req_header("schema-boolean", "not-a-boolean")
+        |> put_req_cookie("schema-boolean", "not-a-boolean")
         |> get("/optional")
       end
     end
@@ -283,7 +287,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "floating point works", %{conn: conn} do
       assert %{"schema-number" => 4.5} =
                conn
-               |> Conn.put_req_header("schema-number", "4.5")
+               |> put_req_cookie("schema-number", "4.5")
                |> get("/optional/")
                |> json_response(200)
     end
@@ -291,17 +295,17 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "integer works", %{conn: conn} do
       assert %{"schema-number" => 4} =
                conn
-               |> Conn.put_req_header("schema-number", "4")
+               |> put_req_cookie("schema-number", "4")
                |> get("/optional/")
                |> json_response(200)
     end
 
     test "string fails", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation headerParamOptional (in header): value \"foo\" at `/` fails schema criterion at `#/paths/~1optional/get/parameters/10/schema/type`",
+                   "Parameter Error in operation cookieParamOptional (in cookie): value \"foo\" at `/` fails schema criterion at `#/paths/~1optional/get/parameters/10/schema/type`",
                    fn ->
                      conn
-                     |> Conn.put_req_header("schema-number", "foo")
+                     |> put_req_cookie("schema-number", "foo")
                      |> get("/optional/")
                    end
     end
@@ -311,7 +315,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "floating point works", %{conn: conn} do
       assert %{"schema-multitype" => 4.5} =
                conn
-               |> Conn.put_req_header("schema-multitype", "4.5")
+               |> put_req_cookie("schema-multitype", "4.5")
                |> get("/optional/")
                |> json_response(200)
     end
@@ -319,7 +323,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "integer works", %{conn: conn} do
       assert %{"schema-multitype" => 4} =
                conn
-               |> Conn.put_req_header("schema-multitype", "4")
+               |> put_req_cookie("schema-multitype", "4")
                |> get("/optional/")
                |> json_response(200)
     end
@@ -327,7 +331,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "boolean works", %{conn: conn} do
       assert %{"schema-multitype" => true} =
                conn
-               |> Conn.put_req_header("schema-multitype", "true")
+               |> put_req_cookie("schema-multitype", "true")
                |> get("/optional/")
                |> json_response(200)
     end
@@ -335,7 +339,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "null works with nothing", %{conn: conn} do
       assert %{"schema-multitype" => nil} =
                conn
-               |> Conn.put_req_header("schema-multitype", "")
+               |> put_req_cookie("schema-multitype", "")
                |> get("/optional/")
                |> json_response(200)
     end
@@ -343,7 +347,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "null works with explicit null", %{conn: conn} do
       assert %{"schema-multitype" => nil} =
                conn
-               |> Conn.put_req_header("schema-multitype", "null")
+               |> put_req_cookie("schema-multitype", "null")
                |> get("/optional/")
                |> json_response(200)
     end
@@ -351,7 +355,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "null works with string", %{conn: conn} do
       assert %{"schema-multitype" => "string"} =
                conn
-               |> Conn.put_req_header("schema-multitype", "string")
+               |> put_req_cookie("schema-multitype", "string")
                |> get("/optional/")
                |> json_response(200)
     end

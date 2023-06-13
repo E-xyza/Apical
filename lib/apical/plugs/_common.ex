@@ -126,8 +126,8 @@ defmodule Apical.Plugs.Common do
         )
 
         Tools.assert(
-          collection === :array,
-          "for parameter `#{name}`, default (exploded) style requires schema type array.  Consider setting `explode: false`",
+          collection in [:array, :object],
+          "for parameter `#{name}`, default (exploded) style requires schema type array or object.  Consider setting `explode: false`",
           apical: true
         )
 
