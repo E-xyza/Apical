@@ -6,6 +6,8 @@ defmodule Apical.Conn do
   alias Apical.Parser.Style
   alias Plug.Conn
 
+  # TODO: rename these to not be "fetch"
+
   def fetch_query_params(conn, settings) do
     case Query.parse(conn.query_string, settings) do
       {:ok, parse_result, warnings} ->
@@ -35,8 +37,16 @@ defmodule Apical.Conn do
     Map.new(conn.path_params, &fetch_kv(&1, conn.private.operation_id, settings))
   end
 
+  # TODO: make this recursive
+
   def fetch_header_params(conn, settings) do
     conn.req_headers
+    |> Enum.filter(&is_map_key(settings, elem(&1, 0)))
+    |> Map.new(&fetch_kv(&1, conn.private.operation_id, settings))
+  end
+
+  def fetch_cookie_params(conn, settings) do
+    conn.cookies
     |> Enum.filter(&is_map_key(settings, elem(&1, 0)))
     |> Map.new(&fetch_kv(&1, conn.private.operation_id, settings))
   end

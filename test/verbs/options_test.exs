@@ -18,6 +18,7 @@ defmodule ApicalTest.Verbs.OptionsTest do
               "200":
                 description: OK
       """,
+      root: "/",
       controller: ApicalTest.Verbs.OptionsTest,
       content_type: "application/yaml"
     )

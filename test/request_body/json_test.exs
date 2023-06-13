@@ -20,6 +20,7 @@ defmodule ApicalTest.RequestBody.JsonTest do
                   schema:
                     type: object
       """,
+      root: "/",
       controller: ApicalTest.RequestBody.JsonTest,
       content_type: "application/yaml"
     )

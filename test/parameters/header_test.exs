@@ -81,6 +81,7 @@ defmodule ApicalTest.Parameters.HeaderTest do
                 schema:
                   type: number
       """,
+      root: "/",
       controller: ApicalTest.Parameters.HeaderTest,
       content_type: "application/yaml"
     )

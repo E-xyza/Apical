@@ -18,6 +18,7 @@ defmodule ApicalTest.Verbs.HeadTest do
               "200":
                 description: OK
       """,
+      root: "/",
       controller: ApicalTest.Verbs.HeadTest,
       content_type: "application/yaml"
     )

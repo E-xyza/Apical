@@ -18,6 +18,7 @@ defmodule ApicalTest.Verbs.DeleteTest do
               "200":
                 description: OK
       """,
+      root: "/",
       controller: ApicalTest.Verbs.DeleteTest,
       content_type: "application/yaml"
     )

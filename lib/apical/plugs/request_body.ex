@@ -6,7 +6,7 @@ defmodule Apical.Plugs.RequestBody do
   alias Plug.Conn
 
   @impl Plug
-  def init([module, operation_id, media_type_string, parameters, _plug_opts]) do
+  def init([module, version, operation_id, media_type_string, parameters, _plug_opts]) do
     parsed_media_type =
       case Conn.Utils.media_type(media_type_string) do
         {:ok, type, subtype, params} ->
@@ -18,7 +18,14 @@ defmodule Apical.Plugs.RequestBody do
       end
 
     %{}
-    |> add_validation(module, operation_id, media_type_string, parsed_media_type, parameters)
+    |> add_validation(
+      module,
+      version,
+      operation_id,
+      media_type_string,
+      parsed_media_type,
+      parameters
+    )
   end
 
   @impl Plug
@@ -69,10 +76,10 @@ defmodule Apical.Plugs.RequestBody do
     Map.put(params, "_json", body_params)
   end
 
-  defp add_validation(operations, module, operation_id, media_type_string, media_type, %{
+  defp add_validation(operations, version, module, operation_id, media_type_string, media_type, %{
          "schema" => _schema
        }) do
-    fun = {module, :"body-#{operation_id}-#{media_type_string}"}
+    fun = {module, validator_name(version, operation_id, media_type_string)}
 
     Map.update(operations, :validations, %{media_type => fun}, &Map.put(&1, media_type, fun))
   end
@@ -91,6 +98,10 @@ defmodule Apical.Plugs.RequestBody do
   end
 
   defp validate!(conn, _, _, _, _), do: conn
+
+  def validator_name(version, operation_id, mimetype) do
+    :"#{version}-body-#{operation_id}-#{mimetype}"
+  end
 
   defp fetch_validation!(
          validations,
