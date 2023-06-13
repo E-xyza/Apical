@@ -18,7 +18,14 @@ defmodule Apical.Plugs.RequestBody do
       end
 
     %{}
-    |> add_validation(module, version, operation_id, media_type_string, parsed_media_type, parameters)
+    |> add_validation(
+      module,
+      version,
+      operation_id,
+      media_type_string,
+      parsed_media_type,
+      parameters
+    )
   end
 
   @impl Plug

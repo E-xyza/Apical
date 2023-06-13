@@ -17,7 +17,14 @@ defmodule Apical.Paths do
   @verb_mapping Map.new(~w(get put post delete options head patch trace)a, &{"#{&1}", &1})
   @verbs Map.keys(@verb_mapping)
 
-  defp to_route(root, path, {verb, operation = %{"operationId" => operation_id}}, base_pointer, version, opts)
+  defp to_route(
+         root,
+         path,
+         {verb, operation = %{"operationId" => operation_id}},
+         base_pointer,
+         version,
+         opts
+       )
        when verb in @verbs do
     # TODO: check all path substitutions have corresponding parameters.
     canonical_path =
@@ -89,7 +96,11 @@ defmodule Apical.Paths do
     "cookie" => Apical.Plugs.Cookie
   }
 
-  defp parameter_plugs(%{"parameters" => parameters, "operationId" => operation_id}, version, plug_opts) do
+  defp parameter_plugs(
+         %{"parameters" => parameters, "operationId" => operation_id},
+         version,
+         plug_opts
+       ) do
     parameters
     |> Enum.group_by(& &1["in"])
     |> Enum.map(fn {location, parameter_opts} ->
@@ -98,7 +109,8 @@ defmodule Apical.Paths do
           quote do
             plug(
               unquote(plug),
-              [__MODULE__] ++ unquote([version, operation_id, Macro.escape(parameter_opts), plug_opts])
+              [__MODULE__] ++
+                unquote([version, operation_id, Macro.escape(parameter_opts), plug_opts])
             )
           end
 

@@ -285,7 +285,10 @@ defmodule Apical.Plugs.Common do
 
   defp add_allow_reserved(operations, _), do: operations
 
-  defp add_validations(operations, module, version, operation_id, %{"schema" => _schema, "name" => name}) do
+  defp add_validations(operations, module, version, operation_id, %{
+         "schema" => _schema,
+         "name" => name
+       }) do
     fun = {module, Apical.Plugs.Parameter.validator_name(version, operation_id, name)}
 
     Map.update(operations, :validations, %{name => fun}, &Map.put(&1, name, fun))
