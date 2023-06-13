@@ -153,6 +153,7 @@ defmodule ApicalTest.Parameters.QueryTest do
           get:
             operationId: unspecified
       """,
+      root: "/",
       controller: ApicalTest.Parameters.QueryTest,
       content_type: "application/yaml",
       styles: [{"x-custom", {__MODULE__, :x_custom}}]

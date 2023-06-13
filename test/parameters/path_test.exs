@@ -255,6 +255,7 @@ defmodule ApicalTest.Parameters.PathTest do
                 schema:
                   type: ["null", object]
       """,
+      root: "/",
       controller: ApicalTest.Parameters.PathTest,
       content_type: "application/yaml",
       styles: [{"x-custom", {__MODULE__, :x_custom}}]

@@ -5,8 +5,9 @@ defmodule Apical.Plugs.Common do
   alias Plug.Conn
   alias Apical.Tools
   alias Apical.Plugs.Query
+  alias Apical.Plugs.Parameter
 
-  def init([in_, module, operation_id, parameters, plug_opts]) do
+  def init([in_, module, version, operation_id, parameters, plug_opts]) do
     operations =
       plug_opts
       |> opts_to_context
@@ -32,7 +33,7 @@ defmodule Apical.Plugs.Common do
       |> add_style(in_, parameter)
       |> add_inner_marshal(parameter)
       |> add_allow_reserved(parameter)
-      |> add_validations(module, operation_id, parameter)
+      |> add_validations(module, version, operation_id, parameter)
     end)
   end
 
@@ -284,13 +285,13 @@ defmodule Apical.Plugs.Common do
 
   defp add_allow_reserved(operations, _), do: operations
 
-  defp add_validations(operations, module, operation_id, %{"schema" => _schema, "name" => name}) do
-    fun = {module, :"#{operation_id}-#{name}"}
+  defp add_validations(operations, module, version, operation_id, %{"schema" => _schema, "name" => name}) do
+    fun = {module, Apical.Plugs.Parameter.validator_name(version, operation_id, name)}
 
     Map.update(operations, :validations, %{name => fun}, &Map.put(&1, name, fun))
   end
 
-  defp add_validations(operations, _, _, _), do: operations
+  defp add_validations(operations, _, _, _, _), do: operations
 
   # TODO: refactor this into a recursive call
   def filter_required(conn, params, _in_, %{required: required}) do

@@ -18,6 +18,7 @@ defmodule ApicalTest.Verbs.PatchTest do
               "200":
                 description: OK
       """,
+      root: "/",
       controller: ApicalTest.Verbs.PatchTest,
       content_type: "application/yaml"
     )

@@ -2,19 +2,22 @@ defmodule Apical.Paths do
   # see: https://datatracker.ietf.org/doc/html/rfc6570#section-3.2.3
   #   to understand path expansion rules.
 
-  def to_routes({path, methods}, opts) do
+  alias Apical.Plugs.Parameter
+  alias Apical.Plugs.RequestBody
+
+  def to_routes(root, {path, methods}, version, opts) do
     base_pointer =
       "/paths"
       |> JsonPointer.from_path()
       |> JsonPointer.join(path)
 
-    Enum.map(methods, &to_route(path, &1, base_pointer, opts))
+    Enum.map(methods, &to_route(root, path, &1, base_pointer, version, opts))
   end
 
   @verb_mapping Map.new(~w(get put post delete options head patch trace)a, &{"#{&1}", &1})
   @verbs Map.keys(@verb_mapping)
 
-  defp to_route(path, {verb, operation = %{"operationId" => operation_id}}, base_pointer, opts)
+  defp to_route(root, path, {verb, operation = %{"operationId" => operation_id}}, base_pointer, version, opts)
        when verb in @verbs do
     # TODO: check all path substitutions have corresponding parameters.
     canonical_path =
@@ -30,7 +33,7 @@ defmodule Apical.Paths do
     verb = Map.fetch!(@verb_mapping, verb)
     # TODO: resolve controller using controller options
     controller = opts[:controller]
-    operation_pipeline = String.to_atom(operation_id)
+    operation_pipeline = :"#{version}-#{operation_id}"
     # TODO: resolve function using operationId options
     function = String.to_atom(operation_id)
 
@@ -46,7 +49,7 @@ defmodule Apical.Paths do
         {subschema, index} ->
           pointer = JsonPointer.join(verb_pointer, ["parameters", "#{index}"])
           name = Map.fetch!(subschema, "name")
-          fn_name = :"#{operation_id}-#{name}"
+          fn_name = Parameter.validator_name(version, operation_id, name)
           validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
       end)
 
@@ -57,7 +60,7 @@ defmodule Apical.Paths do
       |> Enum.flat_map(fn
         {mimetype, subschema} ->
           pointer = JsonPointer.join(verb_pointer, ["requestBody", "content", mimetype])
-          fn_name = :"body-#{operation_id}-#{mimetype}"
+          fn_name = RequestBody.validator_name(version, operation_id, mimetype)
           validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
       end)
 
@@ -66,14 +69,15 @@ defmodule Apical.Paths do
       unquote(body_validators)
 
       pipeline unquote(operation_pipeline) do
-        plug(Apical.Plugs.SetOperationId, unquote(operation_pipeline))
-        unquote(parameter_plugs(operation, plug_opts))
-        unquote(request_body_plugs(operation, plug_opts))
+        plug(Apical.Plugs.SetVersion, unquote(version))
+        plug(Apical.Plugs.SetOperationId, unquote(operation_id))
+        unquote(parameter_plugs(operation, version, plug_opts))
+        unquote(request_body_plugs(operation, version, plug_opts))
       end
 
-      scope unquote(canonical_path) do
+      scope unquote(root) do
         pipe_through(unquote(operation_pipeline))
-        unquote(verb)("/", unquote(controller), unquote(function))
+        unquote(verb)(unquote(canonical_path), unquote(controller), unquote(function))
       end
     end
   end
@@ -85,7 +89,7 @@ defmodule Apical.Paths do
     "cookie" => Apical.Plugs.Cookie
   }
 
-  defp parameter_plugs(%{"parameters" => parameters, "operationId" => operation_id}, plug_opts) do
+  defp parameter_plugs(%{"parameters" => parameters, "operationId" => operation_id}, version, plug_opts) do
     parameters
     |> Enum.group_by(& &1["in"])
     |> Enum.map(fn {location, parameter_opts} ->
@@ -94,7 +98,7 @@ defmodule Apical.Paths do
           quote do
             plug(
               unquote(plug),
-              [__MODULE__] ++ unquote([operation_id, Macro.escape(parameter_opts), plug_opts])
+              [__MODULE__] ++ unquote([version, operation_id, Macro.escape(parameter_opts), plug_opts])
             )
           end
 
@@ -104,10 +108,11 @@ defmodule Apical.Paths do
     end)
   end
 
-  defp parameter_plugs(_, _), do: []
+  defp parameter_plugs(_, _, _), do: []
 
   defp request_body_plugs(
          %{"requestBody" => %{"content" => content}, "operationId" => operation_id},
+         version,
          plug_opts
        ) do
     Enum.map(content, fn {content_type, content_opts} ->
@@ -115,13 +120,13 @@ defmodule Apical.Paths do
         plug(
           Apical.Plugs.RequestBody,
           [__MODULE__] ++
-            unquote([operation_id, content_type, Macro.escape(content_opts), plug_opts])
+            unquote([version, operation_id, content_type, Macro.escape(content_opts), plug_opts])
         )
       end
     end)
   end
 
-  defp request_body_plugs(_, _), do: []
+  defp request_body_plugs(_, _, _), do: []
 
   defp validator(body, resource, pointer, fn_name, opts) do
     List.wrap(

@@ -18,6 +18,7 @@ defmodule ApicalTest.Verbs.TraceTest do
               "200":
                 description: OK
       """,
+      root: "/",
       controller: ApicalTest.Verbs.TraceTest,
       content_type: "application/yaml"
     )

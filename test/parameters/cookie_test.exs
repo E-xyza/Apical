@@ -81,6 +81,7 @@ defmodule ApicalTest.Parameters.CookieTest do
                 schema:
                   type: number
       """,
+      root: "/",
       controller: ApicalTest.Parameters.CookieTest,
       content_type: "application/yaml"
     )

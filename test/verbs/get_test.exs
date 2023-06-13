@@ -18,6 +18,7 @@ defmodule ApicalTest.Verbs.GetTest do
               "200":
                 description: OK
       """,
+      root: "/",
       controller: ApicalTest.Verbs.GetTest,
       content_type: "application/yaml"
     )
