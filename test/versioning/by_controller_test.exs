@@ -25,7 +25,7 @@ defmodule ApicalTest.Versioning.ByControllerTest do
                 description: OK
       """,
       controller: [
-        by_operation: [
+        by_operation_id: [
           sharedOp: ApicalTest.Versioning.ByControllerTest.SharedController,
           forkedOp: ApicalTest.Versioning.ByControllerTest.V1.Controller
         ]
@@ -55,7 +55,7 @@ defmodule ApicalTest.Versioning.ByControllerTest do
       """,
       dump: true,
       controller: [
-        by_operation: [
+        by_operation_id: [
           sharedOp: ApicalTest.Versioning.ByControllerTest.SharedController,
           forkedOp: ApicalTest.Versioning.ByControllerTest.V2.Controller
         ]
