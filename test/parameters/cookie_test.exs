@@ -36,6 +36,12 @@ defmodule ApicalTest.Parameters.CookieTest do
                 style: form
                 schema:
                   type: array
+              - name: style-form-array-unexplode
+                in: cookie
+                style: form
+                explode: false
+                schema:
+                  type: array
               - name: marshal-array
                 in: cookie
                 schema:
@@ -47,21 +53,18 @@ defmodule ApicalTest.Parameters.CookieTest do
                     type: integer
               - name: style-default-object
                 in: cookie
+                explode: false
                 schema:
                   type: object
               - name: style-form-object
                 in: cookie
                 style: form
-                schema:
-                  type: object
-              - name: style-form-object-explode
-                in: cookie
-                style: form
-                explode: true
+                explode: false
                 schema:
                   type: object
               - name: marshal-object
                 in: cookie
+                explode: false
                 schema:
                   type: object
                   properties:
@@ -80,6 +83,10 @@ defmodule ApicalTest.Parameters.CookieTest do
                 in: cookie
                 schema:
                   type: number
+              - name: schema-multitype
+                in: cookie
+                schema:
+                  type: [integer, number, string, "null", boolean]
       """,
       root: "/",
       controller: ApicalTest.Parameters.CookieTest,
@@ -97,10 +104,6 @@ defmodule ApicalTest.Parameters.CookieTest do
       |> Conn.put_resp_content_type("application/json")
       |> Conn.send_resp(200, Jason.encode!(params))
     end
-  end
-
-  defp put_cookie(conn, key, value) do
-    %{conn | req_cookies: Map.put(conn.req_cookies, key, value)}
   end
 
   describe "for a required cookie parameter" do
@@ -137,7 +140,7 @@ defmodule ApicalTest.Parameters.CookieTest do
         |> get("/optional")
 
       assert {"warning", "299 - the cookie parameter `deprecated` is deprecated."} =
-               List.keyfind(response.resp_cookies, "warning", 0)
+               List.keyfind(response.resp_headers, "warning", 0)
 
       assert %{"deprecated" => "foo"} = json_response(response, 200)
     end
@@ -155,7 +158,7 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "default works", %{conn: conn} do
       assert %{"style-default-array" => ["foo", "bar"]} =
                conn
-               |> put_req_cookie("style-default-array", "foo,bar")
+               |> put_req_header("cookie", "style-default-array=foo&style-default-array=bar")
                |> get("/optional")
                |> json_response(200)
     end
@@ -163,15 +166,23 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "form works", %{conn: conn} do
       assert %{"style-form-array" => ["foo", "bar"]} =
                conn
-               |> put_req_cookie("style-form-array", "foo,bar")
+               |> put_req_header("cookie", "style-form-array=foo&style-form-array=bar")
                |> get("/optional")
                |> json_response(200)
     end
 
-    test "empty array works", %{conn: conn} do
+    test "empty array works with no entries", %{conn: conn} do
       assert %{"style-form-array" => []} =
                conn
                |> put_req_cookie("style-form-array", "")
+               |> get("/optional")
+               |> json_response(200)
+    end
+
+    test "form not-exploded works", %{conn: conn} do
+      assert %{"style-form-array-unexplode" => ["foo", "bar"]} =
+               conn
+               |> put_req_cookie("style-form-array-unexplode", "foo,bar")
                |> get("/optional")
                |> json_response(200)
     end
@@ -181,13 +192,15 @@ defmodule ApicalTest.Parameters.CookieTest do
     test "marshalling works", %{conn: conn} do
       assert %{"marshal-array" => [1, "bar", 3]} =
                conn
-               |> put_req_cookie("marshal-array", "1,bar,3")
+               |> put_req_header("cookie", "marshal-array=1&marshal-array=bar&marshal-array=3")
                |> get("/optional")
                |> json_response(200)
     end
   end
 
   describe "for styled cookie parameters with object type" do
+    test "object exploded causes an error."
+
     test "default works", %{conn: conn} do
       assert %{"style-default-object" => %{"foo" => "bar"}} =
                conn
@@ -206,7 +219,7 @@ defmodule ApicalTest.Parameters.CookieTest do
 
     test "form errors when an odd number of terms", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
-                   "Parameter Error in operation cookieParamOptional (in path): comma delimited object parameter `foo,bar,baz` for parameter `style-form-object` has an odd number of entries",
+                   "Parameter Error in operation cookieParamOptional (in cookie): form object parameter `foo,bar,baz` for parameter `style-form-object` has an odd number of entries",
                    fn ->
                      conn
                      |> put_req_cookie("style-form-object", "foo,bar,baz")
@@ -218,30 +231,6 @@ defmodule ApicalTest.Parameters.CookieTest do
       assert %{"style-form-object" => %{}} =
                conn
                |> put_req_cookie("style-form-object", "")
-               |> get("/optional")
-               |> json_response(200)
-    end
-
-    test "form explode works", %{conn: conn} do
-      assert %{"style-form-object-explode" => %{"foo" => "bar", "baz" => "quux"}} =
-               conn
-               |> put_req_cookie("style-form-object-explode", "foo=bar,baz=quux")
-               |> get("/optional")
-               |> json_response(200)
-    end
-
-    test "form explode manages empty strings", %{conn: conn} do
-      assert %{"style-form-object-explode" => %{"foo" => "bar", "baz" => ""}} =
-               conn
-               |> put_req_cookie("style-form-object-explode", "foo=bar,baz=")
-               |> get("/optional")
-               |> json_response(200)
-    end
-
-    test "form explode manages very empty entry", %{conn: conn} do
-      assert %{"style-form-object-explode" => %{"foo" => "bar", "baz" => ""}} =
-               conn
-               |> put_req_cookie("style-form-object-explode", "foo=bar,baz")
                |> get("/optional")
                |> json_response(200)
     end

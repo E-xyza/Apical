@@ -11,6 +11,8 @@ defmodule Apical.Parser.Marshal do
     {:ok, as_type(value, type)}
   end
 
+  def array([""], _), do: []
+
   def array(array, %{elements: {prefix_type, tail_type}}) do
     array_marshal(array, prefix_type, tail_type, [])
   end

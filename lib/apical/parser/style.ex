@@ -4,7 +4,7 @@ defmodule Apical.Parser.Style do
   # TODO: The API for this module needs to be revised once we know better what
   # is in common between path, cookie, and header parameters
 
-  def parse(value, key, :comma_delimited, type, explode?) do
+  def parse(value, key, :simple, type, explode?) do
     cond do
       :array in type ->
         case value do

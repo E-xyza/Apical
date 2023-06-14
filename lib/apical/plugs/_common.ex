@@ -170,8 +170,8 @@ defmodule Apical.Plugs.Common do
   end
 
   @style_atom %{
-    "form" => :comma_delimited,
-    "simple" => :comma_delimited,
+    "form" => :form,
+    "simple" => :simple,
     "label" => :label,
     "matrix" => :matrix,
     "spaceDelimited" => :space_delimited,

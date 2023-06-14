@@ -7,70 +7,71 @@ defmodule Apical.Parser.Query do
   Pegasus.parser_from_string(
     """
     # guards
-    empty           <- ""
-    ARRAY_GUARD     <- empty
-    COMMA_GUARD     <- empty
-    SPACE_GUARD     <- empty
-    PIPE_GUARD      <- empty
-    OBJECT_GUARD    <- empty
-    RESERVED_GUARD  <- empty
+    empty            <- ""
+    ARRAY_GUARD      <- empty
+    COMMA_GUARD      <- empty
+    SPACE_GUARD      <- empty
+    PIPE_GUARD       <- empty
+    OBJECT_GUARD     <- empty
+    RESERVED_GUARD   <- empty
 
     # characters
-    ALPHA         <- [A-Za-z]
-    DIGIT         <- [0-9]
-    HEXDIG        <- [0-9A-Fa-f]
-    sub_delims    <- "!" / "$" / "'" / "(" / ")" / "*" / "+" / ";"
-    equals        <- "="
-    ampersand     <- "&"
-    comma         <- ","
-    space         <- "%20"
-    pipe          <- "%7C" / "%7c"
-    pct_encoded   <- "%" HEXDIG HEXDIG
-    open_br       <- "["
-    close_br      <- "]"
+    ALPHA            <- [A-Za-z]
+    DIGIT            <- [0-9]
+    HEXDIG           <- [0-9A-Fa-f]
+    sub_delims       <- "!" / "$" / "'" / "(" / ")" / "*" / "+" / ";"
+    equals           <- "="
+    ampersand        <- "&"
+    comma            <- ","
+    space            <- "%20"
+    pipe             <- "%7C" / "%7c"
+    pct_encoded      <- "%" HEXDIG HEXDIG
+    open_br          <- "["
+    close_br         <- "]"
 
     # characters, from the spec
-    reserved      <- "/" / "?" / "[" / "]" / "!" / "$" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+    reserved         <- "/" / "?" / "[" / "]" / "!" / "$" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
 
-    iunreserved   <- ALPHA / DIGIT / "-" / "." /  "_" / "~" / ucschar
-    ipchar        <- iunreserved / pct_encoded / sub_delims / ":" /  "@"
-    ipchar_ns     <- !"%20" ipchar
-    ipchar_np     <- !("%7C" / "%7c") ipchar
-    ipchar_rs     <- ipchar / reserved
+    iunreserved      <- ALPHA / DIGIT / "-" / "." /  "_" / "~" / ucschar
+    ipchar           <- iunreserved / pct_encoded / sub_delims / ":" /  "@"
+    ipchar_ns        <- !"%20" ipchar
+    ipchar_np        <- !("%7C" / "%7c") ipchar
+    ipchar_rs        <- ipchar / reserved
 
     # specialized array parsing
-    form_array    <- COMMA_GUARD value? (comma value)*
-    space_array   <- SPACE_GUARD value_ns? (space value_ns)*
-    pipe_array    <- PIPE_GUARD value_np? (pipe value_np)*
-    array_value   <- ARRAY_GUARD (form_array / space_array / pipe_array)
+    form_array       <- COMMA_GUARD value? (comma value)*
+    space_array      <- SPACE_GUARD value_ns? (space value_ns)*
+    pipe_array       <- PIPE_GUARD value_np? (pipe value_np)*
+    array_value      <- ARRAY_GUARD (form_array / space_array / pipe_array)
 
     # specialized object parsing
-    form_object   <- COMMA_GUARD (value comma value)? (comma value comma value)*
-    space_object  <- SPACE_GUARD (value_ns space value_ns)? (comma value_ns space value_ns)*
-    pipe_object   <- PIPE_GUARD (value_np pipe value_np)? (comma value_np pipe value_np)*
-    object_value  <- OBJECT_GUARD (form_object / space_object / pipe_object)
+    form_object      <- COMMA_GUARD (value comma value)? (comma value comma value)* (comma value odd_object_fail)?
+    space_object     <- SPACE_GUARD (value_ns space value_ns)? (comma value_ns space value_ns)* (space value_ns odd_object_fail)?
+    pipe_object      <- PIPE_GUARD (value_np pipe value_np)? (comma value_np pipe value_np)* (pipe value_np odd_object_fail)?
 
-    value         <- ipchar+
-    value_ns      <- ipchar_ns+
-    value_np      <- ipchar_np+
-    value_rs      <- ipchar_rs+
+    object_value     <- OBJECT_GUARD (form_object / space_object / pipe_object)
 
-    key_part      <- ipchar+
-    key_deep      <- key_part open_br key_part close_br
-    value_part    <- equals (object_value / array_value / value_rs_part / value / "")
-    value_rs_part <- RESERVED_GUARD value_rs+
+    value            <- ipchar+
+    value_ns         <- ipchar_ns+
+    value_np         <- ipchar_np+
+    value_rs         <- ipchar_rs+
 
-    basic_query   <- key_part !"[" value_part?
-    deep_object   <- key_deep value_part
+    key_part         <- ipchar+
+    key_deep         <- key_part open_br key_part close_br
+    value_part       <- equals (object_value / array_value / value_rs_part / value / "")
+    value_rs_part    <- RESERVED_GUARD value_rs+
 
-    query_part    <- basic_query / deep_object
-    query         <- query_part? (ampersand query_part?)*
+    basic_query      <- key_part !"[" value_part?
+    deep_object      <- key_deep value_part
+
+    query_part       <- basic_query / deep_object
+    query            <- query_part? (ampersand query_part?)*
     """,
     # guards
     empty: [ignore: true],
     ARRAY_GUARD: [post_traverse: :array_guard],
     OBJECT_GUARD: [post_traverse: :object_guard],
-    COMMA_GUARD: [post_traverse: {:style_guard, [:comma_delimited]}],
+    COMMA_GUARD: [post_traverse: {:style_guard, [:form]}],
     SPACE_GUARD: [post_traverse: {:style_guard, [:space_delimited]}],
     PIPE_GUARD: [post_traverse: {:style_guard, [:pipe_delimited]}],
     RESERVED_GUARD: [post_traverse: :reserved_guard],
@@ -104,13 +105,17 @@ defmodule Apical.Parser.Query do
 
   # fastlane combinators.   Note this supplants the bytewise combinator supplied in the RFC.
   defcombinatorp(:ucschar, utf8_char(not: 0..255))
+  defcombinatorp(:odd_object_fail, eventually(eos()) |> post_traverse(:odd_object_fail))
 
-  defparsecp(:parse_query, parsec(:query) |> eos)
+  defparsecp(:parse_query, parsec(:query) |> eos())
 
   def parse(string, context \\ %{})
 
   def parse(string, context) do
     case parse_query(string, context: context) do
+      {:ok, _, _, result = %{odd_object: true}, _, _} ->
+        {:error, {:odd_object, result.key, result.this}}
+
       {:ok, result, "", context, _, _} ->
         query_parameters =
           result
@@ -259,7 +264,8 @@ defmodule Apical.Parser.Query do
     defp unquote(:"#{type}_guard")(rest_str, list, context = %{key: key}, _, _)
          when is_map_key(context, key) and
                 context_key_type(context, key) in [[unquote(type)], [:null, unquote(type)]] do
-      {rest_str, list, context}
+      value = rest_str |> String.split("&", parts: 2) |> List.first()
+      {rest_str, list, Map.put(context, :this, value)}
     end
 
     defp unquote(:"#{type}_guard")(_, _, _, _, _) do
@@ -283,7 +289,12 @@ defmodule Apical.Parser.Query do
   end
 
   defp finalize_array(rest_str, [{:array, list} | rest], context = %{key: key}, _, _) do
-    {rest_str, [Marshal.array(list, Map.get(context, key)) | rest], Map.delete(context, :key)}
+    {rest_str, [Marshal.array(list, Map.get(context, key)) | rest],
+     Map.drop(context, [:key, :this])}
+  end
+
+  defp finalize_object(_, _, context = %{odd_object: true}, _, _) do
+    {"", [], context}
   end
 
   defp finalize_object(rest_str, [{:object, object_list} | rest], context = %{key: key}, _, _) do
@@ -292,7 +303,7 @@ defmodule Apical.Parser.Query do
       |> to_pairs
       |> Marshal.object(Map.fetch!(context, key))
 
-    {rest_str, [marshalled_object | rest], Map.delete(context, :key)}
+    {rest_str, [marshalled_object | rest], Map.drop(context, [:key, :this])}
   end
 
   defp to_pairs(object_list, so_far \\ [])
@@ -302,4 +313,8 @@ defmodule Apical.Parser.Query do
   end
 
   defp to_pairs([], so_far), do: so_far
+
+  defp odd_object_fail(_, _, context, _, _) do
+    {[], [], Map.put(context, :odd_object, true)}
+  end
 end

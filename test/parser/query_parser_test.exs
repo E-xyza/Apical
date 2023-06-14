@@ -35,7 +35,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
   describe "array encoding" do
     test "with form encoding" do
       assert {:ok, %{"foo" => ["bar", "baz"]}} =
-               Query.parse("foo=bar,baz", %{"foo" => %{type: [:array], style: :comma_delimited}})
+               Query.parse("foo=bar,baz", %{"foo" => %{type: [:array], style: :simple}})
     end
 
     test "with space delimited encoding" do
@@ -55,11 +55,11 @@ defmodule ApicalTest.Parser.QueryParserTest do
   describe "object encoding" do
     test "with form encoding" do
       assert {:ok, %{"foo" => %{"bar" => "baz"}}} =
-               Query.parse("foo=bar,baz", %{"foo" => %{type: [:object], style: :comma_delimited}})
+               Query.parse("foo=bar,baz", %{"foo" => %{type: [:object], style: :simple}})
 
       assert {:ok, %{"foo" => %{"bar" => "baz", "quux" => "mlem"}}} =
                Query.parse("foo=bar,baz,quux,mlem", %{
-                 "foo" => %{type: [:object], style: :comma_delimited}
+                 "foo" => %{type: [:object], style: :simple}
                })
     end
 
@@ -93,7 +93,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
     test "works with a generic" do
       assert {:ok, %{"foo" => [1, 2, 3]}} =
                Query.parse("foo=1,2,3", %{
-                 "foo" => %{type: [:array], style: :comma_delimited, elements: {[], [:integer]}}
+                 "foo" => %{type: [:array], style: :simple, elements: {[], [:integer]}}
                })
     end
 
@@ -102,7 +102,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                Query.parse("foo=1,true,3", %{
                  "foo" => %{
                    type: [:array],
-                   style: :comma_delimited,
+                   style: :simple,
                    elements: {[[:integer], [:boolean]], [:string]}
                  }
                })
@@ -113,7 +113,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                Query.parse("foo=1,true,3", %{
                  "foo" => %{
                    type: [:array],
-                   style: :comma_delimited,
+                   style: :simple,
                    elements: {[[:integer], [:boolean]], [:integer]}
                  }
                })
@@ -126,7 +126,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                Query.parse("foo=bar,1", %{
                  "foo" => %{
                    type: [:object],
-                   style: :comma_delimited,
+                   style: :simple,
                    properties: {%{"bar" => [:integer]}, %{}, [:string]}
                  }
                })
@@ -137,7 +137,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                Query.parse("foo=bar,1", %{
                  "foo" => %{
                    type: [:object],
-                   style: :comma_delimited,
+                   style: :simple,
                    properties: {%{}, %{~r/b.*/ => [:integer]}, [:string]}
                  }
                })
@@ -148,7 +148,7 @@ defmodule ApicalTest.Parser.QueryParserTest do
                Query.parse("foo=bar,1", %{
                  "foo" => %{
                    type: [:object],
-                   style: :comma_delimited,
+                   style: :simple,
                    properties: {%{}, %{}, [:integer]}
                  }
                })

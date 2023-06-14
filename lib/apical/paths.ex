@@ -165,18 +165,22 @@ defmodule Apical.Paths do
 
   defp resolve_controller(operation_id, opts) do
     operation_id = String.to_atom(operation_id)
-    controller_opts = case Keyword.fetch(opts, :controller) do
-      {:ok, controller_opts} ->
-        controller_opts
 
-      :error ->
-        raise "No controller specified in options"
-    end
+    controller_opts =
+      case Keyword.fetch(opts, :controller) do
+        {:ok, controller_opts} ->
+          controller_opts
+
+        :error ->
+          raise "No controller specified in options"
+      end
 
     by_operation_id = Keyword.get(controller_opts, :by_operation_id, [])
 
     cond do
-      controller = by_operation_id[operation_id] -> controller
+      controller = by_operation_id[operation_id] ->
+        controller
+
       # TODO: controller by tag
       true ->
         Keyword.fetch!(controller_opts, :default)

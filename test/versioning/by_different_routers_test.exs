@@ -65,11 +65,11 @@ defmodule ApicalTest.Versioning.ByDifferentRoutersTest do
     use Phoenix.Router
 
     scope "/" do
-      forward "/v1", Router1
+      forward("/v1", Router1)
     end
 
     scope "/" do
-      forward "/v2", Router2
+      forward("/v2", Router2)
     end
   end
 

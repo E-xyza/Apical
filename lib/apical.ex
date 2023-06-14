@@ -2,9 +2,10 @@ defmodule Apical do
   alias Apical.Tools
 
   defmacro router_from_string(string, opts) do
-    opts = opts
-    |> Macro.expand_literals(__CALLER__)
-    |> normalize_opts()
+    opts =
+      opts
+      |> Macro.expand_literals(__CALLER__)
+      |> normalize_opts()
 
     string
     |> Tools.decode(opts)

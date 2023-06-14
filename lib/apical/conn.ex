@@ -8,6 +8,10 @@ defmodule Apical.Conn do
 
   # TODO: rename these to not be "fetch"
 
+  defp style_description(:form), do: "comma delimited"
+  defp style_description(:space_delimited), do: "space delimited"
+  defp style_description(:pipe_delimited), do: "pipe delimited"
+
   def fetch_query_params(conn, settings) do
     case Query.parse(conn.query_string, settings) do
       {:ok, parse_result, warnings} ->
@@ -25,6 +29,19 @@ defmodule Apical.Conn do
         |> Map.put(:query_params, parse_result)
         |> Map.update!(:params, &Map.merge(&1, parse_result))
 
+      {:error, {:odd_object, key, value}} ->
+        style =
+          settings
+          |> Map.fetch!(key)
+          |> Map.get(:style, :form)
+          |> style_description
+
+        raise Apical.Exceptions.ParameterError,
+          operation_id: conn.private.operation_id,
+          in: :query,
+          reason:
+            "#{style} object parameter `#{value}` for parameter `#{key}` has an odd number of entries"
+
       {:error, char} ->
         raise Apical.Exceptions.ParameterError,
           operation_id: conn.private.operation_id,
@@ -34,7 +51,7 @@ defmodule Apical.Conn do
   end
 
   def fetch_path_params(conn, settings) do
-    Map.new(conn.path_params, &fetch_kv(&1, conn.private.operation_id, settings))
+    Map.new(conn.path_params, &fetch_kv(&1, conn.private.operation_id, :simple, settings))
   end
 
   # TODO: make this recursive
@@ -42,18 +59,13 @@ defmodule Apical.Conn do
   def fetch_header_params(conn, settings) do
     conn.req_headers
     |> Enum.filter(&is_map_key(settings, elem(&1, 0)))
-    |> Map.new(&fetch_kv(&1, conn.private.operation_id, settings))
+    |> Map.new(&fetch_kv(&1, conn.private.operation_id, :simple, settings))
   end
 
-  def fetch_cookie_params(conn, settings) do
-    conn.cookies
-    |> Enum.filter(&is_map_key(settings, elem(&1, 0)))
-    |> Map.new(&fetch_kv(&1, conn.private.operation_id, settings))
-  end
-
-  defp fetch_kv({key, value}, operation_id, settings) do
+  defp fetch_kv({key, value}, operation_id, default_style, settings) do
     key_settings = Map.fetch!(settings, key)
-    style = Map.get(key_settings, :style)
+
+    style = Map.get(key_settings, :style, default_style)
 
     type =
       key_settings

@@ -87,9 +87,9 @@ defmodule ApicalTest.Parameters.QueryTest do
                 explode: true
                 schema:
                   type: object
-              - name: style-custom
-                in: query
-                style: x-custom
+              #- name: style-custom
+              #  in: query
+              #  style: x-custom
               - name: schema-nullable-array
                 in: query
                 explode: false
@@ -155,8 +155,8 @@ defmodule ApicalTest.Parameters.QueryTest do
       """,
       root: "/",
       controller: ApicalTest.Parameters.QueryTest,
-      content_type: "application/yaml",
-      styles: [{"x-custom", {__MODULE__, :x_custom}}]
+      content_type: "application/yaml"
+      # styles: [{"x-custom", {__MODULE__, :x_custom}}]
     )
 
     def x_custom("foo"), do: 47
@@ -165,6 +165,8 @@ defmodule ApicalTest.Parameters.QueryTest do
   use ApicalTest.ConnCase
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
+
+  test "restore custom style"
 
   for ops <- ~w(queryParamRequired queryParamOptional)a do
     def unquote(ops)(conn, params) do
@@ -253,6 +255,13 @@ defmodule ApicalTest.Parameters.QueryTest do
                |> json_response(200)
     end
 
+    test "form works with empty", %{conn: conn} do
+      assert %{"style-form-array" => []} =
+               conn
+               |> get("/optional/?style-form-array=")
+               |> json_response(200)
+    end
+
     test "default unexploded works", %{conn: conn} do
       assert %{"style-default-commaDelimited-array" => ["foo", "bar"]} =
                conn
@@ -267,6 +276,13 @@ defmodule ApicalTest.Parameters.QueryTest do
                |> json_response(200)
     end
 
+    test "form unexploded works with empty", %{conn: conn} do
+      assert %{"style-form-commaDelimited-array" => []} =
+               conn
+               |> get("/optional/?style-form-commaDelimited-array=")
+               |> json_response(200)
+    end
+
     test "spaceDelimited works with space", %{conn: conn} do
       assert %{"style-spaceDelimited-array" => ["foo", "bar"]} =
                conn
@@ -274,10 +290,24 @@ defmodule ApicalTest.Parameters.QueryTest do
                |> json_response(200)
     end
 
+    test "spaceDelimited works with empty", %{conn: conn} do
+      assert %{"style-spaceDelimited-array" => []} =
+               conn
+               |> get("/optional/?style-spaceDelimited-array=")
+               |> json_response(200)
+    end
+
     test "pipeDelimited works with pipe", %{conn: conn} do
       assert %{"style-pipeDelimited-array" => ["foo", "bar"]} =
                conn
                |> get("/optional/?style-pipeDelimited-array=foo%7Cbar")
+               |> json_response(200)
+    end
+
+    test "pipeDelimited works with empty", %{conn: conn} do
+      assert %{"style-pipeDelimited-array" => []} =
+               conn
+               |> get("/optional/?style-pipeDelimited-array=")
                |> json_response(200)
     end
   end
@@ -306,10 +336,27 @@ defmodule ApicalTest.Parameters.QueryTest do
                |> json_response(200)
     end
 
+    test "odd number of form parameters fails", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation queryParamOptional (in query): comma delimited object parameter `foo,bar,baz` for parameter `style-form-commaDelimited-object` has an odd number of entries",
+                   fn ->
+                     get(conn, "/optional/?style-form-commaDelimited-object=foo,bar,baz")
+                   end
+    end
+
     test "spaceDelimited works with space", %{conn: conn} do
-      assert %{"style-spaceDelimited-object" => %{"foo" => "bar"}} = conn
-      get(conn, "/optional/?style-spaceDelimited-object=foo%20bar")
-      json_response(response, 200)
+      assert %{"style-spaceDelimited-object" => %{"foo" => "bar"}} =
+               conn
+               |> get("/optional/?style-spaceDelimited-object=foo%20bar")
+               |> json_response(200)
+    end
+
+    test "odd number of space delimited parameters fails", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation queryParamOptional (in query): space delimited object parameter `foo%20bar%20baz` for parameter `style-spaceDelimited-object` has an odd number of entries",
+                   fn ->
+                     get(conn, "/optional/?style-spaceDelimited-object=foo%20bar%20baz")
+                   end
     end
 
     test "pipeDelimited works with pipe", %{conn: conn} do
@@ -317,6 +364,14 @@ defmodule ApicalTest.Parameters.QueryTest do
                conn
                |> get("/optional/?style-pipeDelimited-object=foo%7Cbar")
                |> json_response(200)
+    end
+
+    test "odd number of pipe delimited parameters fails", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation queryParamOptional (in query): pipe delimited object parameter `foo%7Cbar%7Cbaz` for parameter `style-pipeDelimited-object` has an odd number of entries",
+                   fn ->
+                     get(conn, "/optional/?style-pipeDelimited-object=foo%7Cbar%7Cbaz")
+                   end
     end
 
     test "deepObject works", %{conn: conn} do
@@ -479,7 +534,7 @@ defmodule ApicalTest.Parameters.QueryTest do
       assert %{"schema-nullable-array" => ["null"]} =
                conn
                |> get(conn, "/optional/?schema-nullable-array=null")
-               |> json_response(response, 200)
+               |> json_response(200)
     end
 
     test "empty array works", %{conn: conn} do
@@ -536,9 +591,11 @@ defmodule ApicalTest.Parameters.QueryTest do
 
   describe "400 errors for parsing problems" do
     test "when a reserved character appears", %{conn: conn} do
-      assert_raise ParameterError, "", fn ->
-        get(conn, "/optional/?schema-string=[")
-      end
+      assert_raise ParameterError,
+                   "Parameter Error in operation queryParamOptional (in query): invalid character [",
+                   fn ->
+                     get(conn, "/optional/?schema-string=[")
+                   end
     end
   end
 end
