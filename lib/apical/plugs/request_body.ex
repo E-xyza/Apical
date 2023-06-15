@@ -76,7 +76,7 @@ defmodule Apical.Plugs.RequestBody do
     Map.put(params, "_json", body_params)
   end
 
-  defp add_validation(operations, version, module, operation_id, media_type_string, media_type, %{
+  defp add_validation(operations, module, version, operation_id, media_type_string, media_type, %{
          "schema" => _schema
        }) do
     fun = {module, validator_name(version, operation_id, media_type_string)}
