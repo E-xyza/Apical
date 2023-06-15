@@ -1,8 +1,7 @@
 defmodule Apical.Parser.Style do
   @moduledoc false
 
-  # TODO: The API for this module needs to be revised once we know better what
-  # is in common between path, cookie, and header parameters
+  alias Apical.Parser.Marshal
 
   def parse(value, key, :simple, type, explode?) do
     cond do
@@ -34,6 +33,8 @@ defmodule Apical.Parser.Style do
                  "comma delimited object parameter `#{value}` for parameter `#{key}` has a malformed entry: `#{item}`"}
             end
         end
+      true ->
+        {:ok, value}
     end
   end
 
