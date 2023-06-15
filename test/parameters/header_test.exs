@@ -80,6 +80,10 @@ defmodule ApicalTest.Parameters.HeaderTest do
                 in: header
                 schema:
                   type: number
+              - name: schema-multitype
+                in: header
+                schema:
+                  type: [integer, number, string, "null", boolean]
       """,
       root: "/",
       controller: ApicalTest.Parameters.HeaderTest,

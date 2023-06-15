@@ -533,7 +533,7 @@ defmodule ApicalTest.Parameters.QueryTest do
     test "setting null will be treated as an array element", %{conn: conn} do
       assert %{"schema-nullable-array" => ["null"]} =
                conn
-               |> get(conn, "/optional/?schema-nullable-array=null")
+               |> get("/optional/?schema-nullable-array=null")
                |> json_response(200)
     end
 
