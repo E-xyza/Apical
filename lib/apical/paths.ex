@@ -38,7 +38,9 @@ defmodule Apical.Paths do
 
     verb_pointer = JsonPtr.join(base_pointer, verb)
     verb = Map.fetch!(@verb_mapping, verb)
-    controller = resolve_controller(operation_id, opts)
+
+    tags = Map.get(operation, "tags", [])
+    controller = resolve_controller(operation_id, tags, opts)
     operation_pipeline = :"#{version}-#{operation_id}"
     # TODO: resolve function using operationId options
     function = String.to_atom(operation_id)
@@ -163,7 +165,7 @@ defmodule Apical.Paths do
     )
   end
 
-  defp resolve_controller(operation_id, opts) do
+  defp resolve_controller(operation_id, tags, opts) do
     operation_id = String.to_atom(operation_id)
 
     controller_opts =
@@ -176,15 +178,24 @@ defmodule Apical.Paths do
       end
 
     by_operation_id = Keyword.get(controller_opts, :by_operation_id, [])
+    by_tags = Keyword.get(controller_opts, :by_tag, [])
 
     cond do
       controller = by_operation_id[operation_id] ->
         controller
 
-      # TODO: controller by tag
+      controller = find_by_tag(by_tags, tags) ->
+        controller
+
       true ->
         Keyword.fetch!(controller_opts, :default)
     end
+  end
+
+  defp find_by_tag(by_tags, tags) do
+    Enum.find_value(tags, fn tag ->
+      Keyword.get(by_tags, String.to_atom(tag))
+    end)
   end
 
   require Pegasus

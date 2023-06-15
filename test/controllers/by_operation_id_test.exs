@@ -20,6 +20,7 @@ defmodule ApicalTest.Parameters.ByOperationIdTest do
         "/tagged":
           get:
             operationId: tagged
+            tags: [tag]
             responses:
               "200":
                 description: OK
@@ -38,7 +39,7 @@ defmodule ApicalTest.Parameters.ByOperationIdTest do
           untagged: ApicalTest.Parameters.ByOperationIdTest.OperationId
         ],
         by_tag: [
-          tagged: ApicalTest.Parameters.ByOperationIdTest.Tagged
+          tag: ApicalTest.Parameters.ByOperationIdTest.Unimplemented
         ]
       ],
       content_type: "application/yaml"
@@ -49,12 +50,10 @@ defmodule ApicalTest.Parameters.ByOperationIdTest do
     use Phoenix.Controller
     alias Plug.Conn
 
-    def tagged(conn, _param) do
-      Conn.resp(conn, 200, "tagged")
-    end
-
-    def untagged(conn, _param) do
-      Conn.resp(conn, 200, "untagged")
+    for operation <- ~w(tagged untagged) do
+      def unquote(:"#{operation}")(conn, _param) do
+        Conn.resp(conn, 200, unquote(operation))
+      end
     end
   end
 
