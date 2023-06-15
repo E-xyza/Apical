@@ -6,6 +6,6 @@ defmodule Apical.Plugs.SetVersion do
   def init(version), do: version
 
   def call(conn, version) do
-    Conn.assign(conn, :version, version)
+    Conn.assign(conn, :api_version, version)
   end
 end

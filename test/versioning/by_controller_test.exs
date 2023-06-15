@@ -24,11 +24,9 @@ defmodule ApicalTest.Versioning.ByControllerTest do
               "200":
                 description: OK
       """,
-      controller: [
-        by_operation_id: [
-          sharedOp: ApicalTest.Versioning.ByControllerTest.SharedController,
-          forkedOp: ApicalTest.Versioning.ByControllerTest.V1.Controller
-        ]
+      operation_ids: [
+        sharedOp: [controller: ApicalTest.Versioning.ByControllerTest.SharedController],
+        forkedOp: [controller: ApicalTest.Versioning.ByControllerTest.V1.Controller]
       ],
       content_type: "application/yaml"
     )
@@ -53,12 +51,9 @@ defmodule ApicalTest.Versioning.ByControllerTest do
               "200":
                 description: OK
       """,
-      dump: true,
-      controller: [
-        by_operation_id: [
-          sharedOp: ApicalTest.Versioning.ByControllerTest.SharedController,
-          forkedOp: ApicalTest.Versioning.ByControllerTest.V2.Controller
-        ]
+      operation_ids: [
+        sharedOp: [controller: ApicalTest.Versioning.ByControllerTest.SharedController],
+        forkedOp: [controller: ApicalTest.Versioning.ByControllerTest.V2.Controller]
       ],
       content_type: "application/yaml"
     )

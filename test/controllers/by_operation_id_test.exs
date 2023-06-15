@@ -32,15 +32,13 @@ defmodule ApicalTest.Parameters.ByOperationIdTest do
                 description: OK
       """,
       root: "/",
-      controller: [
-        ApicalTest.Parameters.ByOperationIdTest,
-        by_operation_id: [
-          tagged: ApicalTest.Parameters.ByOperationIdTest.OperationId,
-          untagged: ApicalTest.Parameters.ByOperationIdTest.OperationId
-        ],
-        by_tag: [
-          tag: ApicalTest.Parameters.ByOperationIdTest.Unimplemented
-        ]
+      controller: ApicalTest.Parameters.ByOperationIdTest,
+      operation_ids: [
+        tagged: [controller: ApicalTest.Parameters.ByOperationIdTest.OperationId],
+        untagged: [controller: ApicalTest.Parameters.ByOperationIdTest.OperationId]
+      ],
+      tags: [
+        tag: [controller: ApicalTest.Parameters.ByOperationIdTest.Unimplemented]
       ],
       content_type: "application/yaml"
     )

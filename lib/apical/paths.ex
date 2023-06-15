@@ -40,12 +40,27 @@ defmodule Apical.Paths do
     verb = Map.fetch!(@verb_mapping, verb)
 
     tags = Map.get(operation, "tags", [])
-    controller = resolve_controller(operation_id, tags, opts)
+    opts = fold_opts(opts, tags, operation_id)
+
     operation_pipeline = :"#{version}-#{operation_id}"
     # TODO: resolve function using operationId options
     function = String.to_atom(operation_id)
 
     plug_opts = Keyword.take(opts, [:styles])
+
+    controller =
+      case Keyword.fetch(opts, :controller) do
+        {:ok, controller} when is_atom(controller) ->
+          controller
+
+        {:ok, controller} ->
+          raise CompileError,
+            description:
+              "invalid controller for operation #{operation_id}, got #{inspect(controller)} (expected a module atom)"
+
+        :error ->
+          raise CompileError, description: "can't find controller for operation #{operation_id}"
+      end
 
     # generate exonerate validators.
     parameter_validators =
@@ -165,37 +180,26 @@ defmodule Apical.Paths do
     )
   end
 
-  defp resolve_controller(operation_id, tags, opts) do
-    operation_id = String.to_atom(operation_id)
+  @folded_opts [:controller]
 
-    controller_opts =
-      case Keyword.fetch(opts, :controller) do
-        {:ok, controller_opts} ->
-          controller_opts
-
-        :error ->
-          raise "No controller specified in options"
-      end
-
-    by_operation_id = Keyword.get(controller_opts, :by_operation_id, [])
-    by_tags = Keyword.get(controller_opts, :by_tag, [])
-
-    cond do
-      controller = by_operation_id[operation_id] ->
-        controller
-
-      controller = find_by_tag(by_tags, tags) ->
-        controller
-
-      true ->
-        Keyword.fetch!(controller_opts, :default)
-    end
+  defp fold_opts(opts, tags, operation_id) do
+    # NB it's totally okay if this process is unoptimized since it
+    # should be running at compile time.
+    tags
+    |> Enum.reverse()
+    |> Enum.reduce(opts, &merge_opts(&2, &1, :tags))
+    |> merge_opts(operation_id, :operation_ids)
   end
 
-  defp find_by_tag(by_tags, tags) do
-    Enum.find_value(tags, fn tag ->
-      Keyword.get(by_tags, String.to_atom(tag))
-    end)
+  defp merge_opts(opts, key, class) do
+    merge_opts =
+      opts
+      |> Keyword.get(class, [])
+      |> Enum.find_value(&if Atom.to_string(elem(&1, 0)) == key, do: elem(&1, 1))
+      |> List.wrap()
+      |> Keyword.take(@folded_opts)
+
+    Keyword.merge(opts, merge_opts)
   end
 
   require Pegasus

@@ -60,11 +60,11 @@ defmodule ApicalTest.Versioning.ByAssignsTest do
     Conn.resp(conn, 200, "shared")
   end
 
-  def forkedOp(conn = %{assigns: %{version: "1.0.0"}}, _param) do
+  def forkedOp(conn = %{assigns: %{api_version: "1.0.0"}}, _param) do
     Conn.resp(conn, 200, "v1")
   end
 
-  def forkedOp(conn = %{assigns: %{version: "2.0.0"}}, _param) do
+  def forkedOp(conn = %{assigns: %{api_version: "2.0.0"}}, _param) do
     Conn.resp(conn, 200, "v2")
   end
 

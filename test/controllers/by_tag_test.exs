@@ -47,12 +47,10 @@ defmodule ApicalTest.Parameters.ByTagTest do
                 description: OK
       """,
       root: "/",
-      controller: [
-        ApicalTest.Parameters.ByTagTest,
-        by_tag: [
-          tag: ApicalTest.Parameters.ByTagTest.Tagged,
-          other: ApicalTest.Parameters.ByTagTest.Unimplemented
-        ]
+      controller: ApicalTest.Parameters.ByTagTest,
+      tags: [
+        tag: [controller: ApicalTest.Parameters.ByTagTest.Tagged],
+        other: [controller: ApicalTest.Parameters.ByTagTest.Unimplemented]
       ],
       content_type: "application/yaml"
     )
