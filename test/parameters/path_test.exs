@@ -292,9 +292,7 @@ defmodule ApicalTest.Parameters.PathTest do
     end
 
     test "it fails (with 404) when not present", %{conn: conn} do
-      assert_raise Phoenix.Router.NoRouteError, fn ->
-        get(conn, "/required/")
-      end
+      assert %{status: 404} = get(conn, "/required/")
     end
   end
 
