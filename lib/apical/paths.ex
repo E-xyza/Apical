@@ -8,8 +8,8 @@ defmodule Apical.Paths do
   def to_routes(root, {path, methods}, version, opts) do
     base_pointer =
       "/paths"
-      |> JsonPointer.from_path()
-      |> JsonPointer.join(path)
+      |> JsonPtr.from_path()
+      |> JsonPtr.join(path)
 
     Enum.map(methods, &to_route(root, path, &1, base_pointer, version, opts))
   end
@@ -36,7 +36,7 @@ defmodule Apical.Paths do
           raise CompileError, description: "path #{path} is not a valid path template"
       end
 
-    verb_pointer = JsonPointer.join(base_pointer, verb)
+    verb_pointer = JsonPtr.join(base_pointer, verb)
     verb = Map.fetch!(@verb_mapping, verb)
     controller = resolve_controller(operation_id, opts)
     operation_pipeline = :"#{version}-#{operation_id}"
@@ -53,7 +53,7 @@ defmodule Apical.Paths do
       |> Enum.with_index()
       |> Enum.flat_map(fn
         {subschema, index} ->
-          pointer = JsonPointer.join(verb_pointer, ["parameters", "#{index}"])
+          pointer = JsonPtr.join(verb_pointer, ["parameters", "#{index}"])
           name = Map.fetch!(subschema, "name")
           fn_name = Parameter.validator_name(version, operation_id, name)
           validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
@@ -65,7 +65,7 @@ defmodule Apical.Paths do
       |> Kernel.||([])
       |> Enum.flat_map(fn
         {mimetype, subschema} ->
-          pointer = JsonPointer.join(verb_pointer, ["requestBody", "content", mimetype])
+          pointer = JsonPtr.join(verb_pointer, ["requestBody", "content", mimetype])
           fn_name = RequestBody.validator_name(version, operation_id, mimetype)
           validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
       end)
@@ -144,8 +144,8 @@ defmodule Apical.Paths do
       if Map.get(body, "schema") do
         schema_pointer =
           pointer
-          |> JsonPointer.join("schema")
-          |> JsonPointer.to_uri()
+          |> JsonPtr.join("schema")
+          |> JsonPtr.to_uri()
           |> to_string
           |> String.trim_leading("#")
 
