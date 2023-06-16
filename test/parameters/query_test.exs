@@ -159,7 +159,7 @@ defmodule ApicalTest.Parameters.QueryTest do
     def x_custom("foo"), do: {:ok, 47}
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 

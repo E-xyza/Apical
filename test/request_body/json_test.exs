@@ -26,7 +26,7 @@ defmodule ApicalTest.RequestBody.JsonTest do
     )
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Parsers.UnsupportedMediaTypeError
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError

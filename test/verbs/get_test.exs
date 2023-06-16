@@ -24,7 +24,7 @@ defmodule ApicalTest.Verbs.GetTest do
     )
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
 
   def testGet(conn, _params) do

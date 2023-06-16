@@ -24,7 +24,7 @@ defmodule ApicalTest.Verbs.PutTest do
     )
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
 
   def testPut(conn, _params) do

@@ -24,7 +24,7 @@ defmodule ApicalTest.Verbs.DeleteTest do
     )
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
 
   def testDelete(conn, _params) do

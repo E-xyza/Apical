@@ -73,7 +73,7 @@ defmodule ApicalTest.Versioning.ByDifferentRoutersTest do
     end
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
 
   def sharedOp(conn, _param) do

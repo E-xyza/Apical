@@ -1,4 +1,4 @@
-defmodule ApicalTest.ConnCase do
+defmodule ApicalTest.EndpointCase do
   use ExUnit.CaseTemplate
 
   using do

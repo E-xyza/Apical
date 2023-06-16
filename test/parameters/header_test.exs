@@ -91,7 +91,7 @@ defmodule ApicalTest.Parameters.HeaderTest do
     )
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 

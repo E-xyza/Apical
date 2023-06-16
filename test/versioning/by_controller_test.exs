@@ -86,7 +86,7 @@ defmodule ApicalTest.Versioning.ByControllerTest do
     end
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
 
   describe "for shared routes" do
     test "v1 routes to shared", %{conn: conn} do

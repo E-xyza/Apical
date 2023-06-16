@@ -67,7 +67,7 @@ defmodule ApicalTest.Parameters.ByTagTest do
     end
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
 
   def default(conn, _param) do

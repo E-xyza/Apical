@@ -264,7 +264,7 @@ defmodule ApicalTest.Parameters.PathTest do
     def x_custom("foo"), do: 47
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 

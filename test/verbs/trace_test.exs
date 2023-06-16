@@ -24,7 +24,7 @@ defmodule ApicalTest.Verbs.TraceTest do
     )
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
 
   def testTrace(conn, _params) do

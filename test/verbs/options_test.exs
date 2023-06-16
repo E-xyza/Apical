@@ -24,7 +24,7 @@ defmodule ApicalTest.Verbs.OptionsTest do
     )
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
 
   def testOptions(conn, _params) do

@@ -103,14 +103,18 @@ defmodule Apical.Plugs.Common do
     ["null", "object"]
   ]
 
-  defp add_style(operations, _in_, parameter = %{"style" => style, "name" => name}, opts) when style not in @builtin_styles do
+  defp add_style(operations, _in_, parameter = %{"style" => style, "name" => name}, opts)
+       when style not in @builtin_styles do
     with {:ok, styles} <- Keyword.fetch(opts, :styles),
          {_, mf_or_mfa} <- List.keyfind(styles, style, 0) do
-
       apply_style(operations, name, mf_or_mfa, Map.get(parameter, "explode"))
     else
       _ ->
-        Tools.assert(false, "custom style `#{style}` needs to have a definition in the `:styles` option", apical: true)
+        Tools.assert(
+          false,
+          "custom style `#{style}` needs to have a definition in the `:styles` option",
+          apical: true
+        )
     end
   end
 
@@ -128,7 +132,12 @@ defmodule Apical.Plugs.Common do
     update_in(operations, [:parser_context, :deep_object_keys], &[name | List.wrap(&1)])
   end
 
-  defp add_style(operations, in_, parameters = %{"name" => name, "schema" => %{"type" => types}}, _opts)
+  defp add_style(
+         operations,
+         in_,
+         parameters = %{"name" => name, "schema" => %{"type" => types}},
+         _opts
+       )
        when types in @collection_types do
     types = List.wrap(types)
 
@@ -194,10 +203,12 @@ defmodule Apical.Plugs.Common do
 
   defp apply_style(operations, name, mf_or_mfa, explode) when is_tuple(mf_or_mfa) do
     explode = List.wrap(explode)
-    style = case mf_or_mfa do
-      {m, f} -> {m, f, explode}
-      {m, f, a} -> {m, f, explode ++ a}
-    end
+
+    style =
+      case mf_or_mfa do
+        {m, f} -> {m, f, explode}
+        {m, f, a} -> {m, f, explode ++ a}
+      end
 
     put_in(operations, [:parser_context, name, :style], style)
   end

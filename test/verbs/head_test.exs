@@ -24,7 +24,7 @@ defmodule ApicalTest.Verbs.HeadTest do
     )
   end
 
-  use ApicalTest.ConnCase
+  use ApicalTest.EndpointCase
   alias Plug.Conn
 
   def testHead(conn, _params) do
