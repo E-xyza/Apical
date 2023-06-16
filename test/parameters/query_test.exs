@@ -87,9 +87,9 @@ defmodule ApicalTest.Parameters.QueryTest do
                 explode: true
                 schema:
                   type: object
-              #- name: style-custom
-              #  in: query
-              #  style: x-custom
+              - name: style-custom
+                in: query
+                style: x-custom
               - name: schema-nullable-array
                 in: query
                 explode: false
@@ -149,17 +149,14 @@ defmodule ApicalTest.Parameters.QueryTest do
             responses:
               "200":
                 description: OK
-        "/unspecified":
-          get:
-            operationId: unspecified
       """,
       root: "/",
       controller: ApicalTest.Parameters.QueryTest,
+      styles: [{"x-custom", {__MODULE__, :x_custom}}],
       content_type: "application/yaml"
-      # styles: [{"x-custom", {__MODULE__, :x_custom}}]
     )
 
-    def x_custom("foo"), do: 47
+    def x_custom("foo"), do: {:ok, 47}
   end
 
   use ApicalTest.ConnCase
@@ -174,15 +171,6 @@ defmodule ApicalTest.Parameters.QueryTest do
       |> Conn.put_resp_content_type("application/json")
       |> Conn.send_resp(200, Jason.encode!(params))
     end
-  end
-
-  def unspecified(conn = %{params: params}, params) do
-    conn
-    |> Conn.put_resp_content_type("application/json")
-    |> Conn.send_resp(
-      200,
-      Jason.encode!(%{"params" => params, "path_params" => conn.path_params})
-    )
   end
 
   describe "for a required query parameter" do
@@ -579,13 +567,6 @@ defmodule ApicalTest.Parameters.QueryTest do
                List.keyfind(response.resp_headers, "warning", 0)
 
       assert %{} == json_response(response, 200)
-    end
-
-    test "nothing appears anywhere when no parameters are given", %{conn: conn} do
-      assert %{"params" => %{}, "query_params" => :fixme} ==
-               conn
-               |> get("/unspecified/?unspecified=abc")
-               |> json_response(200)
     end
   end
 

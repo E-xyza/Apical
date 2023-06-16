@@ -238,11 +238,10 @@ defmodule Apical.Parser.Query do
 
   defp parse_kv(string, kv_spec) do
     case kv_spec do
-      %{style: {module, fun}} ->
-        apply(module, fun, [string])
-
       %{style: {module, fun, args}} ->
-        apply(module, fun, [string | args])
+        case apply(module, fun, [string | args]) do
+          {:ok, result} -> result
+        end
 
       %{type: types} ->
         Marshal.as_type(string, types)

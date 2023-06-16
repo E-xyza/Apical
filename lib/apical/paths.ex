@@ -180,7 +180,7 @@ defmodule Apical.Paths do
     )
   end
 
-  @folded_opts [:controller]
+  @folded_opts ~w(controller styles)a
 
   defp fold_opts(opts, tags, operation_id) do
     # NB it's totally okay if this process is unoptimized since it

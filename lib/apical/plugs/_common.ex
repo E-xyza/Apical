@@ -5,7 +5,6 @@ defmodule Apical.Plugs.Common do
   alias Plug.Conn
   alias Apical.Tools
   alias Apical.Plugs.Query
-  alias Apical.Plugs.Parameter
 
   def init([in_, module, version, operation_id, parameters, plug_opts]) do
     operations =
@@ -30,7 +29,7 @@ defmodule Apical.Plugs.Common do
       |> add_if_required(parameter)
       |> add_if_deprecated(parameter)
       |> add_type(parameter)
-      |> add_style(in_, parameter)
+      |> add_style(in_, parameter, plug_opts)
       |> add_inner_marshal(parameter)
       |> add_allow_reserved(parameter)
       |> add_validations(module, version, operation_id, parameter)
@@ -82,7 +81,40 @@ defmodule Apical.Plugs.Common do
     |> Enum.sort_by(&Map.fetch!(@type_order, &1))
   end
 
-  defp add_style(operations, in_, parameter = %{"style" => "deepObject", "name" => name}) do
+  @style_to_atom %{
+    "form" => :form,
+    "simple" => :simple,
+    "label" => :label,
+    "matrix" => :matrix,
+    "spaceDelimited" => :space_delimited,
+    "pipeDelimited" => :pipe_delimited
+  }
+
+  @explodable ~w(form simple label matrix)
+
+  @builtin_styles Map.keys(@style_to_atom) ++ ["deepObject"]
+
+  @collection_types [
+    "array",
+    "object",
+    ["array"],
+    ["object"],
+    ["null", "array"],
+    ["null", "object"]
+  ]
+
+  defp add_style(operations, _in_, parameter = %{"style" => style, "name" => name}, opts) when style not in @builtin_styles do
+    with {:ok, styles} <- Keyword.fetch(opts, :styles),
+         {_, mf_or_mfa} <- List.keyfind(styles, style, 0) do
+
+      apply_style(operations, name, mf_or_mfa, Map.get(parameter, "explode"))
+    else
+      _ ->
+        Tools.assert(false, "custom style `#{style}` needs to have a definition in the `:styles` option", apical: true)
+    end
+  end
+
+  defp add_style(operations, in_, parameter = %{"style" => "deepObject", "name" => name}, _opts) do
     Tools.assert(
       in_ == Query,
       "for parameter `#{name}` deepObject style is only supported for query parameters"
@@ -96,16 +128,7 @@ defmodule Apical.Plugs.Common do
     update_in(operations, [:parser_context, :deep_object_keys], &[name | List.wrap(&1)])
   end
 
-  @collection_types [
-    "array",
-    "object",
-    ["array"],
-    ["object"],
-    ["null", "array"],
-    ["null", "object"]
-  ]
-
-  defp add_style(operations, in_, parameters = %{"name" => name, "schema" => %{"type" => types}})
+  defp add_style(operations, in_, parameters = %{"name" => name, "schema" => %{"type" => types}}, _opts)
        when types in @collection_types do
     types = List.wrap(types)
 
@@ -127,7 +150,7 @@ defmodule Apical.Plugs.Common do
 
         Tools.assert(
           collection in [:array, :object],
-          "for parameter `#{name}`, default (exploded) style requires schema type array or object.  Consider setting `explode: false`",
+          "for parameter `#{name}`, form (exploded) style requires schema type array or object.  Consider setting `explode: false`",
           apical: true
         )
 
@@ -147,7 +170,7 @@ defmodule Apical.Plugs.Common do
     end
   end
 
-  defp add_style(operations, in_, %{"name" => name, "style" => style})
+  defp add_style(operations, in_, %{"name" => name, "style" => style}, _opts)
        when style in ~w(matrix label) do
     Tools.assert(
       in_.style_allowed?(style),
@@ -157,7 +180,7 @@ defmodule Apical.Plugs.Common do
     apply_style(operations, name, style, false)
   end
 
-  defp add_style(operations, _in_, parameters = %{"name" => name}) do
+  defp add_style(operations, _in_, parameters = %{"name" => name}, _opts) do
     style = parameters["style"]
 
     Tools.assert(
@@ -169,16 +192,15 @@ defmodule Apical.Plugs.Common do
     operations
   end
 
-  @style_atom %{
-    "form" => :form,
-    "simple" => :simple,
-    "label" => :label,
-    "matrix" => :matrix,
-    "spaceDelimited" => :space_delimited,
-    "pipeDelimited" => :pipe_delimited
-  }
+  defp apply_style(operations, name, mf_or_mfa, explode) when is_tuple(mf_or_mfa) do
+    explode = List.wrap(explode)
+    style = case mf_or_mfa do
+      {m, f} -> {m, f, explode}
+      {m, f, a} -> {m, f, explode ++ a}
+    end
 
-  @explodable ~w(form simple label matrix)
+    put_in(operations, [:parser_context, name, :style], style)
+  end
 
   defp apply_style(operations, name, style, explode?) do
     unless style in @explodable do
@@ -191,7 +213,7 @@ defmodule Apical.Plugs.Common do
     operations
     |> put_in(
       [:parser_context, name, :style],
-      Map.fetch!(@style_atom, style)
+      Map.fetch!(@style_to_atom, style)
     )
     |> apply_explode(name, explode?)
   end

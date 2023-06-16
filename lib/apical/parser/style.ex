@@ -1,8 +1,6 @@
 defmodule Apical.Parser.Style do
   @moduledoc false
 
-  alias Apical.Parser.Marshal
-
   def parse(value, key, :simple, type, explode?) do
     cond do
       :array in type ->
@@ -33,6 +31,7 @@ defmodule Apical.Parser.Style do
                  "comma delimited object parameter `#{value}` for parameter `#{key}` has a malformed entry: `#{item}`"}
             end
         end
+
       true ->
         {:ok, value}
     end
