@@ -143,6 +143,11 @@ defmodule ApicalTest.Parameters.QueryTest do
                       type: boolean
                   additionalProperties:
                     type: integer
+              - name: schema-number-limit
+                in: query
+                schema:
+                  type: number
+                  minimum: 0
               - name: allow-reserved
                 in: query
                 allowReserved: true
@@ -534,7 +539,18 @@ defmodule ApicalTest.Parameters.QueryTest do
   end
 
   describe "for schema" do
-    test "works"
+    test "number greater than zero works", %{conn: conn} do
+      assert %{"schema-number-limit" => 2} =
+        conn
+        |> get("/optional/?schema-number-limit=2")
+        |> json_response(200)
+    end
+
+    test "number less than zero is rejected", %{conn: conn} do
+      assert_raise ParameterError, "Parameter Error in operation queryParamOptional (in query): value -1.5 at `/` fails schema criterion at `#/paths/~1optional/get/parameters/24/schema/minimum`", fn ->
+        get(conn, "/optional/?schema-number-limit=-1.5")
+      end
+    end
   end
 
   describe "for custom style" do
