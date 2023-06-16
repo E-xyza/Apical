@@ -284,8 +284,6 @@ defmodule ApicalTest.Parameters.PathTest do
     end
   end
 
-  test "for path, when not required, causes compilation error"
-
   describe "for a path parameter" do
     test "it serializes as expected", %{conn: conn} do
       assert %{"required" => "foo"} = json_response(get(conn, "/required/foo"), 200)

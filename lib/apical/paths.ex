@@ -26,11 +26,11 @@ defmodule Apical.Paths do
          opts
        )
        when verb in @verbs do
-    # TODO: check all path substitutions have corresponding parameters.
-    canonical_path =
-      case path(path) do
-        {:ok, canonical, "", _, _, _} ->
-          "#{canonical}"
+
+    {canonical_path, path_parameters} =
+      case path(path, context: %{path_parameters: []}) do
+        {:ok, canonical, "", context, _, _} ->
+          {"#{canonical}", context.path_parameters}
 
         _ ->
           raise CompileError, description: "path #{path} is not a valid path template"
@@ -46,7 +46,10 @@ defmodule Apical.Paths do
     # TODO: resolve function using operationId options
     function = String.to_atom(operation_id)
 
-    plug_opts = Keyword.take(opts, [:styles])
+    plug_opts =
+      opts
+      |> Keyword.take([:styles])
+      |> Keyword.merge(path_parameters: path_parameters, path: path)
 
     controller =
       case Keyword.fetch(opts, :controller) do
@@ -277,6 +280,10 @@ defmodule Apical.Paths do
   )
 
   defp to_colon_form(rest, var, context, _line, _offset) do
-    {rest, var ++ ~C':', context}
+    parameter = var
+    |> Enum.reverse
+    |> IO.iodata_to_binary
+
+    {rest, var ++ ~C':', Map.update!(context, :path_parameters, &[parameter | &1])}
   end
 end

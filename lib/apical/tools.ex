@@ -32,9 +32,9 @@ defmodule Apical.Tools do
     unless condition do
       explained =
         if opts[:apical] do
-          "Apical does not recognize your schema: #{message}"
+          "Your schema violates the Apical requirement #{message}"
         else
-          "Your schema violates OpenAPI: #{message}"
+          "Your schema violates the OpenAPI requirement #{message}"
         end
 
       raise CompileError, description: explained

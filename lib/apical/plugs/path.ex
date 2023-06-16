@@ -6,11 +6,19 @@ defmodule Apical.Plugs.Path do
   alias Apical.Plugs.Common
 
   @impl Plug
-  def init(opts = [_module, _version, operation_id, parameters, _plug_opts]) do
+  def init(opts = [_module, _version, operation_id, parameters, plug_opts]) do
     Enum.each(parameters, fn parameter = %{"name" => name} ->
       Tools.assert(
         parameter["required"],
-        "for parameter #{name} in operationId #{operation_id}: path parameters must be `required: true`"
+        "for parameter `#{name}` in operationId `#{operation_id}`: path parameters must be `required: true`"
+      )
+
+      path_parameters = Keyword.get(plug_opts, :path_parameters, [])
+      path = Keyword.fetch!(plug_opts, :path)
+
+      Tools.assert(
+        name in path_parameters,
+        "that the parameter `#{name}` in operationId `#{operation_id}` exists as a match in its path definition: (got: `#{path}`)"
       )
     end)
 
