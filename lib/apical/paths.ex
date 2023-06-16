@@ -48,7 +48,7 @@ defmodule Apical.Paths do
 
     plug_opts =
       opts
-      |> Keyword.take([:styles])
+      |> Keyword.take(~w(styles nest_all_json)a)
       |> Keyword.merge(path_parameters: path_parameters, path: path)
 
     controller =
@@ -183,7 +183,7 @@ defmodule Apical.Paths do
     )
   end
 
-  @folded_opts ~w(controller styles)a
+  @folded_opts ~w(controller styles nest_all_json)a
 
   defp fold_opts(opts, tags, operation_id) do
     # NB it's totally okay if this process is unoptimized since it

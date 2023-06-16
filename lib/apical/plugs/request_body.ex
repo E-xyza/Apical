@@ -6,7 +6,7 @@ defmodule Apical.Plugs.RequestBody do
   alias Plug.Conn
 
   @impl Plug
-  def init([module, version, operation_id, media_type_string, parameters, _plug_opts]) do
+  def init([module, version, operation_id, media_type_string, parameters, plug_opts]) do
     parsed_media_type =
       case Conn.Utils.media_type(media_type_string) do
         {:ok, type, subtype, params} ->
@@ -17,7 +17,8 @@ defmodule Apical.Plugs.RequestBody do
             description: "invalid media type in router definition: #{media_type_string}"
       end
 
-    %{}
+    plug_opts
+    |> Map.new()
     |> add_validation(
       module,
       version,
@@ -42,10 +43,13 @@ defmodule Apical.Plugs.RequestBody do
     with {:ok, body, conn} <- Conn.read_body(conn),
          # NB: this code will change
          body_params = Jason.decode!(body) do
+
+      should_nest_json = Map.get(operations, :nest_all_json, false)
+
       conn
       |> validate!(body_params, content_type_string, content_type, operations)
       |> Map.replace!(:body_params, body_params)
-      |> Map.update!(:params, &update_params(&1, body_params, false))
+      |> Map.update!(:params, &update_params(&1, body_params, should_nest_json))
     else
       {:error, _} -> raise "fatal error"
     end

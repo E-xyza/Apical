@@ -19,10 +19,21 @@ defmodule ApicalTest.RequestBody.JsonTest do
                 "application/json":
                   schema:
                     type: object
+        "/nest_all_json":
+          post:
+            operationId: nest_all_json
+            requestBody:
+              content:
+                "application/json":
+                  schema:
+                    type: object
       """,
       root: "/",
       controller: ApicalTest.RequestBody.JsonTest,
-      content_type: "application/yaml"
+      content_type: "application/yaml",
+      operation_ids: [
+        nest_all_json: [nest_all_json: true]
+      ]
     )
   end
 
@@ -31,7 +42,7 @@ defmodule ApicalTest.RequestBody.JsonTest do
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
-  for ops <- ~w(requestBodyJsonObject requestBodyJsonArray)a do
+  for ops <- ~w(requestBodyJsonObject requestBodyJsonArray nest_all_json)a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -74,6 +85,11 @@ defmodule ApicalTest.RequestBody.JsonTest do
   end
 
   describe "object with nest_all_json option" do
-    test "nests the json"
+    test "nests the json in the _json field", %{conn: conn} do
+      assert %{"_json" => %{"foo" => "bar"}} =
+        conn
+        |> do_post("/nest_all_json", %{"foo" => "bar"})
+        |> json_response(200)
+    end
   end
 end
