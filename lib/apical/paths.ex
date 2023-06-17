@@ -4,6 +4,7 @@ defmodule Apical.Paths do
 
   alias Apical.Plugs.Parameter
   alias Apical.Plugs.RequestBody
+  alias Apical.Tools
 
   def to_routes(root, {path, methods}, version, opts) do
     base_pointer =
@@ -122,6 +123,8 @@ defmodule Apical.Paths do
     parameters
     |> Enum.group_by(& &1["in"])
     |> Enum.map(fn {location, parameter_opts} ->
+      verify_not_form_exploded_object!(parameter_opts, operation_id)
+
       case Map.fetch(@query_mappings, location) do
         {:ok, plug} ->
           quote do
@@ -139,6 +142,25 @@ defmodule Apical.Paths do
   end
 
   defp parameter_plugs(_, _, _), do: []
+
+  defp verify_not_form_exploded_object!(parameter_opts, operation_id) do
+    Enum.each(parameter_opts, fn
+      %{
+        "explode" => true,
+        "style" => "form",
+        "schema" => %{"type" => type_or_types},
+        "name" => name
+      } ->
+        Tools.assert(
+          "object" not in List.wrap(type_or_types),
+          "for parameter `#{name}` in operation `#{operation_id}`: form exploded parameters may not be objects",
+          apical: true
+        )
+
+      _ ->
+        :ok
+    end)
+  end
 
   defp request_body_plugs(
          %{"requestBody" => %{"content" => content}, "operationId" => operation_id},

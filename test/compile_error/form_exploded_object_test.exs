@@ -1,9 +1,9 @@
-defmodule ApicalTest.CompileError.UnrequiredPathParameterTest do
+defmodule ApicalTest.CompileError.FormExplodedObjectTest do
   use ExUnit.Case, async: true
 
   fails =
     quote do
-      defmodule UnrequiredPathParameterFails do
+      defmodule FormExplodedObjectFailsTest do
         require Apical
         use Phoenix.Router
 
@@ -11,15 +11,20 @@ defmodule ApicalTest.CompileError.UnrequiredPathParameterTest do
           """
           openapi: 3.1.0
           info:
-            title: UnrequiredPathParameterTest
+            title: NonexistentPathParameterTest
             version: 1.0.0
           paths:
-            "/{parameter}":
+            "/":
               get:
                 operationId: fails
                 parameters:
                   - name: parameter
-                    in: path
+                    required: true
+                    in: query
+                    style: form
+                    explode: true
+                    schema:
+                      type: object
                 responses:
                   "200":
                     description: OK
@@ -32,9 +37,9 @@ defmodule ApicalTest.CompileError.UnrequiredPathParameterTest do
 
   @attempt_compile fails
 
-  test "unrequired path parameter raises compile error" do
+  test "nonexistent path parameter raises compile error" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement for parameter `parameter` in operation `fails`: path parameters must be `required: true`",
+                 " Your schema violates the Apical requirement for parameter `parameter` in operation `fails`: form exploded parameters may not be objects",
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

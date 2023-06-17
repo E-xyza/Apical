@@ -25,7 +25,8 @@ defmodule ApicalTest.CompileError.NonexistentPathParameterTest do
                   "200":
                     description: OK
           """,
-          controller: Undefined
+          controller: Undefined,
+          content_type: "application/yaml"
         )
       end
     end
@@ -34,7 +35,7 @@ defmodule ApicalTest.CompileError.NonexistentPathParameterTest do
 
   test "nonexistent path parameter raises compile error" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement that the parameter `parameter` in operationId `fails` exists as a match in its path definition: (got: `/`)",
+                 " Your schema violates the OpenAPI requirement that the parameter `parameter` in operation `fails` exists as a match in its path definition: (got: `/`)",
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end
