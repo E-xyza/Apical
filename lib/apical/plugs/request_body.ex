@@ -43,7 +43,6 @@ defmodule Apical.Plugs.RequestBody do
     with {:ok, body, conn} <- Conn.read_body(conn),
          # NB: this code will change
          body_params = Jason.decode!(body) do
-
       should_nest_json = Map.get(operations, :nest_all_json, false)
 
       conn
@@ -87,6 +86,8 @@ defmodule Apical.Plugs.RequestBody do
 
     Map.update(operations, :validations, %{media_type => fun}, &Map.put(&1, media_type, fun))
   end
+
+  defp add_validation(operations, _, _, _, _, _, _), do: operations
 
   defp validate!(conn, body_params, content_type_string, content_type, %{validations: validations}) do
     {module, fun} = fetch_validation!(validations, content_type_string, content_type)

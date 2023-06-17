@@ -26,7 +26,6 @@ defmodule Apical.Paths do
          opts
        )
        when verb in @verbs do
-
     {canonical_path, path_parameters} =
       case path(path, context: %{path_parameters: []}) do
         {:ok, canonical, "", context, _, _} ->
@@ -280,9 +279,10 @@ defmodule Apical.Paths do
   )
 
   defp to_colon_form(rest, var, context, _line, _offset) do
-    parameter = var
-    |> Enum.reverse
-    |> IO.iodata_to_binary
+    parameter =
+      var
+      |> Enum.reverse()
+      |> IO.iodata_to_binary()
 
     {rest, var ++ ~C':', Map.update!(context, :path_parameters, &[parameter | &1])}
   end

@@ -40,6 +40,8 @@ defmodule Apical.Exceptions.ParameterError do
         string -> ".\n#{string}"
       end
 
-    "value #{inspect(exception.error_value)} at `#{exception.instance_location}` fails schema criterion at `#{exception.absolute_keyword_location}`#{etc}"
+    json_value = Jason.encode!(exception.error_value)
+
+    "value `#{json_value}` at `#{exception.instance_location}` fails schema criterion at `#{exception.absolute_keyword_location}`#{etc}"
   end
 end

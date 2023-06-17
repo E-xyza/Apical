@@ -291,7 +291,7 @@ defmodule ApicalTest.Parameters.CookieTest do
 
     test "string fails", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation cookieParamOptional (in cookie): value \"foo\" at `/` fails schema criterion at `#/paths/~1optional/get/parameters/10/schema/type`",
+                   "Parameter Error in operation cookieParamOptional (in cookie): value `\"foo\"` at `/` fails schema criterion at `#/paths/~1optional/get/parameters/10/schema/type`",
                    fn ->
                      conn
                      |> put_req_cookie("schema-number", "foo")

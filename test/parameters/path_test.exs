@@ -536,7 +536,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "other string fails", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation pathParamMarshalBoolean (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1marshal~1boolean~1%7Bboolean%7D/get/parameters/0/schema/type`",
+                   "Parameter Error in operation pathParamMarshalBoolean (in path): value `\"not-a-boolean\"` at `/` fails schema criterion at `#/paths/~1marshal~1boolean~1%7Bboolean%7D/get/parameters/0/schema/type`",
                    fn ->
                      get(conn, "/marshal/boolean/not-a-boolean")
                    end
@@ -567,7 +567,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "other string fails", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation pathParamBooleanMatrix (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1style~1boolean-matrix~1%7Bboolean%7D/get/parameters/0/schema/type`",
+                   "Parameter Error in operation pathParamBooleanMatrix (in path): value `\"not-a-boolean\"` at `/` fails schema criterion at `#/paths/~1style~1boolean-matrix~1%7Bboolean%7D/get/parameters/0/schema/type`",
                    fn ->
                      get(conn, "/style/boolean-matrix/;boolean=not-a-boolean")
                    end
@@ -591,7 +591,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "other string fails", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation pathParamBooleanLabel (in path): value \"not-a-boolean\" at `/` fails schema criterion at `#/paths/~1style~1boolean-label~1%7Bboolean%7D/get/parameters/0/schema/type`",
+                   "Parameter Error in operation pathParamBooleanLabel (in path): value `\"not-a-boolean\"` at `/` fails schema criterion at `#/paths/~1style~1boolean-label~1%7Bboolean%7D/get/parameters/0/schema/type`",
                    fn ->
                      get(conn, "/style/boolean-label/.not-a-boolean")
                    end

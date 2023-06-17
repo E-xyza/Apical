@@ -302,7 +302,7 @@ defmodule ApicalTest.Parameters.HeaderTest do
 
     test "string fails", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation headerParamOptional (in header): value \"foo\" at `/` fails schema criterion at `#/paths/~1optional/get/parameters/10/schema/type`",
+                   "Parameter Error in operation headerParamOptional (in header): value `\"foo\"` at `/` fails schema criterion at `#/paths/~1optional/get/parameters/10/schema/type`",
                    fn ->
                      conn
                      |> Conn.put_req_header("schema-number", "foo")
