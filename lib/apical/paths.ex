@@ -48,7 +48,7 @@ defmodule Apical.Paths do
 
     plug_opts =
       opts
-      |> Keyword.take(~w(styles nest_all_json)a)
+      |> Keyword.take(~w(styles parameters nest_all_json)a)
       |> Keyword.merge(path_parameters: path_parameters, path: path)
 
     controller =
@@ -120,7 +120,6 @@ defmodule Apical.Paths do
          version,
          plug_opts
        ) do
-
     verify_no_duplicate_parameters!(parameters, operation_id)
 
     parameters
@@ -153,6 +152,7 @@ defmodule Apical.Paths do
           name not in so_far,
           "for operation `#{operation_id}`: the parameter `#{name}` is not unique"
         )
+
         MapSet.put(so_far, name)
     end)
   end
@@ -218,7 +218,7 @@ defmodule Apical.Paths do
     )
   end
 
-  @folded_opts ~w(controller styles nest_all_json)a
+  @folded_opts ~w(controller styles parameters nest_all_json)a
 
   defp fold_opts(opts, tags, operation_id) do
     # NB it's totally okay if this process is unoptimized since it
@@ -237,7 +237,7 @@ defmodule Apical.Paths do
       |> List.wrap()
       |> Keyword.take(@folded_opts)
 
-    Keyword.merge(opts, merge_opts)
+    Tools.deepmerge(opts, merge_opts)
   end
 
   require Pegasus

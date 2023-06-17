@@ -90,6 +90,13 @@ defmodule ApicalTest.Parameters.QueryTest do
               - name: style-custom
                 in: query
                 style: x-custom
+              - name: style-custom-explode
+                in: query
+                explode: true
+                style: x-custom
+              - name: style-custom-override
+                in: query
+                style: x-custom-override
               - name: schema-nullable-array
                 in: query
                 explode: false
@@ -154,23 +161,46 @@ defmodule ApicalTest.Parameters.QueryTest do
             responses:
               "200":
                 description: OK
+        "/by-operation-parameter":
+          get:
+            operationId: queryParamStyleByOperationParameter
+            parameters:
+              - name: style-custom-override
+                in: query
+                style: x-custom-override
       """,
       root: "/",
       controller: ApicalTest.Parameters.QueryTest,
       styles: [{"x-custom", {__MODULE__, :x_custom}}],
+      parameters: [
+        "style-custom-override": [
+          styles: [{"x-custom-override", {__MODULE__, :x_custom, ["by parameter"]}}]
+        ]
+      ],
+      operation_ids: [
+        queryParamStyleByOperationParameter: [
+          parameters: [
+            "style-custom-override": [
+              styles: [{"x-custom-override", {__MODULE__, :x_custom, ["by operation parameter"]}}]
+            ]
+          ]
+        ]
+      ],
       content_type: "application/yaml"
     )
 
-    def x_custom("foo"), do: {:ok, 47}
+    def x_custom("ok"), do: {:ok, 47}
+    def x_custom("error_message"), do: {:error, "message"}
+    def x_custom("error_list"), do: {:error, message: "list"}
+    def x_custom(_, true), do: {:ok, "explode"}
+    def x_custom(_, level), do: {:ok, level}
   end
 
   use ApicalTest.EndpointCase
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
-  test "restore custom style"
-
-  for ops <- ~w(queryParamRequired queryParamOptional)a do
+  for ops <- ~w(queryParamRequired queryParamOptional queryParamStyleByOperationParameter)a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -548,7 +578,7 @@ defmodule ApicalTest.Parameters.QueryTest do
 
     test "number less than zero is rejected", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation queryParamOptional (in query): value `-1.5` at `/` fails schema criterion at `#/paths/~1optional/get/parameters/24/schema/minimum`",
+                   "Parameter Error in operation queryParamOptional (in query): value `-1.5` at `/` fails schema criterion at `#/paths/~1optional/get/parameters/26/schema/minimum`",
                    fn ->
                      get(conn, "/optional/?schema-number-limit=-1.5")
                    end
@@ -556,14 +586,45 @@ defmodule ApicalTest.Parameters.QueryTest do
   end
 
   describe "for custom style" do
-    test "content is overloadable", %{conn: conn} do
+    test "content is overloadable with marshalling", %{conn: conn} do
       assert %{"style-custom" => 47} =
                conn
-               |> get("/optional/?style-custom=foo")
+               |> get("/optional/?style-custom=ok")
                |> json_response(200)
     end
 
-    test "override can error"
+    test "content can error with a message", %{conn: conn} do
+      assert_raise ParameterError, "Parameter Error in operation queryParamOptional (in query): custom parser for style `x-custom` in property `style-custom` failed: message", fn ->
+        get(conn, "/optional/?style-custom=error_message")
+      end
+    end
+
+    test "content can error with a keywordlist", %{conn: conn} do
+      assert_raise ParameterError, "Parameter Error in operation queryParamOptional (in query): custom parser for style `x-custom` in property `style-custom` failed: list", fn ->
+        get(conn, "/optional/?style-custom=error_list")
+      end
+    end
+
+    test "content can error exploded", %{conn: conn} do
+      assert %{"style-custom-explode" => "explode"} =
+        conn
+        |> get("/optional/?style-custom-explode=ok")
+        |> json_response(200)
+    end
+
+    test "content can be custom styled at the parameter level", %{conn: conn} do
+      assert %{"style-custom-override" => "by parameter"} =
+        conn
+        |> get("/optional/?style-custom-override=ok")
+        |> json_response(200)
+    end
+
+    test "content can be custom styled at the operation/parameter level", %{conn: conn} do
+      assert %{"style-custom-override" => "by operation parameter"} =
+        conn
+        |> get("/by-operation-parameter/?style-custom-override=ok")
+        |> json_response(200)
+    end
   end
 
   describe "for allowReserved" do

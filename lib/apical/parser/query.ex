@@ -114,7 +114,7 @@ defmodule Apical.Parser.Query do
   def parse(string, context) do
     case parse_query(string, context: context) do
       {:ok, _, _, result = %{odd_object: true}, _, _} ->
-        {:error, {:odd_object, result.key, result.this}}
+        {:error, :odd_object, result.key, result.this}
 
       {:ok, result, "", context, _, _} ->
         query_parameters =
@@ -132,8 +132,11 @@ defmodule Apical.Parser.Query do
         end
 
       {:error, "expected end of string", char, _, _, _} ->
-        {:error, char}
+        {:error, :misparse, char}
     end
+  catch
+    # TODO: assess if this can be done without a catch
+    custom_error = {:error, :custom, _, _} -> custom_error
   end
 
   defp merge_deep_objects(collected_parameters, context = %{deep_objects: objects}) do
@@ -191,7 +194,7 @@ defmodule Apical.Parser.Query do
             context
             |> get_in([:exploded_arrays, key])
             |> List.wrap()
-            |> List.insert_at(0, parse_kv(value, Map.get(context, key)))
+            |> List.insert_at(0, parse_kv(value, key, Map.get(context, key)))
 
           new_exploded_arrays =
             context
@@ -200,11 +203,11 @@ defmodule Apical.Parser.Query do
 
           {rest_str, rest, Map.put(context, :exploded_arrays, new_exploded_arrays)}
         else
-          {rest_str, [{key, parse_kv(value, Map.get(context, key))} | rest], context}
+          {rest_str, [{key, parse_kv(value, key, Map.get(context, key))} | rest], context}
         end
 
       _ ->
-        {rest_str, [{key, parse_kv(value, Map.get(context, key))} | rest], context}
+        {rest_str, [{key, parse_kv(value, key, Map.get(context, key))} | rest], context}
     end
   end
 
@@ -236,11 +239,13 @@ defmodule Apical.Parser.Query do
     end
   end
 
-  defp parse_kv(string, kv_spec) do
+  defp parse_kv(string, property, kv_spec) do
     case kv_spec do
       %{style: {module, fun, args}} ->
         case apply(module, fun, [string | args]) do
           {:ok, result} -> result
+          {:error, message} ->
+            throw {:error, :custom, property, message}
         end
 
       %{type: types} ->

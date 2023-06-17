@@ -103,11 +103,27 @@ defmodule Apical.Plugs.Common do
     ["null", "object"]
   ]
 
+  defp merge_style(opts, name) do
+    to_merge = opts
+    |> Keyword.get(:parameters, [])
+    |> Enum.find_value(fn {k, v} ->
+      if Atom.to_string(k) == name, do: v
+    end)
+    |> List.wrap
+
+    Tools.deepmerge(opts, to_merge)
+  end
+
   defp add_style(operations, _in_, parameter = %{"style" => style, "name" => name}, opts)
        when style not in @builtin_styles do
+
+    opts = merge_style(opts, name)
+
     with {:ok, styles} <- Keyword.fetch(opts, :styles),
          {_, mf_or_mfa} <- List.keyfind(styles, style, 0) do
-      apply_style(operations, name, mf_or_mfa, Map.get(parameter, "explode"))
+      operations
+      |> apply_style(name, mf_or_mfa, Map.get(parameter, "explode"))
+      |> put_in([:parser_context, name, :style_name], style)
     else
       _ ->
         Tools.assert(

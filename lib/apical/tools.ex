@@ -27,6 +27,19 @@ defmodule Apical.Tools do
     end
   end
 
+  def deepmerge(into_list, src_list) when is_list(into_list) do
+    Enum.reduce(src_list, into_list, fn {key, src_value}, so_far->
+      if kv = List.keyfind(into_list, key, 0) do
+        {_k, v} = kv
+        List.keyreplace(so_far, key, 0, {key, deepmerge(v, src_value)})
+      else
+        [{key, src_value} | so_far]
+      end
+    end)
+  end
+
+  def deepmerge(_, src), do: src
+
   def assert(condition, message, opts \\ []) do
     # todo: consider adding jsonschema path information here.
     unless condition do

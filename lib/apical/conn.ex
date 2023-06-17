@@ -6,6 +6,9 @@ defmodule Apical.Conn do
   alias Apical.Parser.Style
   alias Plug.Conn
 
+  require Apical.Exceptions.ParameterError
+  @error_keys Map.keys(Apical.Exceptions.ParameterError.__struct__())
+
   # TODO: rename these to not be "fetch"
 
   defp style_description(:form), do: "comma delimited"
@@ -29,7 +32,7 @@ defmodule Apical.Conn do
         |> Map.put(:query_params, parse_result)
         |> Map.update!(:params, &Map.merge(&1, parse_result))
 
-      {:error, {:odd_object, key, value}} ->
+      {:error, :odd_object, key, value} ->
         style =
           settings
           |> Map.fetch!(key)
@@ -42,11 +45,40 @@ defmodule Apical.Conn do
           reason:
             "#{style} object parameter `#{value}` for parameter `#{key}` has an odd number of entries"
 
-      {:error, char} ->
+      {:error, :custom, property, message} when is_binary(message) ->
+        style_name = settings
+        |> Map.fetch!(property)
+        |> Map.fetch!(:style_name)
+
         raise Apical.Exceptions.ParameterError,
           operation_id: conn.private.operation_id,
           in: :query,
-          misparsed: char
+          reason: "custom parser for style `#{style_name}` in property `#{property}` failed: #{message}"
+
+      {:error, :custom, property, contents} when is_list(contents) ->
+        tail = if message = Keyword.get(contents, :message) do
+          ": #{message}"
+        else
+          ""
+        end
+
+        style_name = settings
+        |> Map.fetch!(property)
+        |> Map.fetch!(:style_name)
+
+        fields =
+          contents
+          |> Keyword.take(@error_keys)
+          |> Keyword.merge(operation_id: conn.private.operation_id, in: :query)
+          |> Keyword.put_new(:reason, "custom parser for style `#{style_name}` in property `#{property}` failed#{tail}")
+
+        raise Apical.Exceptions.ParameterError, fields
+
+      {:error, :misparse, misparse_location} ->
+        raise Apical.Exceptions.ParameterError,
+          operation_id: conn.private.operation_id,
+          in: :query,
+          misparsed: misparse_location
     end
   end
 
