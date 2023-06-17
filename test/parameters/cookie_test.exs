@@ -107,7 +107,7 @@ defmodule ApicalTest.Parameters.CookieTest do
   end
 
   describe "for a required cookie parameter" do
-    test "it serializes into required", %{conn: conn} do
+    test "it serializes", %{conn: conn} do
       assert %{"required" => "foo"} =
                conn
                |> put_req_cookie("required", "foo")
@@ -125,7 +125,7 @@ defmodule ApicalTest.Parameters.CookieTest do
   end
 
   describe "for an optional cookie parameter" do
-    test "it serializes into required", %{conn: conn} do
+    test "it serializes", %{conn: conn} do
       assert %{"optional" => "foo"} =
                conn
                |> put_req_cookie("optional", "foo")

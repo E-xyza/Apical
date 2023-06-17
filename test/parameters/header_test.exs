@@ -104,7 +104,7 @@ defmodule ApicalTest.Parameters.HeaderTest do
   end
 
   describe "for a required header parameter" do
-    test "it serializes into required", %{conn: conn} do
+    test "it serializes", %{conn: conn} do
       assert %{"required" => "foo"} =
                conn
                |> Conn.put_req_header("required", "foo")
@@ -122,7 +122,7 @@ defmodule ApicalTest.Parameters.HeaderTest do
   end
 
   describe "for an optional header parameter" do
-    test "it serializes into required", %{conn: conn} do
+    test "it serializes", %{conn: conn} do
       assert %{"optional" => "foo"} =
                conn
                |> Conn.put_req_header("optional", "foo")

@@ -209,7 +209,7 @@ defmodule ApicalTest.Parameters.QueryTest do
   end
 
   describe "for a required query parameter" do
-    test "it serializes into required", %{conn: conn} do
+    test "it serializes", %{conn: conn} do
       assert %{"required" => "foo"} = json_response(get(conn, "/required/?required=foo"), 200)
     end
 
@@ -223,7 +223,7 @@ defmodule ApicalTest.Parameters.QueryTest do
   end
 
   describe "for an optional query parameter" do
-    test "it serializes into required", %{conn: conn} do
+    test "it serializes", %{conn: conn} do
       assert %{"optional" => "bar"} =
                conn
                |> get("/optional/?optional=bar")

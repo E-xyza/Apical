@@ -254,6 +254,16 @@ defmodule ApicalTest.Parameters.PathTest do
                 style: matrix
                 schema:
                   type: ["null", object]
+        "/schema-limit/{number}":
+          get:
+            operationId: schemaNumber
+            parameters:
+              - name: number
+                in: path
+                required: true
+                schema:
+                  type: number
+                  minimum: 0
       """,
       root: "/",
       controller: ApicalTest.Parameters.PathTest,
@@ -276,6 +286,7 @@ defmodule ApicalTest.Parameters.PathTest do
       pathParamSimpleObject pathParamSimpleObjectExplode
       pathParamMarshalObject pathParamMarshalBoolean pathParamBooleanMatrix pathParamBooleanLabel
       pathParamNumber pathParamMultitype pathParamNullableArray pathParamNullableObject
+      schemaNumber
     )a do
     def unquote(ops)(conn, params) do
       conn
@@ -710,11 +721,24 @@ defmodule ApicalTest.Parameters.PathTest do
     end
   end
 
-  describe "for custom style" do
-    test "works"
+  describe "for schema" do
+    test "number greater than zero works", %{conn: conn} do
+      assert %{"number" => 2} =
+               conn
+               |> get("/schema-limit/2")
+               |> json_response(200)
+    end
+
+    test "number less than zero is rejected", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation schemaNumber (in path): value `-1.5` at `/` fails schema criterion at `#/paths/~1schema-limit~1%7Bnumber%7D/get/parameters/0/schema/minimum`",
+                   fn ->
+                     get(conn, "/schema-limit/-1.5")
+                   end
+    end
   end
 
-  describe "for schema" do
+  describe "for custom style" do
     test "works"
   end
 end
