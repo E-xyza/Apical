@@ -199,8 +199,6 @@ defmodule ApicalTest.Parameters.CookieTest do
   end
 
   describe "for styled cookie parameters with object type" do
-    test "object exploded causes an error."
-
     test "default works", %{conn: conn} do
       assert %{"style-default-object" => %{"foo" => "bar"}} =
                conn

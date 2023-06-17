@@ -52,9 +52,11 @@ defmodule ApicalTest.RequestBody.JsonTest do
   end
 
   use ApicalTest.EndpointCase
+
   alias Plug.Parsers.UnsupportedMediaTypeError
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
+  alias ApicalTest.RequestBody.JsonTest.Endpoint
 
   for ops <- ~w(requestBodyJsonObject requestBodyJsonArray requestBodyGeneric nest_all_json)a do
     def unquote(ops)(conn, params) do
@@ -158,8 +160,15 @@ defmodule ApicalTest.RequestBody.JsonTest do
                    end
     end
 
-    # NOTE: should be a 400 error
-    test "passing data with no content-type"
+    test "passing data with no content-type", %{conn: conn} do
+      assert %{plug_status: 400} = %Apical.Exceptions.MissingContentTypeError{}
+
+      assert_raise Apical.Exceptions.MissingContentTypeError, "missing content-type header", fn ->
+        conn
+        |> Plug.Adapters.Test.Conn.conn(:post, "/object", "{}")
+        |> Endpoint.call(Endpoint.init([]))
+      end
+    end
   end
 
   describe "object with nest_all_json option" do
