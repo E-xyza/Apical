@@ -120,6 +120,9 @@ defmodule Apical.Paths do
          version,
          plug_opts
        ) do
+
+    verify_no_duplicate_parameters!(parameters, operation_id)
+
     parameters
     |> Enum.group_by(& &1["in"])
     |> Enum.map(fn {location, parameter_opts} ->
@@ -142,6 +145,17 @@ defmodule Apical.Paths do
   end
 
   defp parameter_plugs(_, _, _), do: []
+
+  defp verify_no_duplicate_parameters!(parameters, operation_id) do
+    Enum.reduce(parameters, MapSet.new(), fn
+      %{"name" => name}, so_far ->
+        Tools.assert(
+          name not in so_far,
+          "for operation `#{operation_id}`: the parameter `#{name}` is not unique"
+        )
+        MapSet.put(so_far, name)
+    end)
+  end
 
   defp verify_not_form_exploded_object!(parameter_opts, operation_id) do
     Enum.each(parameter_opts, fn

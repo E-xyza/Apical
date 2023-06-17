@@ -11,7 +11,7 @@ defmodule ApicalTest.CompileError.FormExplodedObjectTest do
           """
           openapi: 3.1.0
           info:
-            title: NonexistentPathParameterTest
+            title: FormExplodedObjectTest
             version: 1.0.0
           paths:
             "/":
