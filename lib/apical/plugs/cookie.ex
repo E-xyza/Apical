@@ -4,7 +4,6 @@ defmodule Apical.Plugs.Cookie do
 
   alias Apical.Parser.Query
   alias Apical.Plugs.Common
-  alias Plug.Conn
 
   @impl Plug
   def init(opts) do
@@ -22,7 +21,7 @@ defmodule Apical.Plugs.Cookie do
           {:ok, result, _} ->
             result
 
-          {:error, {:odd_object, key, value}} ->
+          {:error, :odd_object, key, value} ->
             raise Apical.Exceptions.ParameterError,
               operation_id: conn.private.operation_id,
               in: :cookie,
@@ -52,22 +51,6 @@ defmodule Apical.Plugs.Cookie do
     |> Common.warn_deprecated(cookie_params, :cookie, operations)
     |> Common.validate(cookie_params, :cookie, operations)
   end
-
-  defp process_cookie_params(cookies, parser_context) do
-    parser_context
-    |> Map.keys()
-    |> do_process_cookie_params(parser_context, cookies, %{})
-  end
-
-  defp do_process_cookie_params([head | tail], parser_context, cookies, cookie_params)
-       when is_binary(head) do
-  end
-
-  defp do_process_cookie_params([_head | tail], parser_context, cookies, cookie_params) do
-    do_process_cookie_params(tail, parser_context, cookies, cookie_params)
-  end
-
-  defp do_process_cookie_params([], _parser_context, _cookies, cookie_params), do: cookie_params
 
   @impl Apical.Plugs.Parameter
   def name, do: :cookie
