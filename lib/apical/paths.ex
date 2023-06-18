@@ -63,7 +63,22 @@ defmodule Apical.Paths do
 
         :error ->
           raise CompileError, description: "can't find controller for operation #{operation_id}"
-      end
+        end
+
+    extra_plugs =
+      opts
+      |> Keyword.get(:extra_plugs, [])
+      |> Enum.map(fn
+        {plug, plug_opts} ->
+          quote do
+            plug(unquote(plug), unquote(plug_opts))
+          end
+
+        plug ->
+          quote do
+            plug(unquote(plug))
+          end
+      end)
 
     # generate exonerate validators.
     parameter_validators =
@@ -95,6 +110,8 @@ defmodule Apical.Paths do
       unquote(body_validators)
 
       pipeline unquote(operation_pipeline) do
+        unquote(extra_plugs)
+
         plug(Apical.Plugs.SetVersion, unquote(version))
         plug(Apical.Plugs.SetOperationId, unquote(operation_id))
         unquote(parameter_plugs(operation, version, plug_opts))
