@@ -1,7 +1,10 @@
 defmodule Apical.Phoenix do
   alias Apical.Paths
+  alias Apical.Schema
 
   def router(openapi = %{"info" => %{"version" => version}, "paths" => paths}, schema, opts) do
+    Schema.verify_schema_basics!(openapi)
+
     name = Keyword.get_lazy(opts, :name, fn -> hash(openapi) end)
     encode_opts = Keyword.take(opts, ~w(content_type mimetype_mapping)a)
     route_opts = Keyword.put(opts, :name, name)
