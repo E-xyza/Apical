@@ -13,6 +13,13 @@ defmodule Apical.Plugs.Common do
       |> Map.put(:parser_context, %{})
 
     Enum.reduce(parameters, operations, fn parameter = %{"name" => name}, operations_so_far ->
+      merge_opts = plug_opts
+      |> Keyword.get(:parameters, [])
+      |> Enum.find(&(Atom.to_string(elem(&1, 0)) == name))
+      |> List.wrap
+
+      plug_opts = Tools.deepmerge(plug_opts, merge_opts)
+
       Tools.assert(
         !parameter["allowEmptyValue"],
         "allowEmptyValue is not supported for parameters due to ambiguity, see https://github.com/OAI/OpenAPI-Specification/issues/1573",
@@ -104,19 +111,19 @@ defmodule Apical.Plugs.Common do
   ]
 
   defp merge_style(opts, name) do
-    to_merge = opts
-    |> Keyword.get(:parameters, [])
-    |> Enum.find_value(fn {k, v} ->
-      if Atom.to_string(k) == name, do: v
-    end)
-    |> List.wrap
+    to_merge =
+      opts
+      |> Keyword.get(:parameters, [])
+      |> Enum.find_value(fn {k, v} ->
+        if Atom.to_string(k) == name, do: v
+      end)
+      |> List.wrap()
 
     Tools.deepmerge(opts, to_merge)
   end
 
   defp add_style(operations, _in_, parameter = %{"style" => style, "name" => name}, opts)
        when style not in @builtin_styles do
-
     opts = merge_style(opts, name)
 
     with {:ok, styles} <- Keyword.fetch(opts, :styles),

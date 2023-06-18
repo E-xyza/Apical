@@ -1,18 +1,19 @@
 defmodule Apical.Exceptions.ParameterError do
-  defexception [
-    :operation_id,
-    :in,
-    :misparsed,
-    :absolute_keyword_location,
-    :instance_location,
-    :errors,
-    :error_value,
-    :matches,
-    :reason,
-    :required,
-    :ref_trace,
-    plug_status: 400
-  ]
+  @optional_keys ~w(operation_id
+  in
+  misparsed
+  absolute_keyword_location
+  instance_location
+  errors
+  error_value
+  matches
+  reason
+  required
+  ref_trace)a
+
+  defexception @optional_keys ++ [plug_status: 400]
+
+  @struct_keys @optional_keys ++ [:plug_status]
 
   def message(exception = %{reason: reason}) when is_binary(reason) do
     "Parameter Error in operation #{exception.operation_id} (in #{exception.in}): #{reason}"
@@ -24,6 +25,27 @@ defmodule Apical.Exceptions.ParameterError do
 
   def message(exception) do
     "Parameter Error in operation #{exception.operation_id} (in #{exception.in}): invalid character #{exception.misparsed}"
+  end
+
+  def custom_fields_from(operation_id, where, style_name, property, message) when is_binary(message) do
+    custom_fields_from(operation_id, where, style_name, property, message: message)
+  end
+
+  def custom_fields_from(operation_id, where, style_name, property, contents) when is_list(contents) do
+    tail =
+      if message = Keyword.get(contents, :message) do
+        ": #{message}"
+      else
+        ""
+      end
+
+    contents
+    |> Keyword.take(@struct_keys)
+    |> Keyword.merge(operation_id: operation_id, in: where)
+    |> Keyword.put_new(
+      :reason,
+      "custom parser for style `#{style_name}` in property `#{property}` failed#{tail}"
+    )
   end
 
   # TODO: improve this error by turning

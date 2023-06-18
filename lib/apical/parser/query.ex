@@ -243,9 +243,11 @@ defmodule Apical.Parser.Query do
     case kv_spec do
       %{style: {module, fun, args}} ->
         case apply(module, fun, [string | args]) do
-          {:ok, result} -> result
+          {:ok, result} ->
+            result
+
           {:error, message} ->
-            throw {:error, :custom, property, message}
+            throw({:error, :custom, property, message})
         end
 
       %{type: types} ->

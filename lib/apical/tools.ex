@@ -28,7 +28,7 @@ defmodule Apical.Tools do
   end
 
   def deepmerge(into_list, src_list) when is_list(into_list) do
-    Enum.reduce(src_list, into_list, fn {key, src_value}, so_far->
+    Enum.reduce(src_list, into_list, fn {key, src_value}, so_far ->
       if kv = List.keyfind(into_list, key, 0) do
         {_k, v} = kv
         List.keyreplace(so_far, key, 0, {key, deepmerge(v, src_value)})

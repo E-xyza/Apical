@@ -11,7 +11,7 @@ defmodule Apical.Plugs.Query do
 
   @impl Plug
   def call(conn, operations) do
-    conn = Apical.Conn.fetch_query_params(conn, operations.parser_context)
+    conn = Apical.Conn.fetch_query_params!(conn, operations.parser_context)
 
     conn
     |> Common.filter_required(conn.query_params, :query, operations)

@@ -24,7 +24,7 @@ defmodule Apical.Plugs.Header do
       end
     end)
 
-    params = Apical.Conn.fetch_header_params(conn, operations.parser_context)
+    params = Apical.Conn.fetch_header_params!(conn, operations.parser_context)
 
     conn
     |> Map.update!(:params, &Map.merge(&1, params))

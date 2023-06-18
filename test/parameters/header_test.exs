@@ -206,7 +206,7 @@ defmodule ApicalTest.Parameters.HeaderTest do
 
     test "simple errors when an odd number of terms", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
-                   "Parameter Error in operation headerParamOptional (in path): comma delimited object parameter `foo,bar,baz` for parameter `style-simple-object` has an odd number of entries",
+                   "Parameter Error in operation headerParamOptional (in header): comma delimited object parameter `foo,bar,baz` for parameter `style-simple-object` has an odd number of entries",
                    fn ->
                      conn
                      |> Conn.put_req_header("style-simple-object", "foo,bar,baz")

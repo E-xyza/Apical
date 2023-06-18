@@ -27,7 +27,7 @@ defmodule Apical.Plugs.Path do
 
   @impl Plug
   def call(conn, operations) do
-    params = Apical.Conn.fetch_path_params(conn, operations.parser_context)
+    params = Apical.Conn.fetch_path_params!(conn, operations.parser_context)
 
     conn
     |> Map.update!(:params, &Map.merge(&1, params))

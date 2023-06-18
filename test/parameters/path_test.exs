@@ -264,14 +264,65 @@ defmodule ApicalTest.Parameters.PathTest do
                 schema:
                   type: number
                   minimum: 0
+        "/style-custom/{value}":
+          get:
+            operationId: styleCustom
+            parameters:
+              - name: value
+                in: path
+                required: true
+                style: x-custom
+        "/style-custom-explode/{value}":
+          get:
+            operationId: styleCustomExplode
+            parameters:
+              - name: value
+                in: path
+                required: true
+                explode: true
+                style: x-custom
+        "/style-custom-parameter/{custom}":
+          get:
+            operationId: styleCustomParameter
+            parameters:
+              - name: custom
+                in: path
+                required: true
+                style: x-custom
+        "/style-custom-operation-parameter/{custom}":
+          get:
+            operationId: styleCustomOperationParameter
+            parameters:
+              - name: custom
+                in: path
+                required: true
+                style: x-custom
       """,
       root: "/",
       controller: ApicalTest.Parameters.PathTest,
       content_type: "application/yaml",
-      styles: [{"x-custom", {__MODULE__, :x_custom}}]
+      styles: [{"x-custom", {__MODULE__, :x_custom}}],
+      parameters: [
+        custom: [
+          styles: [{"x-custom", {__MODULE__, :x_custom, ["parameter"]}}],
+        ]
+      ],
+      operation_ids: [
+        styleCustomOperationParameter: [
+          parameters: [
+            custom: [
+              styles: [{"x-custom", {__MODULE__, :x_custom, ["operation parameter"]}}],
+            ]
+          ]
+        ]
+      ]
     )
 
-    def x_custom("foo"), do: 47
+    def x_custom("ok"), do: {:ok, 47}
+    def x_custom("error"), do: {:error, "error"}
+    def x_custom("error_list"), do: {:error, message: "list"}
+    def x_custom(_, true), do: {:ok, "explode"}
+    def x_custom(_, payload), do: {:ok, payload}
   end
 
   use ApicalTest.EndpointCase
@@ -286,7 +337,7 @@ defmodule ApicalTest.Parameters.PathTest do
       pathParamSimpleObject pathParamSimpleObjectExplode
       pathParamMarshalObject pathParamMarshalBoolean pathParamBooleanMatrix pathParamBooleanLabel
       pathParamNumber pathParamMultitype pathParamNullableArray pathParamNullableObject
-      schemaNumber
+      schemaNumber styleCustom styleCustomExplode styleCustomParameter styleCustomOperationParameter
     )a do
     def unquote(ops)(conn, params) do
       conn
@@ -739,6 +790,48 @@ defmodule ApicalTest.Parameters.PathTest do
   end
 
   describe "for custom style" do
-    test "works"
+    test "content is overloadable with marshalling", %{conn: conn} do
+      assert %{"value" => 47} =
+               conn
+               |> get("/style-custom/ok")
+               |> json_response(200)
+    end
+
+    test "content can error with a message", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation styleCustom (in path): custom parser for style `x-custom` in property `error` failed: error",
+                   fn ->
+                     get(conn, "/style-custom/error")
+                   end
+    end
+
+    test "content can error with a keywordlist", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation styleCustom (in path): custom parser for style `x-custom` in property `error_list` failed: list",
+                   fn ->
+                     get(conn, "/style-custom/error_list")
+                   end
+    end
+
+    test "content can error exploded", %{conn: conn} do
+      assert %{"value" => "explode"} =
+               conn
+               |> get("/style-custom-explode/ok")
+               |> json_response(200)
+    end
+
+    test "content can be custom styled at the parameter level", %{conn: conn} do
+      assert %{"custom" => "parameter"} =
+               conn
+               |> get("/style-custom-parameter/ok")
+               |> json_response(200)
+    end
+
+    test "content can be custom styled at the operation/parameter level", %{conn: conn} do
+      assert %{"custom" => "operation parameter"} =
+               conn
+               |> get("/style-custom-operation-parameter/ok")
+               |> json_response(200)
+    end
   end
 end

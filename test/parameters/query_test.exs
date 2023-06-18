@@ -594,36 +594,40 @@ defmodule ApicalTest.Parameters.QueryTest do
     end
 
     test "content can error with a message", %{conn: conn} do
-      assert_raise ParameterError, "Parameter Error in operation queryParamOptional (in query): custom parser for style `x-custom` in property `style-custom` failed: message", fn ->
-        get(conn, "/optional/?style-custom=error_message")
-      end
+      assert_raise ParameterError,
+                   "Parameter Error in operation queryParamOptional (in query): custom parser for style `x-custom` in property `style-custom` failed: message",
+                   fn ->
+                     get(conn, "/optional/?style-custom=error_message")
+                   end
     end
 
     test "content can error with a keywordlist", %{conn: conn} do
-      assert_raise ParameterError, "Parameter Error in operation queryParamOptional (in query): custom parser for style `x-custom` in property `style-custom` failed: list", fn ->
-        get(conn, "/optional/?style-custom=error_list")
-      end
+      assert_raise ParameterError,
+                   "Parameter Error in operation queryParamOptional (in query): custom parser for style `x-custom` in property `style-custom` failed: list",
+                   fn ->
+                     get(conn, "/optional/?style-custom=error_list")
+                   end
     end
 
     test "content can error exploded", %{conn: conn} do
       assert %{"style-custom-explode" => "explode"} =
-        conn
-        |> get("/optional/?style-custom-explode=ok")
-        |> json_response(200)
+               conn
+               |> get("/optional/?style-custom-explode=ok")
+               |> json_response(200)
     end
 
     test "content can be custom styled at the parameter level", %{conn: conn} do
       assert %{"style-custom-override" => "by parameter"} =
-        conn
-        |> get("/optional/?style-custom-override=ok")
-        |> json_response(200)
+               conn
+               |> get("/optional/?style-custom-override=ok")
+               |> json_response(200)
     end
 
     test "content can be custom styled at the operation/parameter level", %{conn: conn} do
       assert %{"style-custom-override" => "by operation parameter"} =
-        conn
-        |> get("/by-operation-parameter/?style-custom-override=ok")
-        |> json_response(200)
+               conn
+               |> get("/by-operation-parameter/?style-custom-override=ok")
+               |> json_response(200)
     end
   end
 
