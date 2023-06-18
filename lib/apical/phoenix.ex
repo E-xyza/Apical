@@ -16,8 +16,20 @@ defmodule Apical.Phoenix do
       require Exonerate
       Exonerate.register_resource(unquote(schema), unquote(name), unquote(encode_opts))
 
+      unquote(external_resource(opts))
+
       unquote(routes)
     end
+  end
+
+  defp external_resource(opts) do
+    List.wrap(
+      if file = Keyword.get(opts, :file) do
+        quote do
+          @external_resource unquote(file)
+        end
+      end
+    )
   end
 
   defp hash(openapi) do

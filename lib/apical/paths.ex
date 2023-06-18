@@ -63,7 +63,7 @@ defmodule Apical.Paths do
 
         :error ->
           raise CompileError, description: "can't find controller for operation #{operation_id}"
-        end
+      end
 
     extra_plugs =
       opts
