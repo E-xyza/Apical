@@ -235,7 +235,7 @@ defmodule Apical.Paths do
     )
   end
 
-  @folded_opts ~w(controller styles parameters nest_all_json)a
+  @folded_opts ~w(controller styles parameters extra_plugs nest_all_json)a
 
   defp fold_opts(opts, tags, operation_id) do
     # NB it's totally okay if this process is unoptimized since it

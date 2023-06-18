@@ -10,12 +10,12 @@ defmodule ApicalTest.ExtraPlug.GlobalTest do
       """
       openapi: 3.1.0
       info:
-        title: TestGet
+        title: GlobalTest
         version: 1.0.0
       paths:
-        "/plugged":
+        "/global":
           get:
-            operationId: plugged
+            operationId: global
             responses:
               "200":
                 description: OK
@@ -41,10 +41,10 @@ defmodule ApicalTest.ExtraPlug.GlobalTest do
   end
 
   use ApicalTest.EndpointCase
-  
+
   alias Plug.Conn
 
-  def plugged(conn, _) do
+  def global(conn, _) do
     resp =
       conn.private
       |> Map.take([
@@ -67,9 +67,9 @@ defmodule ApicalTest.ExtraPlug.GlobalTest do
                "extra_module_plug_option" => "module option",
                "extra_local_plug" => "no options",
                "extra_local_plug_option" => "local option"
-             } =
+             } ==
                conn
-               |> get("/plugged")
+               |> get("/global")
                |> json_response(200)
     end
   end
