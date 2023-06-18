@@ -4,15 +4,23 @@ defmodule Apical.Parser.Style do
   def parse(value, key, :simple, type, explode) do
     cond do
       :array in type ->
+        has_null? = :null in type
+
         case value do
           "" -> {:ok, []}
+          "null" when has_null? -> {:ok, nil}
           _ -> {:ok, String.split(value, ",")}
         end
 
       :object in type ->
+        has_null? = :null in type
+
         case value do
           "" ->
             {:ok, %{}}
+
+          "null" when has_null? ->
+            {:ok, nil}
 
           _ ->
             value

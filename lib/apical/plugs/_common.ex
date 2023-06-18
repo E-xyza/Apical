@@ -13,10 +13,11 @@ defmodule Apical.Plugs.Common do
       |> Map.put(:parser_context, %{})
 
     Enum.reduce(parameters, operations, fn parameter = %{"name" => name}, operations_so_far ->
-      merge_opts = plug_opts
-      |> Keyword.get(:parameters, [])
-      |> Enum.find(&(Atom.to_string(elem(&1, 0)) == name))
-      |> List.wrap
+      merge_opts =
+        plug_opts
+        |> Keyword.get(:parameters, [])
+        |> Enum.find(&(Atom.to_string(elem(&1, 0)) == name))
+        |> List.wrap()
 
       plug_opts = Tools.deepmerge(plug_opts, merge_opts)
 

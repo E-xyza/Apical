@@ -27,11 +27,13 @@ defmodule Apical.Exceptions.ParameterError do
     "Parameter Error in operation #{exception.operation_id} (in #{exception.in}): invalid character #{exception.misparsed}"
   end
 
-  def custom_fields_from(operation_id, where, style_name, property, message) when is_binary(message) do
+  def custom_fields_from(operation_id, where, style_name, property, message)
+      when is_binary(message) do
     custom_fields_from(operation_id, where, style_name, property, message: message)
   end
 
-  def custom_fields_from(operation_id, where, style_name, property, contents) when is_list(contents) do
+  def custom_fields_from(operation_id, where, style_name, property, contents)
+      when is_list(contents) do
     tail =
       if message = Keyword.get(contents, :message) do
         ": #{message}"

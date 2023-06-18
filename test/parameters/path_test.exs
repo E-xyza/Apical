@@ -304,14 +304,14 @@ defmodule ApicalTest.Parameters.PathTest do
       styles: [{"x-custom", {__MODULE__, :x_custom}}],
       parameters: [
         custom: [
-          styles: [{"x-custom", {__MODULE__, :x_custom, ["parameter"]}}],
+          styles: [{"x-custom", {__MODULE__, :x_custom, ["parameter"]}}]
         ]
       ],
       operation_ids: [
         styleCustomOperationParameter: [
           parameters: [
             custom: [
-              styles: [{"x-custom", {__MODULE__, :x_custom, ["operation parameter"]}}],
+              styles: [{"x-custom", {__MODULE__, :x_custom, ["operation parameter"]}}]
             ]
           ]
         ]

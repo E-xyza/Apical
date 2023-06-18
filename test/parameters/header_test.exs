@@ -84,6 +84,14 @@ defmodule ApicalTest.Parameters.HeaderTest do
                 in: header
                 schema:
                   type: [integer, number, string, "null", boolean]
+              - name: schema-nullable-array
+                in: header
+                schema:
+                  type: [array, "null"]
+              - name: schema-nullable-object
+                in: header
+                schema:
+                  type: [object, "null"]
       """,
       root: "/",
       controller: ApicalTest.Parameters.HeaderTest,
@@ -361,11 +369,63 @@ defmodule ApicalTest.Parameters.HeaderTest do
     end
   end
 
-  describe "for custom style" do
-    test "works"
+  describe "for nullable array" do
+    test "basic array works", %{conn: conn} do
+      assert %{"schema-nullable-array" => ["foo", "bar"]} =
+               conn
+               |> Conn.put_req_header("schema-nullable-array", "foo,bar")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "setting null will be treated as an null element", %{conn: conn} do
+      assert %{"schema-nullable-array" => nil} =
+               conn
+               |> Conn.put_req_header("schema-nullable-array", "null")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "empty string is empty array", %{conn: conn} do
+      assert %{"schema-nullable-array" => []} =
+               conn
+               |> Conn.put_req_header("schema-nullable-array", "")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+  end
+
+  describe "for nullable object" do
+    test "basic object works", %{conn: conn} do
+      %{"schema-nullable-object" => %{"foo" => "bar"}} =
+        conn
+        |> Conn.put_req_header("schema-nullable-object", "foo,bar")
+        |> get("/optional/")
+        |> json_response(200)
+    end
+
+    test "null object works", %{conn: conn} do
+      %{"schema-nullable-object" => nil} =
+        conn
+        |> Conn.put_req_header("schema-nullable-object", "null")
+        |> get("/optional/")
+        |> json_response(200)
+    end
+
+    test "empty object works", %{conn: conn} do
+      assert %{"schema-nullable-object" => %{}} =
+               conn
+               |> Conn.put_req_header("schema-nullable-object", "")
+               |> get("/optional/")
+               |> json_response(200)
+    end
   end
 
   describe "for schema" do
+    test "works"
+  end
+
+  describe "for custom style" do
     test "works"
   end
 end

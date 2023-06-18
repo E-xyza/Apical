@@ -48,7 +48,13 @@ defmodule Apical.Conn do
           |> Map.fetch!(:style_name)
 
         raise ParameterError,
-              ParameterError.custom_fields_from(conn.private.operation_id, :query, style_name, property, payload)
+              ParameterError.custom_fields_from(
+                conn.private.operation_id,
+                :query,
+                style_name,
+                property,
+                payload
+              )
 
       {:error, :misparse, misparse_location} ->
         raise ParameterError,
@@ -82,8 +88,8 @@ defmodule Apical.Conn do
 
     explode = Map.get(key_settings, :explode)
 
-    with {:ok, parsed} <- Style.parse(value, key, style, type, explode),
-         {:ok, marshalled} <- Marshal.marshal(parsed, key_settings, type) do
+    with {:ok, parsed} <- Style.parse(value, key, style, type, explode) |> dbg(limit: 25),
+         {:ok, marshalled} <- Marshal.marshal(parsed, key_settings, type) |> dbg(limit: 25) do
       {key, marshalled}
     else
       {:error, msg} ->
@@ -93,12 +99,19 @@ defmodule Apical.Conn do
           reason: msg
 
       {:error, :custom, property, payload} ->
-        style_name = settings
-        |> Map.fetch!(key)
-        |> Map.fetch!(:style_name)
+        style_name =
+          settings
+          |> Map.fetch!(key)
+          |> Map.fetch!(:style_name)
 
         raise ParameterError,
-              ParameterError.custom_fields_from(operation_id, where, style_name, property, payload)
+              ParameterError.custom_fields_from(
+                operation_id,
+                where,
+                style_name,
+                property,
+                payload
+              )
     end
   end
 end
