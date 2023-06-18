@@ -97,18 +97,61 @@ defmodule ApicalTest.Parameters.CookieTest do
                 explode: false
                 schema:
                   type: ["null", object]
+              - name: schema-number-limit
+                in: cookie
+                schema:
+                  type: number
+                  minimum: 0
+              - name: style-custom
+                in: cookie
+                style: x-custom
+              - name: style-custom-explode
+                in: cookie
+                style: x-custom
+                explode: true
+              - name: style-custom-override
+                in: cookie
+                style: x-custom
+        "/override":
+          get:
+            operationId: cookieParamOverride
+            parameters:
+              - name: style-custom-override
+                in: cookie
+                style: x-custom
       """,
       root: "/",
       controller: ApicalTest.Parameters.CookieTest,
-      content_type: "application/yaml"
+      content_type: "application/yaml",
+      styles: [{"x-custom", {__MODULE__, :x_custom}}],
+      parameters: [
+        "style-custom-override": [
+          styles: [{"x-custom", {__MODULE__, :x_custom, ["by parameter"]}}]
+        ]
+      ],
+      operation_ids: [
+        cookieParamOverride: [
+          parameters: [
+            "style-custom-override": [
+              styles: [{"x-custom", {__MODULE__, :x_custom, ["by operation parameter"]}}]
+            ]
+          ]
+        ]
+      ]
     )
+
+    def x_custom("ok"), do: {:ok, 47}
+    def x_custom("error_message"), do: {:error, "message"}
+    def x_custom("error_list"), do: {:error, message: "list"}
+    def x_custom(_, true), do: {:ok, "explode"}
+    def x_custom(_, level), do: {:ok, level}
   end
 
   use ApicalTest.EndpointCase
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
-  for ops <- ~w(cookieParamRequired cookieParamOptional)a do
+  for ops <- ~w(cookieParamRequired cookieParamOptional cookieParamOverride)a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -427,10 +470,76 @@ defmodule ApicalTest.Parameters.CookieTest do
   end
 
   describe "for schema" do
-    test "works"
+    test "number greater than zero works", %{conn: conn} do
+      assert %{"schema-number-limit" => 2} =
+               conn
+               |> put_req_cookie("schema-number-limit", "2")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "number less than zero is rejected", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation cookieParamOptional (in cookie): value `-1.5` at `/` fails schema criterion at `#/paths/~1optional/get/parameters/14/schema/minimum`",
+                   fn ->
+                     conn
+                     |> put_req_cookie("schema-number-limit", "-1.5")
+                     |> get("/optional/")
+                   end
+    end
   end
 
   describe "for custom style" do
-    test "works"
+    test "content is overloadable with marshalling", %{conn: conn} do
+      assert %{"style-custom" => 47} =
+               conn
+               |> put_req_cookie("style-custom", "ok")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "content can error with a message", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation cookieParamOptional (in cookie): custom parser for style `x-custom` in property `style-custom` failed: message",
+                   fn ->
+                     conn
+                     |> put_req_cookie("style-custom", "error_message")
+                     |> get("/optional/")
+                   end
+    end
+
+    test "content can error with a keywordlist", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation cookieParamOptional (in cookie): custom parser for style `x-custom` in property `style-custom` failed: list",
+                   fn ->
+                     conn
+                     |> put_req_cookie("style-custom", "error_list")
+                     |> get("/optional/?style-custom=error_list")
+                   end
+    end
+
+    test "content can error exploded", %{conn: conn} do
+      assert %{"style-custom-explode" => "explode"} =
+               conn
+               |> put_req_cookie("style-custom-explode", "ok")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "content can be custom styled at the parameter level", %{conn: conn} do
+      assert %{"style-custom-override" => "by parameter"} =
+               conn
+               |> put_req_cookie("style-custom-override", "ok")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "content can be custom styled at the operation/parameter level", %{conn: conn} do
+      assert %{"style-custom-override" => "by operation parameter"} =
+               conn
+               |> put_req_cookie("style-custom-override", "ok")
+               |> get("/override/")
+               |> json_response(200)
+    end
   end
 end

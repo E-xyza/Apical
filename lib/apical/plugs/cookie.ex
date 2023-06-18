@@ -4,6 +4,7 @@ defmodule Apical.Plugs.Cookie do
 
   alias Apical.Parser.Query
   alias Apical.Plugs.Common
+  alias Apical.Exceptions.ParameterError
 
   @impl Plug
   def init(opts) do
@@ -22,11 +23,26 @@ defmodule Apical.Plugs.Cookie do
             result
 
           {:error, :odd_object, key, value} ->
-            raise Apical.Exceptions.ParameterError,
+            raise ParameterError,
               operation_id: conn.private.operation_id,
               in: :cookie,
               reason:
                 "form object parameter `#{value}` for parameter `#{key}` has an odd number of entries"
+
+          {:error, :custom, key, payload} ->
+            style_name =
+              parser_context
+              |> Map.fetch!(key)
+              |> Map.fetch!(:style_name)
+
+            raise ParameterError,
+                  ParameterError.custom_fields_from(
+                    conn.private.operation_id,
+                    :cookie,
+                    style_name,
+                    key,
+                    payload
+                  )
         end
       else
         nil -> %{}
@@ -40,7 +56,7 @@ defmodule Apical.Plugs.Cookie do
         :ok
 
       missing_cookie ->
-        raise Apical.Exceptions.ParameterError,
+        raise ParameterError,
           operation_id: conn.private.operation_id,
           in: :cookie,
           reason: "required cookie `#{missing_cookie}` not present"

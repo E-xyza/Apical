@@ -304,7 +304,8 @@ defmodule Apical.Parser.Query do
   end
 
   defp finalize_object(rest_str, [{:object, object_list} | rest], context = %{key: key}, _, _) do
-    settings = Map.fetch!(context, key) 
+    settings = Map.fetch!(context, key)
+
     case {object_list, settings} do
       {["null"], %{type: [:null, :object], style: :form}} ->
         {rest_str, [nil | rest], Map.drop(context, [:key, :this])}
