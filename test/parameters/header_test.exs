@@ -122,14 +122,14 @@ defmodule ApicalTest.Parameters.HeaderTest do
       styles: [{"x-custom", {__MODULE__, :x_custom}}],
       parameters: [
         "style-custom-override": [
-          styles: [{"x-custom", {__MODULE__, :x_custom, ["by parameter"]}}],
+          styles: [{"x-custom", {__MODULE__, :x_custom, ["by parameter"]}}]
         ]
       ],
       operation_ids: [
         headerParamOverride: [
           parameters: [
             "style-custom-override": [
-              styles: [{"x-custom", {__MODULE__, :x_custom, ["by operation parameter"]}}],
+              styles: [{"x-custom", {__MODULE__, :x_custom, ["by operation parameter"]}}]
             ]
           ]
         ]

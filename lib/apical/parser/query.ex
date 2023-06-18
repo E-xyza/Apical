@@ -9,7 +9,7 @@ defmodule Apical.Parser.Query do
     # guards
     empty            <- ""
     ARRAY_GUARD      <- empty
-    COMMA_GUARD      <- empty
+    FORM_GUARD       <- empty
     SPACE_GUARD      <- empty
     PIPE_GUARD       <- empty
     OBJECT_GUARD     <- empty
@@ -39,13 +39,13 @@ defmodule Apical.Parser.Query do
     ipchar_rs        <- ipchar / reserved
 
     # specialized array parsing
-    form_array       <- COMMA_GUARD value? (comma value)*
+    form_array       <- FORM_GUARD value? (comma value)*
     space_array      <- SPACE_GUARD value_ns? (space value_ns)*
     pipe_array       <- PIPE_GUARD value_np? (pipe value_np)*
     array_value      <- ARRAY_GUARD (form_array / space_array / pipe_array)
 
     # specialized object parsing
-    form_object      <- COMMA_GUARD (value comma value)? (comma value comma value)* (comma value odd_object_fail)?
+    form_object      <- FORM_GUARD ("null" / ((value comma value)? (comma value comma value)* (comma value odd_object_fail)?))
     space_object     <- SPACE_GUARD (value_ns space value_ns)? (comma value_ns space value_ns)* (space value_ns odd_object_fail)?
     pipe_object      <- PIPE_GUARD (value_np pipe value_np)? (comma value_np pipe value_np)* (pipe value_np odd_object_fail)?
 
@@ -71,7 +71,7 @@ defmodule Apical.Parser.Query do
     empty: [ignore: true],
     ARRAY_GUARD: [post_traverse: :array_guard],
     OBJECT_GUARD: [post_traverse: :object_guard],
-    COMMA_GUARD: [post_traverse: {:style_guard, [:form]}],
+    FORM_GUARD: [post_traverse: {:style_guard, [:form]}],
     SPACE_GUARD: [post_traverse: {:style_guard, [:space_delimited]}],
     PIPE_GUARD: [post_traverse: {:style_guard, [:pipe_delimited]}],
     RESERVED_GUARD: [post_traverse: :reserved_guard],
@@ -304,12 +304,19 @@ defmodule Apical.Parser.Query do
   end
 
   defp finalize_object(rest_str, [{:object, object_list} | rest], context = %{key: key}, _, _) do
-    marshalled_object =
-      object_list
-      |> to_pairs
-      |> Marshal.object(Map.fetch!(context, key))
+    settings = Map.fetch!(context, key) 
+    case {object_list, settings} do
+      {["null"], %{type: [:null, :object], style: :form}} ->
+        {rest_str, [nil | rest], Map.drop(context, [:key, :this])}
 
-    {rest_str, [marshalled_object | rest], Map.drop(context, [:key, :this])}
+      _ ->
+        marshalled_object =
+          object_list
+          |> to_pairs
+          |> Marshal.object(settings)
+
+        {rest_str, [marshalled_object | rest], Map.drop(context, [:key, :this])}
+    end
   end
 
   defp to_pairs(object_list, so_far \\ [])
