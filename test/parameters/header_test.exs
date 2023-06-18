@@ -92,18 +92,62 @@ defmodule ApicalTest.Parameters.HeaderTest do
                 in: header
                 schema:
                   type: [object, "null"]
+              - name: schema-number-limit
+                in: header
+                schema:
+                  type: number
+                  minimum: 0
+              - name: style-custom
+                in: header
+                style: x-custom
+              - name: style-custom-explode
+                in: header
+                style: x-custom
+                explode: true
+              - name: style-custom-override
+                in: header
+                style: x-custom
+        "/override":
+          get:
+            operationId: headerParamOverride
+            parameters:
+              - name: style-custom-override
+                in: header
+                style: x-custom
+
       """,
       root: "/",
       controller: ApicalTest.Parameters.HeaderTest,
-      content_type: "application/yaml"
+      content_type: "application/yaml",
+      styles: [{"x-custom", {__MODULE__, :x_custom}}],
+      parameters: [
+        "style-custom-override": [
+          styles: [{"x-custom", {__MODULE__, :x_custom, ["by parameter"]}}],
+        ]
+      ],
+      operation_ids: [
+        headerParamOverride: [
+          parameters: [
+            "style-custom-override": [
+              styles: [{"x-custom", {__MODULE__, :x_custom, ["by operation parameter"]}}],
+            ]
+          ]
+        ]
+      ]
     )
+
+    def x_custom("ok"), do: {:ok, 47}
+    def x_custom("error_message"), do: {:error, "message"}
+    def x_custom("error_list"), do: {:error, message: "list"}
+    def x_custom(_, true), do: {:ok, "explode"}
+    def x_custom(_, level), do: {:ok, level}
   end
 
   use ApicalTest.EndpointCase
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
-  for ops <- ~w(headerParamRequired headerParamOptional)a do
+  for ops <- ~w(headerParamRequired headerParamOptional headerParamOverride)a do
     def unquote(ops)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
@@ -422,10 +466,76 @@ defmodule ApicalTest.Parameters.HeaderTest do
   end
 
   describe "for schema" do
-    test "works"
+    test "number greater than zero works", %{conn: conn} do
+      assert %{"schema-number-limit" => 2} =
+               conn
+               |> Conn.put_req_header("schema-number-limit", "2")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "number less than zero is rejected", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation headerParamOptional (in header): value `-1.5` at `/` fails schema criterion at `#/paths/~1optional/get/parameters/14/schema/minimum`",
+                   fn ->
+                     conn
+                     |> Conn.put_req_header("schema-number-limit", "-1.5")
+                     |> get("/optional/")
+                   end
+    end
   end
 
   describe "for custom style" do
-    test "works"
+    test "content is overloadable with marshalling", %{conn: conn} do
+      assert %{"style-custom" => 47} =
+               conn
+               |> Conn.put_req_header("style-custom", "ok")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "content can error with a message", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation headerParamOptional (in header): custom parser for style `x-custom` in property `style-custom` failed: message",
+                   fn ->
+                     conn
+                     |> Conn.put_req_header("style-custom", "error_message")
+                     |> get("/optional/")
+                   end
+    end
+
+    test "content can error with a keywordlist", %{conn: conn} do
+      assert_raise ParameterError,
+                   "Parameter Error in operation headerParamOptional (in header): custom parser for style `x-custom` in property `style-custom` failed: list",
+                   fn ->
+                     conn
+                     |> Conn.put_req_header("style-custom", "error_list")
+                     |> get("/optional/?style-custom=error_list")
+                   end
+    end
+
+    test "content can error exploded", %{conn: conn} do
+      assert %{"style-custom-explode" => "explode"} =
+               conn
+               |> Conn.put_req_header("style-custom-explode", "ok")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "content can be custom styled at the parameter level", %{conn: conn} do
+      assert %{"style-custom-override" => "by parameter"} =
+               conn
+               |> Conn.put_req_header("style-custom-override", "ok")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "content can be custom styled at the operation/parameter level", %{conn: conn} do
+      assert %{"style-custom-override" => "by operation parameter"} =
+               conn
+               |> Conn.put_req_header("style-custom-override", "ok")
+               |> get("/override/")
+               |> json_response(200)
+    end
   end
 end

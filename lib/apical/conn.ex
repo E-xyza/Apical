@@ -88,8 +88,8 @@ defmodule Apical.Conn do
 
     explode = Map.get(key_settings, :explode)
 
-    with {:ok, parsed} <- Style.parse(value, key, style, type, explode) |> dbg(limit: 25),
-         {:ok, marshalled} <- Marshal.marshal(parsed, key_settings, type) |> dbg(limit: 25) do
+    with {:ok, parsed} <- Style.parse(value, key, style, type, explode),
+         {:ok, marshalled} <- Marshal.marshal(parsed, key_settings, type) do
       {key, marshalled}
     else
       {:error, msg} ->

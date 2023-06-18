@@ -153,7 +153,7 @@ defmodule Apical.Parser.Style do
      "matrix style `#{value}` for parameter `#{key}` is missing a leading semicolon, use format: `;#{key}=...`"}
   end
 
-  def parse(value, _key, {m, f, a}, _, _explode) do
+  def parse(value, key, {m, f, a}, _, _explode) do
     result = apply(m, f, [value | a])
 
     case result do
@@ -161,7 +161,7 @@ defmodule Apical.Parser.Style do
         ok
 
       {:error, msg} ->
-        {:error, :custom, value, msg}
+        {:error, :custom, key, msg}
     end
   end
 

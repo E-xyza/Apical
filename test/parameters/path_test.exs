@@ -799,7 +799,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "content can error with a message", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation styleCustom (in path): custom parser for style `x-custom` in property `error` failed: error",
+                   "Parameter Error in operation styleCustom (in path): custom parser for style `x-custom` in property `value` failed: error",
                    fn ->
                      get(conn, "/style-custom/error")
                    end
@@ -807,7 +807,7 @@ defmodule ApicalTest.Parameters.PathTest do
 
     test "content can error with a keywordlist", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation styleCustom (in path): custom parser for style `x-custom` in property `error_list` failed: list",
+                   "Parameter Error in operation styleCustom (in path): custom parser for style `x-custom` in property `value` failed: list",
                    fn ->
                      get(conn, "/style-custom/error_list")
                    end
