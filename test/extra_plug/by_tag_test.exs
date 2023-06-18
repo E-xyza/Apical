@@ -33,7 +33,6 @@ defmodule ApicalTest.ExtraPlug.ByTagTest do
         tag: [
           extra_plugs: [
             {:local_plug, ["local override"]},
-            {ApicalTest.ExtraPlug, :delete}, # note this deletes the module plug
             {ApicalTest.ExtraPlug, ["module override"]},
             :tag_only_plug
           ]
@@ -97,11 +96,10 @@ defmodule ApicalTest.ExtraPlug.ByTagTest do
                |> json_response(200)
     end
 
-    test "scoped to tag adds extra plugs", %{conn: conn} do
+    test "scoped to tag overrides extra plugs", %{conn: conn} do
       assert %{
                "extra_tag_only_plug" => "no options",
                "extra_module_plug_option" => "module override",
-               "extra_local_plug" => "no options",
                "extra_local_plug_option" => "local override"
              } ==
                conn
