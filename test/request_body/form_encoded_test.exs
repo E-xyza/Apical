@@ -28,9 +28,9 @@ defmodule ApicalTest.RequestBody.FormEncodedTest do
 
   use ApicalTest.EndpointCase
 
+  alias ApicalTest.RequestBody.FormEncodedTest.Endpoint
   alias Plug.Parsers.UnsupportedMediaTypeError
   alias Plug.Conn
-  alias Apical.Exceptions.ParameterError
 
   for ops <-
         ~w(requestBodyFormEncodedObject requestBodyFormEncodedArray requestBodyGeneric nest_all_json)a do
@@ -59,45 +59,26 @@ defmodule ApicalTest.RequestBody.FormEncodedTest do
                |> do_post("/object", "foo=bar&baz=quux")
                |> json_response(200)
     end
-
-    #    test "passing wrong data", %{conn: conn} do
-    #      assert_raise ParameterError,
-    #                   "Parameter Error in operation requestBodyFormEncodedObject (in body): value `[\"foo\",\"bar\"]` at `/` fails schema criterion at `#/paths/~1object/post/requestBody/content/application~1json/schema/type`",
-    #                   fn ->
-    #                     do_post(conn, "/object", ["foo", "bar"])
-    #                   end
-    #    end
   end
 
-  #
-  #
-  #  describe "generic errors when posting" do
-  #    # TODO: create a more meaningful apical error for this
-  #    test "passing data with the wrong content-type", %{conn: conn} do
-  #      assert_raise UnsupportedMediaTypeError,
-  #                   "unsupported media type text/csv",
-  #                   fn ->
-  #                     do_post(conn, "/object", %{}, "text/csv")
-  #                   end
-  #    end
-  #
-  #    test "passing data with no content-type", %{conn: conn} do
-  #      assert %{plug_status: 400} = %Apical.Exceptions.MissingContentTypeError{}
-  #
-  #      assert_raise Apical.Exceptions.MissingContentTypeError, "missing content-type header", fn ->
-  #        conn
-  #        |> Plug.Adapters.Test.Conn.conn(:post, "/object", "{}")
-  #        |> Endpoint.call(Endpoint.init([]))
-  #      end
-  #    end
-  #  end
-  #
-  #  describe "object with nest_all_json option" do
-  #    test "nests the json in the _json field", %{conn: conn} do
-  #      assert %{"_json" => %{"foo" => "bar"}} =
-  #               conn
-  #               |> do_post("/nest_all_json", %{"foo" => "bar"})
-  #               |> json_response(200)
-  #    end
-  #  end
+  describe "generic errors when posting" do
+    # TODO: create a more meaningful apical error for this
+    test "passing data with the wrong content-type", %{conn: conn} do
+      assert_raise UnsupportedMediaTypeError,
+                   "unsupported media type text/csv",
+                   fn ->
+                     do_post(conn, "/object", %{}, "text/csv")
+                   end
+    end
+
+    test "passing data with no content-type", %{conn: conn} do
+      assert %{plug_status: 400} = %Apical.Exceptions.MissingContentTypeError{}
+
+      assert_raise Apical.Exceptions.MissingContentTypeError, "missing content-type header", fn ->
+        conn
+        |> Plug.Adapters.Test.Conn.conn(:post, "/object", "{}")
+        |> Endpoint.call(Endpoint.init([]))
+      end
+    end
+  end
 end

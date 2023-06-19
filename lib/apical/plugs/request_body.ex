@@ -44,8 +44,7 @@ defmodule Apical.Plugs.RequestBody do
     # TODO: make this respect limits set in configuration
     with {:ok, body, conn} <- Conn.read_body(conn),
          {m, f, a} = operations.adapter,
-         {:ok, body_params} <- apply(m, f, [body | a]) |> dbg(limit: 25) do
-
+         {:ok, body_params} <- apply(m, f, [body | a]) do
       conn
       |> validate!(body_params, content_type_string, content_type, operations)
       |> Map.replace!(:body_params, body_params)
