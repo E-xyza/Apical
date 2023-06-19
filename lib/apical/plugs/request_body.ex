@@ -117,7 +117,7 @@ defmodule Apical.Plugs.RequestBody do
 
   defp add_validation(operations, _, _, _, _, _, _), do: operations
 
-  defp add_nesting(operations, {"application", "json", params}, plug_opts) do
+  defp add_nesting(operations, {"application", "json", _params}, plug_opts) do
     if plug_opts[:nest_all_json] do
       Map.put(operations, :nest, "_json")
     else
