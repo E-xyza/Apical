@@ -10,8 +10,9 @@ defmodule Apical.Plugs.RequestBody do
   def init([module, version, operation_id, media_type_string, parameters, plug_opts]) do
     {parsed_media_type, adapter} =
       with {:ok, type, subtype, params} <- Conn.Utils.media_type(media_type_string),
-           {:ok, adapter} <- get_adapter(type, subtype, params, parameters, plug_opts) do
-        {{type, subtype, params}, adapter}
+           parsed_media_type = {type, subtype, params},
+           {:ok, adapter} <- get_source(parsed_media_type, parameters, plug_opts) do
+        {parsed_media_type, adapter}
       else
         :error ->
           raise CompileError,
@@ -45,16 +46,16 @@ defmodule Apical.Plugs.RequestBody do
         :error -> raise InvalidContentTypeError, invalid_string: content_type_string
       end
 
-    # TODO: make this respect limits set in configuration
-    with {:ok, body, conn} <- Conn.read_body(conn),
-         {m, f, a} = operations.adapter,
-         {:ok, body_params} <- apply(m, f, [body | a]) do
-      conn
-      |> validate!(body_params, content_type_string, content_type, operations)
-      |> Map.replace!(:body_params, body_params)
-      |> Map.update!(:params, &update_params(&1, body_params, operations))
-    else
-      {:error, _} -> raise "fatal error"
+    case operations.adapter.fetch(conn, operations) do
+      {:ok, conn, body_params} ->
+        conn
+        |> validate!(body_params, content_type_string, content_type, operations)
+        |> Map.replace!(:body_params, body_params)
+        |> Map.update!(:params, &update_params(&1, body_params, operations))
+      {:ok, conn} ->
+        conn
+      {:error, reason} ->
+        raise reason
     end
   end
 
@@ -90,21 +91,21 @@ defmodule Apical.Plugs.RequestBody do
 
   @urlencoded_types [["object"], "object"]
 
-  defp get_adapter("application", "json", _, _, _) do
-    {:ok, {Jason, :decode, []}}
+  defp get_source({"application", "json", _}, _, _) do
+    {:ok, Apical.Plugs.RequestBody.Json}
   end
 
-  defp get_adapter("application", "x-www-form-urlencoded", _, %{"schema" => %{"type" => type}}, _)
+  defp get_source({"application", "x-www-form-urlencoded", _}, %{"schema" => %{"type" => type}}, _)
        when type not in @urlencoded_types do
     {:error, "content-type `x-www-form-urlencoded` must have schema type `object`"}
   end
 
-  defp get_adapter("application", "x-www-form-urlencoded", _, _, _) do
-    {:ok, {__MODULE__, :urlencoded_parser, []}}
+  defp get_source({"application", "x-www-form-urlencoded", _}, _, _) do
+    {:ok, Apical.Plugs.RequestBody.FormEncoded}
   end
 
-  def urlencoded_parser(string) do
-    {:ok, Query.decode(string)}
+  defp get_source(_, _, _) do
+    {:ok, Apical.Plugs.RequestBody.Default}
   end
 
   defp add_validation(operations, module, version, operation_id, media_type_string, media_type, %{

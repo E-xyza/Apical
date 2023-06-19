@@ -28,6 +28,7 @@
 
 - support for plug-only (no phoenix use)
 - more sophisticated parsing and marshalling in request_body
+- support for json libraries besides Jason
 - data egress checking (conditional, compile-time)
 - support for auto-rejecting based on accept: information
 - multipart/form-data support

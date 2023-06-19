@@ -42,7 +42,10 @@ defmodule ApicalTest.RequestBody.FormEncodedTest do
   end
 
   defp do_post(conn, route, payload, content_type \\ "application/x-www-form-urlencoded") do
+    content_length = byte_size(payload)
+
     conn
+    |> Conn.put_req_header("content-length", "#{content_length}")
     |> Conn.put_req_header("content-type", content_type)
     |> post(route, payload)
   end
@@ -67,7 +70,7 @@ defmodule ApicalTest.RequestBody.FormEncodedTest do
       assert_raise UnsupportedMediaTypeError,
                    "unsupported media type text/csv",
                    fn ->
-                     do_post(conn, "/object", %{}, "text/csv")
+                     do_post(conn, "/object", "", "text/csv")
                    end
     end
 

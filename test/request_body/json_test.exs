@@ -67,9 +67,13 @@ defmodule ApicalTest.RequestBody.JsonTest do
   end
 
   defp do_post(conn, route, payload, content_type \\ "application/json") do
+    payload_binary = Jason.encode!(payload)
+    content_length = byte_size(payload_binary)
+
     conn
     |> Conn.put_req_header("content-type", content_type)
-    |> post(route, Jason.encode!(payload))
+    |> Conn.put_req_header("content-length", "#{content_length}")
+    |> post(route, payload_binary)
   end
 
   describe "for posted array data" do
