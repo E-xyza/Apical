@@ -10,12 +10,15 @@ defmodule Apical.Plugs.RequestBody do
   def init([module, version, operation_id, media_type_string, parameters, plug_opts]) do
     {parsed_media_type, adapter} =
       with {:ok, type, subtype, params} <- Conn.Utils.media_type(media_type_string),
-           {:ok, adapter} <- get_adapter(type, subtype, params) do
+           {:ok, adapter} <- get_adapter(type, subtype, params, parameters, plug_opts) do
         {{type, subtype, params}, adapter}
       else
         :error ->
           raise CompileError,
             description: "invalid media type in router definition: #{media_type_string}"
+
+        {:error, description} ->
+          raise CompileError, description: description
       end
 
     plug_opts
@@ -28,6 +31,7 @@ defmodule Apical.Plugs.RequestBody do
       parsed_media_type,
       parameters
     )
+    |> add_nesting(parsed_media_type, plug_opts)
     |> add_adapter(adapter)
   end
 
@@ -84,11 +88,18 @@ defmodule Apical.Plugs.RequestBody do
     Map.put(params, "_json", body_params)
   end
 
-  defp get_adapter("application", "json", _) do
+  @urlencoded_types [["object"], "object"]
+
+  defp get_adapter("application", "json", _, _, _) do
     {:ok, {Jason, :decode, []}}
   end
 
-  defp get_adapter("application", "x-www-form-urlencoded", _) do
+  defp get_adapter("application", "x-www-form-urlencoded", _, %{"schema" => %{"type" => type}}, _)
+       when type not in @urlencoded_types do
+    {:error, "content-type `x-www-form-urlencoded` must have schema type `object`"}
+  end
+
+  defp get_adapter("application", "x-www-form-urlencoded", _, _, _) do
     {:ok, {__MODULE__, :urlencoded_parser, []}}
   end
 
@@ -105,6 +116,16 @@ defmodule Apical.Plugs.RequestBody do
   end
 
   defp add_validation(operations, _, _, _, _, _, _), do: operations
+
+  defp add_nesting(operations, {"application", "json", params}, plug_opts) do
+    if plug_opts[:nest_all_json] do
+      Map.put(operations, :nest, "_json")
+    else
+      operations
+    end
+  end
+
+  defp add_nesting(operations, _, _), do: operations
 
   defp add_adapter(operations, adapter) do
     Map.put(operations, :adapter, adapter)

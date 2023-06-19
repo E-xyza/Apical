@@ -27,6 +27,7 @@
 ### These features are in approximate order of priority
 
 - support for plug-only (no phoenix use)
+- more sophisticated parsing and marshalling in request_body
 - data egress checking (conditional, compile-time)
 - support for auto-rejecting based on accept: information
 - multipart/form-data support
