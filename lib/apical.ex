@@ -12,12 +12,10 @@ defmodule Apical do
   defmacro router_from_file(file, opts) do
     opts = Macro.expand_literals(opts, __CALLER__)
 
-    string =
-      file
-      |> Macro.expand(__CALLER__)
-      |> File.read!()
-
-    router(string, opts ++ [file: file])
+    file
+    |> Macro.expand(__CALLER__)
+    |> File.read!()
+    |> router(opts ++ [file: file])
   end
 
   defp router(string, opts) do
