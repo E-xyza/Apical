@@ -3,15 +3,16 @@ defmodule Apical.Plugs.RequestBody do
 
   alias Apical.Exceptions.InvalidContentTypeError
   alias Apical.Exceptions.MissingContentTypeError
+  alias Plug.Conn.Query
   alias Plug.Conn
 
   @impl Plug
   def init([module, version, operation_id, media_type_string, parameters, plug_opts]) do
-    parsed_media_type =
-      case Conn.Utils.media_type(media_type_string) do
-        {:ok, type, subtype, params} ->
-          {type, subtype, params}
-
+    {parsed_media_type, adapter} =
+      with {:ok, type, subtype, params} <- Conn.Utils.media_type(media_type_string),
+           {:ok, adapter} <- get_adapter(type, subtype, params) do
+        {{type, subtype, params}, adapter}
+      else
         :error ->
           raise CompileError,
             description: "invalid media type in router definition: #{media_type_string}"
@@ -27,6 +28,7 @@ defmodule Apical.Plugs.RequestBody do
       parsed_media_type,
       parameters
     )
+    |> add_adapter(adapter)
   end
 
   @impl Plug
@@ -41,14 +43,13 @@ defmodule Apical.Plugs.RequestBody do
 
     # TODO: make this respect limits set in configuration
     with {:ok, body, conn} <- Conn.read_body(conn),
-         # NB: this code will change
-         body_params = Jason.decode!(body) do
-      should_nest_json = Map.get(operations, :nest_all_json, false)
+         {m, f, a} = operations.adapter,
+         {:ok, body_params} <- apply(m, f, [body | a]) |> dbg(limit: 25) do
 
       conn
       |> validate!(body_params, content_type_string, content_type, operations)
       |> Map.replace!(:body_params, body_params)
-      |> Map.update!(:params, &update_params(&1, body_params, should_nest_json))
+      |> Map.update!(:params, &update_params(&1, body_params, operations))
     else
       {:error, _} -> raise "fatal error"
     end
@@ -63,7 +64,14 @@ defmodule Apical.Plugs.RequestBody do
     end
   end
 
-  defp update_params(params, body_params, nested) when is_map(body_params) and not nested do
+  defp update_params(params, body_params, %{nest: nest}) when is_map(body_params) do
+    # objects can also be forced into "_json" by setting :nest_all_json
+    #
+    # see: https://hexdocs.pm/plug/Plug.Parsers.JSON.html#module-options
+    Map.put(params, nest, body_params)
+  end
+
+  defp update_params(params, body_params, _) when is_map(body_params) do
     # we merge params into body_params so that malicious payloads can't overwrite the cleared
     # type checking performed by the params parsing.
     Map.merge(body_params, params)
@@ -73,10 +81,20 @@ defmodule Apical.Plugs.RequestBody do
     # non-object JSON content is put into a "_json" field, this matches the functionality found
     # in Plug.Parsers.JSON
     #
-    # objects can also be forced into "_json" by setting :nest_all_json
-    #
     # see: https://hexdocs.pm/plug/Plug.Parsers.JSON.html#module-options
     Map.put(params, "_json", body_params)
+  end
+
+  defp get_adapter("application", "json", _) do
+    {:ok, {Jason, :decode, []}}
+  end
+
+  defp get_adapter("application", "x-www-form-urlencoded", _) do
+    {:ok, {__MODULE__, :urlencoded_parser, []}}
+  end
+
+  def urlencoded_parser(string) do
+    {:ok, Query.decode(string)}
   end
 
   defp add_validation(operations, module, version, operation_id, media_type_string, media_type, %{
@@ -88,6 +106,10 @@ defmodule Apical.Plugs.RequestBody do
   end
 
   defp add_validation(operations, _, _, _, _, _, _), do: operations
+
+  defp add_adapter(operations, adapter) do
+    Map.put(operations, :adapter, adapter)
+  end
 
   defp validate!(conn, body_params, content_type_string, content_type, %{validations: validations}) do
     {module, fun} = fetch_validation!(validations, content_type_string, content_type)
