@@ -14,7 +14,6 @@ defmodule ApicalTest.RequestBody.OtherTest do
     def validate!(_, _), do: :ok
   end
 
-
   defmodule Router do
     use Phoenix.Router
 

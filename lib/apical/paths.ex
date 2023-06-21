@@ -198,15 +198,23 @@ defmodule Apical.Paths do
          version,
          plug_opts
        ) do
-    Enum.map(content, fn {content_type, content_opts} ->
+    matching_plugs =
+      Enum.map(content, fn {content_type, content_opts} ->
+        quote do
+          plug(
+            Apical.Plugs.RequestBody,
+            [__MODULE__] ++
+              unquote([version, operation_id, content_type, Macro.escape(content_opts), plug_opts])
+          )
+        end
+      end)
+
+    [
       quote do
-        plug(
-          Apical.Plugs.RequestBody,
-          [__MODULE__] ++
-            unquote([version, operation_id, content_type, Macro.escape(content_opts), plug_opts])
-        )
+        plug(Apical.Plugs.RequestBody, :match)
       end
-    end) ++
+    ] ++
+      matching_plugs ++
       [
         quote do
           plug(Apical.Plugs.RequestBody, :not_matched)
