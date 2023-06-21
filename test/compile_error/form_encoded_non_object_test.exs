@@ -36,7 +36,7 @@ defmodule ApicalTest.CompileError.FormEncodedNonObjectTest do
 
   test "request body fails when it's form-encoded and the type is not \"object\"" do
     assert_raise CompileError,
-                 " content-type `x-www-form-urlencoded` must have schema type `object`",
+                 " media type `application/x-www-form-urlencoded` does not support types other than object, found `\"integer\"` in operation `fails`",
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

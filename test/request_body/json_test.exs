@@ -184,4 +184,6 @@ defmodule ApicalTest.RequestBody.JsonTest do
                |> json_response(200)
     end
   end
+
+  test "unparsable not-json-content"
 end

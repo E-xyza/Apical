@@ -1,4 +1,6 @@
 defmodule Apical.Plugs.RequestBody.FormEncoded do
+  @moduledoc false
+
   alias Apical.Plugs.RequestBody.Source
   @behaviour Source
 
@@ -20,7 +22,7 @@ defmodule Apical.Plugs.RequestBody.FormEncoded do
 
     raise CompileError,
       description:
-        "application/x-www-form-urlencoded does not support types other than object, found `#{type_json}` in `#{operation_id}`"
+        "media type `application/x-www-form-urlencoded` does not support types other than object, found `#{type_json}` in operation `#{operation_id}`"
   end
 
   def validate!(_, _), do: :ok

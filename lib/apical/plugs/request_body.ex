@@ -44,7 +44,7 @@ defmodule Apical.Plugs.RequestBody do
       parsed_media_type,
       parameters
     )
-    |> add_source(source)
+    |> add_source(source, plug_opts)
   end
 
   defp get_source(media_type_string, parsed_media_type, plug_opts) do
@@ -86,24 +86,23 @@ defmodule Apical.Plugs.RequestBody do
   # a part of this plug so that the code can be organized in the same place.
   def call(conn, :match) do
     with [content_type] <- Conn.get_req_header(conn, "content-type"),
-         {:ok, type, subtype, params} <- Conn.Utils.media_type(content_type) do
+         {{:ok, type, subtype, params}, _} <- {Conn.Utils.media_type(content_type), content_type} do
       Conn.put_private(conn, :content_type, {type, subtype, params})
     else
       [] ->
         raise Apical.Exceptions.MissingContentTypeError
 
-      :error ->
-        # TODO: fix this.
-        raise "bad content-type string"
+      {:error, _content_type} ->
+        raise "do better"
     end
   end
 
   # once matched, we skip all further steps.
   def call(conn = %{private: %{apical_content_type_matched: true}}, _), do: conn
 
-  def call(_, :not_matched) do
-    # TODO: fix this.
-    raise "do better here"
+  def call(conn, :not_matched) do
+    [content_type] = Conn.get_req_header(conn, "content-type")
+    raise Plug.Parsers.UnsupportedMediaTypeError, media_type: content_type
   end
 
   def call(conn, operations) do
@@ -154,8 +153,12 @@ defmodule Apical.Plugs.RequestBody do
     Enum.all?(tgt_params, fn {key, value} -> Map.get(req_params, key) == value end)
   end
 
-  defp add_source(operations, source) do
-    Map.put(operations, :source, source)
+  defp add_source(operations, {mod, mod_opts}, plug_opts) do
+    new_mod_opts = plug_opts
+    |> Keyword.take([:nest_all_json])
+    |> Keyword.merge(mod_opts)
+
+    Map.put(operations, :source, {mod, new_mod_opts})
   end
 
   defp validate!(conn, body_params, content_type_string, content_type, %{validations: validations}) do

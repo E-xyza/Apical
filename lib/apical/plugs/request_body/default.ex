@@ -1,4 +1,6 @@
 defmodule Apical.Plugs.RequestBody.Default do
+  @moduledoc false
+
   @behaviour Apical.Plugs.RequestBody.Source
 
   @impl true
