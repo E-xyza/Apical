@@ -1,18 +1,22 @@
 defmodule Apical.Plugs.RequestBody do
   @behaviour Plug
 
-  alias Apical.Exceptions.InvalidContentTypeError
-  alias Apical.Exceptions.MissingContentTypeError
-  alias Plug.Conn.Query
   alias Plug.Conn
 
+  alias Apical.Plugs.RequestBody.FormEncoded
+  alias Apical.Plugs.RequestBody.Json
+  alias Apical.Plugs.RequestBody.Default
+
   @impl Plug
+  def init(:not_matched), do: :not_matched
+
   def init([module, version, operation_id, media_type_string, parameters, plug_opts]) do
-    {parsed_media_type, adapter} =
-      with {:ok, type, subtype, params} <- Conn.Utils.media_type(media_type_string),
-           parsed_media_type = {type, subtype, params},
-           {:ok, adapter} <- get_source(parsed_media_type, parameters, plug_opts) do
-        {parsed_media_type, adapter}
+    {parsed_media_type, source} =
+      with {:ok, type, subtype, params} <- Conn.Utils.media_type(media_type_string) do
+        parsed_media_type = {type, subtype, params}
+        source = {source_module, _} = get_source(media_type_string, parsed_media_type, plug_opts)
+        source_module.validate!(parameters, operation_id)
+        {parsed_media_type, source}
       else
         :error ->
           raise CompileError,
@@ -24,6 +28,7 @@ defmodule Apical.Plugs.RequestBody do
 
     plug_opts
     |> Map.new()
+    |> Map.take(~w(source path)a)
     |> add_validation(
       module,
       version,
@@ -33,80 +38,60 @@ defmodule Apical.Plugs.RequestBody do
       parameters
     )
     |> add_nesting(parsed_media_type, plug_opts)
-    |> add_adapter(adapter)
+    |> add_source(source)
   end
 
   @impl Plug
+  def call(conn = %{private: %{apical_content_type_matched: true}}, :not_matched), do: conn
+
+  def call(_, :not_matched) do
+    raise Apical.Exceptions.MissingContentTypeError
+  end
+
   def call(conn, operations) do
-    content_type_string = get_content_type_string(conn)
-
-    content_type =
-      case Conn.Utils.content_type(content_type_string) do
-        {:ok, type, subtype, params} -> {type, subtype, params}
-        :error -> raise InvalidContentTypeError, invalid_string: content_type_string
-      end
-
-    case operations.adapter.fetch(conn, operations) do
-      {:ok, conn, body_params} ->
-        conn
-        |> validate!(body_params, content_type_string, content_type, operations)
-        |> Map.replace!(:body_params, body_params)
-        |> Map.update!(:params, &update_params(&1, body_params, operations))
-      {:ok, conn} ->
-        conn
-      {:error, reason} ->
-        raise reason
-    end
-  end
-
-  @spec get_content_type_string(Conn.t()) :: String.t()
-  defp get_content_type_string(conn) do
-    if content_type_header = List.keyfind(conn.req_headers, "content-type", 0, nil) do
-      elem(content_type_header, 1)
+    with :ok <- match_req_header(conn, "content-type"),
+         {source, opts} = operations.source,
+         {:ok, conn} <- source.fetch(conn, opts) do
+      Conn.put_private(conn, :apical_content_type_matched, true)
     else
-      raise MissingContentTypeError
+      :ignore -> conn
+      {:error, keyword} ->
+        message = case Keyword.fetch(keyword, :message) do
+          {:ok, message} -> ": #{message}"
+          :error -> ""
+        end
+
+        params = [reason: "error fetching request body#{message}"]
+        |> Keyword.merge(keyword)
+        |> Keyword.merge(in: :body)
+        |> Keyword.drop([:message])
+
+        raise Apical.Exceptions.ParameterError, params
     end
   end
 
-  defp update_params(params, body_params, %{nest: nest}) when is_map(body_params) do
-    # objects can also be forced into "_json" by setting :nest_all_json
-    #
-    # see: https://hexdocs.pm/plug/Plug.Parsers.JSON.html#module-options
-    Map.put(params, nest, body_params)
-  end
-
-  defp update_params(params, body_params, _) when is_map(body_params) do
-    # we merge params into body_params so that malicious payloads can't overwrite the cleared
-    # type checking performed by the params parsing.
-    Map.merge(body_params, params)
-  end
-
-  defp update_params(params, body_params, _) do
-    # non-object JSON content is put into a "_json" field, this matches the functionality found
-    # in Plug.Parsers.JSON
-    #
-    # see: https://hexdocs.pm/plug/Plug.Parsers.JSON.html#module-options
-    Map.put(params, "_json", body_params)
-  end
+  defp match_req_header(_, _), do: :ok
 
   @urlencoded_types [["object"], "object"]
 
-  defp get_source({"application", "json", _}, _, _) do
-    {:ok, Apical.Plugs.RequestBody.Json}
+  defp get_source(media_type_string, parsed_media_type, plug_opts) do
+    plug_opts
+    |> Keyword.get(:content_sources, [])
+    |> List.keyfind(media_type_string, 0)
+    |> resolve_source(parsed_media_type)
   end
 
-  defp get_source({"application", "x-www-form-urlencoded", _}, %{"schema" => %{"type" => type}}, _)
-       when type not in @urlencoded_types do
-    {:error, "content-type `x-www-form-urlencoded` must have schema type `object`"}
+  defp resolve_source({_, source = {module, args}}, _) when is_atom(module) and is_list(args) do
+    source
   end
 
-  defp get_source({"application", "x-www-form-urlencoded", _}, _, _) do
-    {:ok, Apical.Plugs.RequestBody.FormEncoded}
-  end
+  defp resolve_source({_, source}, _) when is_atom(source), do: {source, []}
 
-  defp get_source(_, _, _) do
-    {:ok, Apical.Plugs.RequestBody.Default}
-  end
+  defp resolve_source(_, {"application", "x-www-form-urlencoded", _}), do: {FormEncoded, []}
+
+  defp resolve_source(_, {"application", "json", _}), do: {Json, []}
+
+  defp resolve_source(_, _), do: {Default, []}
 
   defp add_validation(operations, module, version, operation_id, media_type_string, media_type, %{
          "schema" => _schema
@@ -128,8 +113,8 @@ defmodule Apical.Plugs.RequestBody do
 
   defp add_nesting(operations, _, _), do: operations
 
-  defp add_adapter(operations, adapter) do
-    Map.put(operations, :adapter, adapter)
+  defp add_source(operations, source) do
+    Map.put(operations, :source, source)
   end
 
   defp validate!(conn, body_params, content_type_string, content_type, %{validations: validations}) do

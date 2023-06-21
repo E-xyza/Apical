@@ -32,9 +32,9 @@ defmodule ApicalTest.RequestBody.FormEncodedTest do
   alias Plug.Parsers.UnsupportedMediaTypeError
   alias Plug.Conn
 
-  for ops <-
+  for operation <-
         ~w(requestBodyFormEncodedObject requestBodyFormEncodedArray requestBodyGeneric nest_all_json)a do
-    def unquote(ops)(conn, params) do
+    def unquote(operation)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
       |> Conn.send_resp(200, Jason.encode!(params))

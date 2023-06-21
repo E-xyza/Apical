@@ -48,7 +48,7 @@ defmodule Apical.Paths do
 
     plug_opts =
       opts
-      |> Keyword.take(~w(styles parameters nest_all_json)a)
+      |> Keyword.take(~w(styles parameters nest_all_json content_sources)a)
       |> Keyword.merge(path_parameters: path_parameters, path: path)
 
     controller =
@@ -206,7 +206,12 @@ defmodule Apical.Paths do
             unquote([version, operation_id, content_type, Macro.escape(content_opts), plug_opts])
         )
       end
-    end)
+    end) ++
+      [
+        quote do
+          plug(Apical.Plugs.RequestBody, :not_matched)
+        end
+      ]
   end
 
   defp request_body_plugs(_, _, _), do: []
@@ -235,7 +240,7 @@ defmodule Apical.Paths do
     )
   end
 
-  @folded_opts ~w(controller styles parameters extra_plugs nest_all_json)a
+  @folded_opts ~w(controller styles parameters extra_plugs nest_all_json content_sources)a
 
   defp fold_opts(opts, tags, operation_id) do
     # NB it's totally okay if this process is unoptimized since it

@@ -147,8 +147,8 @@ defmodule ApicalTest.Parameters.HeaderTest do
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
-  for ops <- ~w(headerParamRequired headerParamOptional headerParamOverride)a do
-    def unquote(ops)(conn, params) do
+  for operation <- ~w(headerParamRequired headerParamOptional headerParamOverride)a do
+    def unquote(operation)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
       |> Conn.send_resp(200, Jason.encode!(params))

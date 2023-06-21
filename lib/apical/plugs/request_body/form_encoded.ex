@@ -10,4 +10,18 @@ defmodule Apical.Plugs.RequestBody.FormEncoded do
       {:ok, %{conn | params: Map.merge(params, conn.params)}}
     end
   end
+
+  @formencoded_types ["object", ["object"]]
+
+  @impl true
+  def validate!(%{"schema" => %{"type" => type}}, operation_id)
+      when type not in @formencoded_types do
+    type_json = Jason.encode!(type)
+
+    raise CompileError,
+      description:
+        "application/x-www-form-urlencoded does not support types other than object, found `#{type_json}` in `#{operation_id}`"
+  end
+
+  def validate!(_, _), do: :ok
 end

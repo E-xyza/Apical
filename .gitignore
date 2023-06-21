@@ -24,3 +24,6 @@ apical-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# elixir-ls files
+/.elixir_ls/

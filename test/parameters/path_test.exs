@@ -329,7 +329,7 @@ defmodule ApicalTest.Parameters.PathTest do
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
-  for ops <- ~w(pathParamBasic pathParamDeprecated pathParamPartial
+  for operation <- ~w(pathParamBasic pathParamDeprecated pathParamPartial
       pathParamDefaultArray pathParamMatrixArray pathParamMatrixArrayExplode
       pathParamLabelArray pathParamSimpleArray pathParamMarshalArray
       pathParamDefaultObject pathParamMatrixObject pathParamMatrixObjectExplode
@@ -339,7 +339,7 @@ defmodule ApicalTest.Parameters.PathTest do
       pathParamNumber pathParamMultitype pathParamNullableArray pathParamNullableObject
       schemaNumber styleCustom styleCustomExplode styleCustomParameter styleCustomOperationParameter
     )a do
-    def unquote(ops)(conn, params) do
+    def unquote(operation)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
       |> Conn.send_resp(200, Jason.encode!(params))

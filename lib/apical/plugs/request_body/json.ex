@@ -9,4 +9,7 @@ defmodule Apical.Plugs.RequestBody.Json do
       {:ok, conn, json}
     end
   end
+
+  @impl true
+  def validate!(_, _), do: :ok
 end

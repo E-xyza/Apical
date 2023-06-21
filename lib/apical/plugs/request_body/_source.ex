@@ -4,9 +4,11 @@ defmodule Apical.Plugs.RequestBody.Source do
   """
 
   alias Plug.Conn
-  @callback fetch(Conn.t(), opts :: keyword) :: {:ok, Conn.t} | {:ok, Conn.t, map()} | {:error, keyword}
 
-  @spec fetch_body(Conn.t(), keyword) :: {:ok, body :: iodata, Conn.t} | {:error, any}
+  @callback fetch(Conn.t(), opts :: keyword) :: {:ok, Conn.t()} | {:error, keyword}
+  @callback validate!(schema :: map, operation_id :: String.t()) :: :ok
+
+  @spec fetch_body(Conn.t(), keyword) :: {:ok, body :: iodata, Conn.t()} | {:error, any}
   @doc """
   Utility function that grabs request bodies.
 
@@ -16,7 +18,7 @@ defmodule Apical.Plugs.RequestBody.Source do
   in a streaming fashion, this function should not be used.
 
   ### options
-  
+
   `:length` (integer, default `8_000_000`) - total maximum length of the request body.
   `:read_length` (integer, default `1_000_000`) - maximum length of each chunk.
   `:string` (boolean, default `false`) - if true, the result will be a single binary,

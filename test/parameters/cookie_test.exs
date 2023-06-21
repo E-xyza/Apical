@@ -151,8 +151,8 @@ defmodule ApicalTest.Parameters.CookieTest do
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError
 
-  for ops <- ~w(cookieParamRequired cookieParamOptional cookieParamOverride)a do
-    def unquote(ops)(conn, params) do
+  for operation <- ~w(cookieParamRequired cookieParamOptional cookieParamOverride)a do
+    def unquote(operation)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
       |> Conn.send_resp(200, Jason.encode!(params))

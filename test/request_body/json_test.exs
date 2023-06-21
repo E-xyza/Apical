@@ -58,8 +58,9 @@ defmodule ApicalTest.RequestBody.JsonTest do
   alias Apical.Exceptions.ParameterError
   alias ApicalTest.RequestBody.JsonTest.Endpoint
 
-  for ops <- ~w(requestBodyJsonObject requestBodyJsonArray requestBodyGeneric nest_all_json)a do
-    def unquote(ops)(conn, params) do
+  for operation <-
+        ~w(requestBodyJsonObject requestBodyJsonArray requestBodyGeneric nest_all_json)a do
+    def unquote(operation)(conn, params) do
       conn
       |> Conn.put_resp_content_type("application/json")
       |> Conn.send_resp(200, Jason.encode!(params))
