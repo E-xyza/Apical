@@ -120,13 +120,14 @@ defmodule Apical.Plugs.RequestBody do
         conn
 
       {:error, keyword} ->
-        params = if message = Keyword.get(keyword, :message) do
-          {:reason, "error fetching request body#{message}"}
-        end
-        |> List.wrap()
-        |> Keyword.merge(keyword)
-        |> Keyword.merge(in: :body, operation_id: conn.private.operation_id)
-        |> Keyword.drop([:message])
+        params =
+          if message = Keyword.get(keyword, :message) do
+            {:reason, "error fetching request body#{message}"}
+          end
+          |> List.wrap()
+          |> Keyword.merge(keyword)
+          |> Keyword.merge(in: :body, operation_id: conn.private.operation_id)
+          |> Keyword.drop([:message])
 
         raise Apical.Exceptions.ParameterError, params
     end

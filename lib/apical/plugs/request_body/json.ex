@@ -10,6 +10,15 @@ defmodule Apical.Plugs.RequestBody.Json do
          {:ok, json} <- Jason.decode(str),
          :ok <- Source.apply_validator(json, validator) do
       {:ok, add_into_params(conn, json, opts)}
+    else
+      kw_error = {:error, kw} when is_list(kw) ->
+        kw_error
+
+      {:error, exception} when is_exception(exception) ->
+        {:error, message: " (#{Exception.message(exception)})"}
+
+      {:error, other} ->
+        {:error, message: "fetching json body failed: #{other}"}
     end
   end
 

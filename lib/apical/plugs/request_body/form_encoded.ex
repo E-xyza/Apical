@@ -10,6 +10,12 @@ defmodule Apical.Plugs.RequestBody.FormEncoded do
          params = Plug.Conn.Query.decode(str, %{}, true),
          :ok <- Source.apply_validator(params, validator) do
       {:ok, %{conn | params: Map.merge(params, conn.params)}}
+    else
+      kw_error = {:error, kw} when is_list(kw) ->
+        kw_error
+
+      {:error, other} ->
+        {:error, message: "fetching json body failed: #{other}"}
     end
   end
 

@@ -185,5 +185,15 @@ defmodule ApicalTest.RequestBody.JsonTest do
     end
   end
 
-  test "unparsable not-json-content"
+  test "unparsable not-json-content", %{conn: conn} do
+    payload_binary = "{"
+    content_length = byte_size(payload_binary)
+
+    assert_raise ParameterError, "Parameter Error in operation requestBodyGeneric (in body): error fetching request body (unexpected end of input at position 1)", fn ->
+      conn
+      |> Conn.put_req_header("content-type", "application/json")
+      |> Conn.put_req_header("content-length", "#{content_length}")
+      |> post("/generic", payload_binary)
+    end
+  end
 end
