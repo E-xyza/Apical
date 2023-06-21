@@ -5,6 +5,7 @@ defmodule Apical.Paths do
   alias Apical.Plugs.Parameter
   alias Apical.Plugs.RequestBody
   alias Apical.Tools
+  alias Plug.Conn
 
   def to_routes(root, {path, methods}, version, opts) do
     base_pointer =
@@ -198,8 +199,14 @@ defmodule Apical.Paths do
          version,
          plug_opts
        ) do
+        
+    # TODO: filter out content_source. and pass that into the plug without sending it
+    # to the plug
+
     matching_plugs =
-      Enum.map(content, fn {content_type, content_opts} ->
+      content
+      |> Enum.sort_by(&Conn.Utils.media_type(elem(&1, 0)), Apical.Plugs.RequestBody)
+      |> Enum.map(fn {content_type, content_opts} ->
         quote do
           plug(
             Apical.Plugs.RequestBody,

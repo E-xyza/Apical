@@ -98,9 +98,8 @@ defmodule Apical.Plugs.RequestBody do
     end
   end
 
-  # match checking phase.  This is pulled out as its own phase so that we can
-  # pull apart each individual media type as its own plug in the pipeline.
-  def call(conn = %{private: %{apical_content_type_matched: true}}, :not_matched), do: conn
+  # once matched, we skip all further steps.
+  def call(conn = %{private: %{apical_content_type_matched: true}}, _), do: conn
 
   def call(_, :not_matched) do
     # TODO: fix this.
@@ -108,7 +107,7 @@ defmodule Apical.Plugs.RequestBody do
   end
 
   def call(conn, operations) do
-    with true <- match_req_header?(conn.private.content_type, operations.media_type),
+    with true <- matches_req_header?(conn.private.content_type, operations.media_type),
          {source, opts} = operations.source,
          {:ok, conn} <- source.fetch(conn, opts) do
       Conn.put_private(conn, :apical_content_type_matched, true)
@@ -134,19 +133,22 @@ defmodule Apical.Plugs.RequestBody do
   end
 
   # same content-type
-  defp match_req_header?({type, subtype, req_params}, {type, subtype, tgt_params}) do
+  defp matches_req_header?({type, subtype, req_params}, {type, subtype, tgt_params}) do
     params_subset?(req_params, tgt_params)
   end
   # generic media-subtype
-  defp match_req_header?({type, _subtype, req_params}, {type, "*", tgt_params}) do
+  defp matches_req_header?({type, _subtype, req_params}, {type, "*", tgt_params}) do
     params_subset?(req_params, tgt_params)
   end
   # generic media-type
-  defp match_req_header?({_type, _subtype, req_params}, {"*", "*", tgt_params}) do
+  defp matches_req_header?({_type, _subtype, req_params}, {"*", "*", tgt_params}) do
     params_subset?(req_params, tgt_params)
   end
 
-  defp match_req_header?(_, _), do: false
+  defp matches_req_header?(_, _), do: false
+
+  # fastlane to avoid Enum.all, this is going to be extremely common.
+  defp params_subset?(_, tgt_params) when tgt_params === %{}, do: true
 
   defp params_subset?(req_params, tgt_params) do
     Enum.all?(tgt_params, fn {key, value} -> Map.get(req_params, key) == value end)
@@ -188,6 +190,42 @@ defmodule Apical.Plugs.RequestBody do
       validation
     else
       raise Plug.Parsers.UnsupportedMediaTypeError, media_type: content_type_string
+    end
+  end
+
+  # sorting function sorts based on content-type string, with more generic
+  # media-type strings coming after less generic media-type strings
+
+  def compare(:error, _), do: raise "bad media type"
+  def compare(_, :error), do: raise "bad media type"
+
+  def compare(same, same), do: :eq
+
+  def compare({:ok, type, subtype, map_a}, {:ok, type, subtype, map_b}) do
+    case {map_size(map_a), map_size(map_b)} do
+      {same, same} when map_a > map_b -> :gt
+      {same, same} when map_a < map_b -> :lt
+      {lhs, rhs} when lhs > rhs -> :lt
+      {lhs, rhs} when lhs < rhs -> :gt
+    end
+  end
+
+  def compare({:ok, type, "*", _}, {:ok, type, _, _}), do: :gt
+  def compare({:ok, type, _, _}, {:ok, type, "*", _}), do: :lt
+  def compare({:ok, type, subtype_a, _}, {:ok, type, subtype_b, _}) do
+    cond do
+      subtype_a > subtype_b -> :gt
+      subtype_a < subtype_b -> :lt
+    end
+  end
+
+  def compare({:ok, "*", _, _}, {:ok, _, _, _}), do: :gt
+  def compare({:ok, _, _, _}, {:ok, "*", _, _}), do: :lt
+
+  def compare({:ok, type_a, _, _}, {:ok, type_b, _, _}) do
+    cond do
+      type_a > type_b -> :gt
+      type_a < type_b -> :lt
     end
   end
 end

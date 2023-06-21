@@ -71,8 +71,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
       ],
       operation_ids: [
         content_sources: [{"application/*", tag: "application tagged"}]
-      ],
-      dump: true
+      ]
     )
   end
 
@@ -91,7 +90,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
   end
 
   for operation <- ~w(requestBodyMultiParser requestBodyTagParser requestBodyOperationParser)a do
-    def unquote(operation)(conn, params) do
+    def unquote(operation)(conn, _params) do
       conn
       |> Conn.put_resp_content_type("text/plain")
       |> Conn.send_resp(200, conn.private.response)
@@ -116,6 +115,18 @@ defmodule ApicalTest.RequestBody.OtherTest do
   describe "when multiple content-types are declared" do
     test "the fully generic content-type is accepted when it doesn't match", %{conn: conn} do
       assert "generic" = do_post(conn, "/multi-parser", "foo", "text/csv")
+    end
+
+    test "the content-supertype can be selected when the subtype doesn't match", %{conn: conn} do
+      assert "application generic" = do_post(conn, "/multi-parser", "foo", "application/x-bar")
+    end
+
+    test "the content-subtype overrides generic matches", %{conn: conn} do
+      assert "application specific" = do_post(conn, "/multi-parser", "foo", "application/x-foo")
+    end
+
+    test "the content-subtype with option overrides generic matches", %{conn: conn} do
+      assert "application option" = do_post(conn, "/multi-parser", "foo", "application/x-foo; charset=utf-8")
     end
   end
 end
