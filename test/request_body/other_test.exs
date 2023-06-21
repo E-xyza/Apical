@@ -49,6 +49,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
             requestBody:
               content:
                 "application/*": {}
+                "application/x-foo": {}
         "/operation-parser":
           post:
             operationId: requestBodyOperationParser
@@ -56,6 +57,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
             requestBody:
               content:
                 "application/*": {}
+                "application/x-foo": {}
       """,
       root: "/",
       controller: ApicalTest.RequestBody.OtherTest,
@@ -67,10 +69,14 @@ defmodule ApicalTest.RequestBody.OtherTest do
         {"application/x-foo; charset=utf-8", {GenericSource, tag: "application option"}}
       ],
       tags: [
-        content_sources: [{"application/*", tag: "application tagged"}]
+        tag: [
+          content_sources: [{"application/*", {GenericSource, tag: "application tagged"}}]
+        ]
       ],
       operation_ids: [
-        content_sources: [{"application/*", tag: "application tagged"}]
+        requestBodyOperationParser: [
+          content_sources: [{"application/*", {GenericSource, tag: "application operation_id"}}]
+        ]
       ]
     )
   end
@@ -127,6 +133,26 @@ defmodule ApicalTest.RequestBody.OtherTest do
 
     test "the content-subtype with option overrides generic matches", %{conn: conn} do
       assert "application option" = do_post(conn, "/multi-parser", "foo", "application/x-foo; charset=utf-8")
+    end
+  end
+
+  describe "when content-type is declared by tag" do
+    test "the fully generic content-type is accepted when it doesn't match", %{conn: conn} do
+      assert "application specific" = do_post(conn, "/tag-parser", "foo", "application/x-foo")
+    end
+
+    test "the content-subtype with option overrides generic matches", %{conn: conn} do
+      assert "application tagged" = do_post(conn, "/tag-parser", "foo", "application/x-bar")
+    end
+  end
+
+  describe "when content-type is declared by operation_id" do
+    test "the fully generic conent-type is accepted when it doesn't match", %{conn: conn} do
+      assert "application specific" = do_post(conn, "/operation-parser", "foo", "application/x-foo")
+    end
+
+    test "the content-subtype with option overrides generic matches", %{conn: conn} do
+      assert "application operation_id" = do_post(conn, "/operation-parser", "foo", "application/x-bar")
     end
   end
 end

@@ -107,6 +107,7 @@ defmodule Apical.Paths do
       end)
 
     quote do
+      # TODO: make these functions
       unquote(parameter_validators)
       unquote(body_validators)
 
@@ -199,8 +200,8 @@ defmodule Apical.Paths do
          version,
          plug_opts
        ) do
-        
-    # TODO: filter out content_source. and pass that into the plug without sending it
+
+    # TODO: filter out content_sources. and pass that into the plug without sending it
     # to the plug
 
     matching_plugs =

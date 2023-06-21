@@ -27,7 +27,7 @@ defmodule Apical.Tools do
     end
   end
 
-  @terminating ~w(extra_plugs content_sources)a
+  @terminating ~w(extra_plugs)a
 
   def deepmerge(into_list, src_list) when is_list(into_list) do
     Enum.reduce(src_list, into_list, fn
