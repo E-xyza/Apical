@@ -5,7 +5,23 @@ defmodule Apical.Plugs.RequestBody.Source do
 
   alias Plug.Conn
 
-  @callback fetch(Conn.t(), opts :: keyword) :: {:ok, Conn.t()} | {:error, keyword}
+  @typedoc """
+  Type for a function that encapsulates the logic for validating a request body.
+
+  The function should return `:ok` if the body is valid, or `{:error, keyword}`
+
+  In the generic case, keyword should contain the key `:message` which determines
+  what the request body error message will be.
+
+  for more specific cases, see the documentation for `Exonerate` which describes
+  the fields available.
+
+  The default validator (if no validation is to be performed) will return `:ok`
+  on any input.
+  """
+  @type validator :: nil | {module, atom} | {module, atom, list}
+
+  @callback fetch(Conn.t(), validator, opts :: keyword) :: {:ok, Conn.t()} | {:error, keyword}
   @callback validate!(schema :: map, operation_id :: String.t()) :: :ok
 
   @spec fetch_body(Conn.t(), keyword) :: {:ok, body :: iodata, Conn.t()} | {:error, any}
@@ -61,5 +77,15 @@ defmodule Apical.Plugs.RequestBody.Source do
       error = {:error, _} ->
         error
     end
+  end
+
+  def apply_validator(_content, nil), do: :ok
+
+  def apply_validator(content, {module, fun}) do
+    apply(module, fun, [content])
+  end
+
+  def apply_validator(content, {module, fun, args}) do
+    apply(module, fun, [content | args])
   end
 end

@@ -5,10 +5,10 @@ defmodule Apical.Plugs.RequestBody.Json do
   @behaviour Source
 
   @impl true
-  def fetch(conn, opts) do
+  def fetch(conn, validator, opts) do
     with {:ok, str, conn} <- Source.fetch_body(conn, []),
-         {:ok, json} <- Jason.decode(str) do
-
+         {:ok, json} <- Jason.decode(str),
+         :ok <- Source.apply_validator(json, validator) do
       {:ok, add_into_params(conn, json, opts)}
     end
   end

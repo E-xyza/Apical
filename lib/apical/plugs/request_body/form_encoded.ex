@@ -5,10 +5,10 @@ defmodule Apical.Plugs.RequestBody.FormEncoded do
   @behaviour Source
 
   @impl true
-  def fetch(conn, _opts) do
-    with {:ok, str, conn} <- Source.fetch_body(conn, string: true) do
-      # TODO: enable custom module for raising errors
-      params = Plug.Conn.Query.decode(str, %{}, true)
+  def fetch(conn, validator, _opts) do
+    with {:ok, str, conn} <- Source.fetch_body(conn, string: true),
+         params = Plug.Conn.Query.decode(str, %{}, true),
+         :ok <- Source.apply_validator(params, validator) do
       {:ok, %{conn | params: Map.merge(params, conn.params)}}
     end
   end

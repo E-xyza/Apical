@@ -41,7 +41,6 @@ defmodule Apical.Plugs.RequestBody do
       version,
       operation_id,
       media_type_string,
-      parsed_media_type,
       parameters
     )
     |> add_source(source, plug_opts)
@@ -69,15 +68,18 @@ defmodule Apical.Plugs.RequestBody do
   defp add_content_type(operations, parsed_media_type),
     do: Map.put(operations, :media_type, parsed_media_type)
 
-  defp add_validation(operations, module, version, operation_id, media_type_string, media_type, %{
+  def validator_name(version, operation_id, mimetype) do
+    :"#{version}-body-#{operation_id}-#{mimetype}"
+  end
+
+  defp add_validation(operations, module, version, operation_id, media_type_string, %{
          "schema" => _schema
        }) do
     fun = {module, validator_name(version, operation_id, media_type_string)}
-
-    Map.update(operations, :validations, %{media_type => fun}, &Map.put(&1, media_type, fun))
+    Map.put(operations, :validator, fun)
   end
 
-  defp add_validation(operations, _, _, _, _, _, _), do: operations
+  defp add_validation(operations, _, _, _, _, _), do: operations
 
   @impl Plug
 
@@ -89,11 +91,14 @@ defmodule Apical.Plugs.RequestBody do
          {{:ok, type, subtype, params}, _} <- {Conn.Utils.media_type(content_type), content_type} do
       Conn.put_private(conn, :content_type, {type, subtype, params})
     else
+      {:error, _content_type} ->
+        raise "do better"
+
       [] ->
         raise Apical.Exceptions.MissingContentTypeError
 
-      {:error, _content_type} ->
-        raise "do better"
+      [_ | _] ->
+        raise "robot butt"
     end
   end
 
@@ -108,24 +113,20 @@ defmodule Apical.Plugs.RequestBody do
   def call(conn, operations) do
     with true <- matches_req_header?(conn.private.content_type, operations.media_type),
          {source, opts} = operations.source,
-         {:ok, conn} <- source.fetch(conn, opts) do
+         {:ok, conn} <- source.fetch(conn, Map.get(operations, :validator), opts) do
       Conn.put_private(conn, :apical_content_type_matched, true)
     else
       false ->
         conn
 
       {:error, keyword} ->
-        message =
-          case Keyword.fetch(keyword, :message) do
-            {:ok, message} -> ": #{message}"
-            :error -> ""
-          end
-
-        params =
-          [reason: "error fetching request body#{message}"]
-          |> Keyword.merge(keyword)
-          |> Keyword.merge(in: :body)
-          |> Keyword.drop([:message])
+        params = if message = Keyword.get(keyword, :message) do
+          {:reason, "error fetching request body#{message}"}
+        end
+        |> List.wrap()
+        |> Keyword.merge(keyword)
+        |> Keyword.merge(in: :body, operation_id: conn.private.operation_id)
+        |> Keyword.drop([:message])
 
         raise Apical.Exceptions.ParameterError, params
     end
@@ -135,10 +136,12 @@ defmodule Apical.Plugs.RequestBody do
   defp matches_req_header?({type, subtype, req_params}, {type, subtype, tgt_params}) do
     params_subset?(req_params, tgt_params)
   end
+
   # generic media-subtype
   defp matches_req_header?({type, _subtype, req_params}, {type, "*", tgt_params}) do
     params_subset?(req_params, tgt_params)
   end
+
   # generic media-type
   defp matches_req_header?({_type, _subtype, req_params}, {"*", "*", tgt_params}) do
     params_subset?(req_params, tgt_params)
@@ -154,53 +157,19 @@ defmodule Apical.Plugs.RequestBody do
   end
 
   defp add_source(operations, {mod, mod_opts}, plug_opts) do
-    new_mod_opts = plug_opts
-    |> Keyword.take([:nest_all_json])
-    |> Keyword.merge(mod_opts)
+    new_mod_opts =
+      plug_opts
+      |> Keyword.take([:nest_all_json])
+      |> Keyword.merge(mod_opts)
 
     Map.put(operations, :source, {mod, new_mod_opts})
-  end
-
-  defp validate!(conn, body_params, content_type_string, content_type, %{validations: validations}) do
-    {module, fun} = fetch_validation!(validations, content_type_string, content_type)
-
-    case apply(module, fun, [body_params]) do
-      :ok ->
-        conn
-
-      {:error, reasons} ->
-        raise Apical.Exceptions.ParameterError,
-              [operation_id: conn.private.operation_id, in: :body] ++ reasons
-    end
-  end
-
-  defp validate!(conn, _, _, _, _), do: conn
-
-  def validator_name(version, operation_id, mimetype) do
-    :"#{version}-body-#{operation_id}-#{mimetype}"
-  end
-
-  defp fetch_validation!(
-         validations,
-         content_type_string,
-         content_type = {_req_type, _req_subtype, _req_param}
-       ) do
-    if validation =
-         Enum.find_value(validations, fn
-           {^content_type, fun} -> fun
-           _ -> nil
-         end) do
-      validation
-    else
-      raise Plug.Parsers.UnsupportedMediaTypeError, media_type: content_type_string
-    end
   end
 
   # sorting function sorts based on content-type string, with more generic
   # media-type strings coming after less generic media-type strings
 
-  def compare(:error, _), do: raise "bad media type"
-  def compare(_, :error), do: raise "bad media type"
+  def compare(:error, _), do: raise("bad media type")
+  def compare(_, :error), do: raise("bad media type")
 
   def compare(same, same), do: :eq
 
@@ -215,6 +184,7 @@ defmodule Apical.Plugs.RequestBody do
 
   def compare({:ok, type, "*", _}, {:ok, type, _, _}), do: :gt
   def compare({:ok, type, _, _}, {:ok, type, "*", _}), do: :lt
+
   def compare({:ok, type, subtype_a, _}, {:ok, type, subtype_b, _}) do
     cond do
       subtype_a > subtype_b -> :gt

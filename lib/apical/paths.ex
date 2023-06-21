@@ -200,7 +200,6 @@ defmodule Apical.Paths do
          version,
          plug_opts
        ) do
-
     # TODO: filter out content_sources. and pass that into the plug without sending it
     # to the plug
 

@@ -4,7 +4,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
     alias Plug.Conn
 
     @impl true
-    def fetch(conn, opts) do
+    def fetch(conn, _, opts) do
       response = Keyword.get(opts, :tag, "generic")
 
       {:ok, Conn.put_private(conn, :response, response)}
@@ -132,7 +132,8 @@ defmodule ApicalTest.RequestBody.OtherTest do
     end
 
     test "the content-subtype with option overrides generic matches", %{conn: conn} do
-      assert "application option" = do_post(conn, "/multi-parser", "foo", "application/x-foo; charset=utf-8")
+      assert "application option" =
+               do_post(conn, "/multi-parser", "foo", "application/x-foo; charset=utf-8")
     end
   end
 
@@ -148,11 +149,13 @@ defmodule ApicalTest.RequestBody.OtherTest do
 
   describe "when content-type is declared by operation_id" do
     test "the fully generic conent-type is accepted when it doesn't match", %{conn: conn} do
-      assert "application specific" = do_post(conn, "/operation-parser", "foo", "application/x-foo")
+      assert "application specific" =
+               do_post(conn, "/operation-parser", "foo", "application/x-foo")
     end
 
     test "the content-subtype with option overrides generic matches", %{conn: conn} do
-      assert "application operation_id" = do_post(conn, "/operation-parser", "foo", "application/x-bar")
+      assert "application operation_id" =
+               do_post(conn, "/operation-parser", "foo", "application/x-bar")
     end
   end
 end
