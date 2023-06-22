@@ -8,14 +8,14 @@ defmodule ApicalTest.Refs.PathItemObjectTest do
       """
       openapi: 3.1.0
       info:
-        title: TestGet
+        title: PathItemObjectTest
         version: 1.0.0
       paths:
         "/":
-          "$ref": "#/components/pathItems/GetTest"
+          "$ref": "#/components/pathItems/PathItemObjectTest"
       components:
         pathItems:
-          GetTest:
+          PathItemObjectTest:
             get:
               operationId: testGet
               responses:
@@ -23,7 +23,7 @@ defmodule ApicalTest.Refs.PathItemObjectTest do
                   description: OK
       """,
       root: "/",
-      controller: ApicalTest.Verbs.GetTest,
+      controller: ApicalTest.Refs.PathItemObjectTest,
       content_type: "application/yaml"
     )
   end

@@ -2,19 +2,27 @@ defmodule Apical.Phoenix do
   alias Apical.Paths
   alias Apical.Schema
 
-  def router(openapi = %{"info" => %{"version" => version}, "paths" => paths}, schema, opts) do
-    Schema.verify_schema_basics!(openapi)
+  def router(schema = %{"info" => %{"version" => version}}, schema_string, opts) do
+    Schema.verify_router!(schema)
 
-    name = Keyword.get_lazy(opts, :name, fn -> hash(openapi) end)
+    name = Keyword.get_lazy(opts, :name, fn -> hash(schema) end)
     encode_opts = Keyword.take(opts, ~w(content_type mimetype_mapping)a)
-    route_opts = Keyword.put(opts, :name, name)
 
-    root = resolve_root(version, opts)
-    routes = Enum.flat_map(paths, &Paths.to_routes(root, &1, version, route_opts))
+    route_opts =
+      Keyword.merge(opts,
+        name: name,
+        root: resolve_root(version, opts),
+        version: version
+      )
+
+    routes =
+      "/paths"
+      |> JsonPtr.from_path()
+      |> JsonPtr.flat_map(schema, &Paths.to_routes(&1, &2, &3, schema, route_opts))
 
     quote do
       require Exonerate
-      Exonerate.register_resource(unquote(schema), unquote(name), unquote(encode_opts))
+      Exonerate.register_resource(unquote(schema_string), unquote(name), unquote(encode_opts))
 
       unquote(external_resource(opts))
 

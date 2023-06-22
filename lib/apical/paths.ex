@@ -7,29 +7,33 @@ defmodule Apical.Paths do
   alias Apical.Tools
   alias Plug.Conn
 
-  def to_routes(root, {path, methods}, version, opts) do
-    base_pointer =
-      "/paths"
-      |> JsonPtr.from_path()
-      |> JsonPtr.join(path)
+  def to_routes(_pointer, path, %{"$ref" => ref}, schema, opts) do
+    # for now, don't handle the remote ref scenario, or the id scenario.
+    new_pointer = JsonPtr.from_uri(ref)
+    subschema = JsonPtr.resolve_json!(schema, new_pointer)
 
-    Enum.map(methods, &to_route(root, path, &1, base_pointer, version, opts))
+    to_routes(new_pointer, path, subschema, schema, opts)
+  end
+
+  def to_routes(pointer, path, _subschema, schema, opts) do
+    # each route contains a map of verbs to operations.
+    # map over that content to generate routes.
+    JsonPtr.map(pointer, schema, &to_route(&1, &2, &3, schema, path, opts))
   end
 
   @verb_mapping Map.new(~w(get put post delete options head patch trace)a, &{"#{&1}", &1})
   @verbs Map.keys(@verb_mapping)
 
-  defp to_route(
-         root,
-         path,
-         {verb, operation = %{"operationId" => operation_id}},
-         base_pointer,
-         version,
-         opts
-       )
-       when verb in @verbs do
+  defp to_route(pointer, verb, operation, schema, path, opts) when verb in @verbs do
+    Tools.assert(
+      Map.has_key?(operation, "operationId"),
+      "that all operations have an operationId: (missing for operation at `#{JsonPtr.to_path(pointer)}`)"
+    )
+
+    operation_id = Map.fetch!(operation, "operationId")
+
     {canonical_path, path_parameters} =
-      case path(path, context: %{path_parameters: []}) do
+      case parse_path(path, context: %{path_parameters: []}) do
         {:ok, canonical, "", context, _, _} ->
           {"#{canonical}", context.path_parameters}
 
@@ -37,11 +41,12 @@ defmodule Apical.Paths do
           raise CompileError, description: "path #{path} is not a valid path template"
       end
 
-    verb_pointer = JsonPtr.join(base_pointer, verb)
     verb = Map.fetch!(@verb_mapping, verb)
 
     tags = Map.get(operation, "tags", [])
     opts = fold_opts(opts, tags, operation_id)
+    version = Keyword.fetch!(opts, :version)
+    root = Keyword.fetch!(opts, :root)
 
     operation_pipeline = :"#{version}-#{operation_id}"
     # TODO: resolve function using operationId options
@@ -89,7 +94,7 @@ defmodule Apical.Paths do
       |> Enum.with_index()
       |> Enum.flat_map(fn
         {subschema, index} ->
-          pointer = JsonPtr.join(verb_pointer, ["parameters", "#{index}"])
+          pointer = JsonPtr.join(pointer, ["parameters", "#{index}"])
           name = Map.fetch!(subschema, "name")
           fn_name = Parameter.validator_name(version, operation_id, name)
           validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
@@ -101,7 +106,7 @@ defmodule Apical.Paths do
       |> Kernel.||([])
       |> Enum.flat_map(fn
         {mimetype, subschema} ->
-          pointer = JsonPtr.join(verb_pointer, ["requestBody", "content", mimetype])
+          pointer = JsonPtr.join(pointer, ["requestBody", "content", mimetype])
           fn_name = RequestBody.validator_name(version, operation_id, mimetype)
           validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
       end)
@@ -300,13 +305,13 @@ defmodule Apical.Paths do
     RBRACKET <- "}"
     expression <- LBRACKET identifiers+ RBRACKET
 
-    path <- (expression / literal)+ eof
+    parse_path <- (expression / literal)+ eof
     eof <- !.
     """,
     LBRACKET: [ignore: true],
     RBRACKET: [ignore: true],
     expression: [post_traverse: :to_colon_form],
-    path: [parser: true]
+    parse_path: [parser: true]
   )
 
   defcombinatorp(:unreserved_extra, ascii_char(~C'-._~'))

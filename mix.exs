@@ -30,7 +30,7 @@ defmodule Apical.MixProject do
       {:phoenix_html, "~> 3.3.1", only: :test},
       {:yaml_elixir, "~> 2.7", optional: true},
       {:jason, "~> 1.4", optional: true},
-      {:json_ptr, "~> 1.0"}
+      {:json_ptr, "~> 1.2"}
     ]
   end
 end
