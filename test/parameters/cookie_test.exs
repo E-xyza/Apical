@@ -170,7 +170,7 @@ defmodule ApicalTest.Parameters.CookieTest do
 
     test "it fails when not present", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation cookieParamRequired (in cookie): required cookie `required` not present",
+                   "Parameter Error in operation cookieParamRequired (in cookie): required parameter `required` not present",
                    fn ->
                      get(conn, "/required")
                    end

@@ -214,11 +214,19 @@ defmodule ApicalTest.Parameters.QueryTest do
     end
 
     test "it fails when not present", %{conn: conn} do
-      assert %{status: 400} = get(conn, "/required/?")
+      assert_raise ParameterError,
+                   "Parameter Error in operation queryParamRequired (in query): required parameter `required` not present",
+                   fn ->
+                     get(conn, "/required/?")
+                   end
     end
 
     test "it fails no query is present", %{conn: conn} do
-      assert %{status: 400} = get(conn, "/required/")
+      assert_raise ParameterError,
+                   "Parameter Error in operation queryParamRequired (in query): required parameter `required` not present",
+                   fn ->
+                     get(conn, "/required/")
+                   end
     end
   end
 

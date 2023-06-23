@@ -13,7 +13,7 @@ defmodule Apical.Plugs.Cookie do
 
   @impl Plug
   def call(conn, operations = %{parser_context: parser_context}) do
-    cookie_params =
+    params =
       with {_, value} <- List.keyfind(conn.req_headers, "cookie", 0) do
         case Query.parse(value, parser_context) do
           {:ok, result} ->
@@ -49,23 +49,12 @@ defmodule Apical.Plugs.Cookie do
       end
 
     # TODO: make this recursive
-    operations
-    |> Map.get(:required, [])
-    |> Enum.each(fn
-      required_cookie when is_map_key(cookie_params, required_cookie) ->
-        :ok
-
-      missing_cookie ->
-        raise ParameterError,
-          operation_id: conn.private.operation_id,
-          in: :cookie,
-          reason: "required cookie `#{missing_cookie}` not present"
-    end)
 
     conn
-    |> Map.update!(:params, &Map.merge(&1, cookie_params))
-    |> Parameter.warn_deprecated(cookie_params, :cookie, operations)
-    |> Parameter.validate(cookie_params, :cookie, operations)
+    |> Parameter.check_required(params, :cookie, operations)
+    |> Map.update!(:params, &Map.merge(&1, params))
+    |> Parameter.warn_deprecated(params, :cookie, operations)
+    |> Parameter.validate(params, :cookie, operations)
   end
 
   @impl Apical.Plugs.Parameter

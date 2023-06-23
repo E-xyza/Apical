@@ -50,15 +50,19 @@ defmodule ApicalTest.Refs.ParameterObjectTest do
 
   describe "for get route with shared parameter" do
     test "fails when missing parameter", %{conn: conn} do
-      assert_raise ParameterError, "", fn ->
-        get(conn, "/")
-      end
+      assert_raise ParameterError,
+                   "Parameter Error in operation parameterGet (in query): required parameter `required` not present",
+                   fn ->
+                     get(conn, "/")
+                   end
     end
 
     test "fails when not marshallable", %{conn: conn} do
-      assert_raise ParameterError, "Parameter Error in operation parameterGet (in query): value `\"foo\"` at `/` fails schema criterion at `#/components/parameters/ParameterObjectTest/schema/type`", fn ->
-        get(conn, "/?required=foo")
-      end
+      assert_raise ParameterError,
+                   "Parameter Error in operation parameterGet (in query): value `\"foo\"` at `/` fails schema criterion at `#/components/parameters/ParameterObjectTest/schema/type`",
+                   fn ->
+                     get(conn, "/?required=foo")
+                   end
     end
 
     test "works when marshallable", %{conn: conn} do
@@ -71,15 +75,19 @@ defmodule ApicalTest.Refs.ParameterObjectTest do
 
   describe "for post route with shared parameter" do
     test "fails when missing parameter", %{conn: conn} do
-      assert_raise ParameterError, "", fn ->
-        post(conn, "/")
-      end
+      assert_raise ParameterError,
+                   "Parameter Error in operation parameterPost (in query): required parameter `required` not present",
+                   fn ->
+                     post(conn, "/")
+                   end
     end
 
     test "fails when not marshallable", %{conn: conn} do
-      assert_raise ParameterError, "Parameter Error in operation parameterPost (in query): value `\"foo\"` at `/` fails schema criterion at `#/components/parameters/ParameterObjectTest/schema/type`", fn ->
-        post(conn, "/?required=foo")
-      end
+      assert_raise ParameterError,
+                   "Parameter Error in operation parameterPost (in query): value `\"foo\"` at `/` fails schema criterion at `#/components/parameters/ParameterObjectTest/schema/type`",
+                   fn ->
+                     post(conn, "/?required=foo")
+                   end
     end
 
     test "works when marshallable", %{conn: conn} do

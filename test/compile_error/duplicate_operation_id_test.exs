@@ -41,7 +41,7 @@ defmodule ApicalTest.CompileError.DuplicateOperationIdTest do
 
   @attempt_compile fails
 
-  test "nonexistent path parameter raises compile error" do
+  test "nonunique operation ids compile error" do
     assert_raise CompileError,
                  " Your schema violates the OpenAPI requirement that operationIds are unique: (got more than one `fails`)",
                  fn ->

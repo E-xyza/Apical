@@ -6,6 +6,8 @@ defmodule Apical.Plugs.Parameter do
   alias Apical.Plugs.Query
   alias Apical.Tools
   alias Apical.Validators
+  alias Apical.Exceptions.ParameterError
+
   alias Plug.Conn
 
   # common functions for parameter plugs to use generally
@@ -364,18 +366,22 @@ defmodule Apical.Plugs.Parameter do
   # REQUIRED PARAMETERS
 
   # TODO: refactor this into a recursive call
-  def filter_required(conn, params, _in_, %{required: required}) do
-    if Enum.all?(required, &is_map_key(params, &1)) do
-      conn
-    else
-      # TODO: raise so that this message can be customized
-      conn
-      |> Conn.put_status(400)
-      |> Conn.halt()
-    end
+  def check_required(conn, params, in_, %{required: required}) do
+    Enum.each(required, fn
+      parameter when is_map_key(params, parameter) ->
+        :ok
+
+      parameter ->
+        raise ParameterError,
+          operation_id: conn.private.operation_id,
+          in: in_,
+          reason: "required parameter `#{parameter}` not present"
+    end)
+
+    conn
   end
 
-  def filter_required(conn, _, _, _), do: conn
+  def check_required(conn, _, _, _), do: conn
 
   # DEPRECATED PARAMETERS
 
@@ -483,10 +489,7 @@ defmodule Apical.Plugs.Parameter do
     new_validator =
       make_parameter_validator(subschema, parameter_pointer, operation_id, plug_opts)
 
-    if name in acc.parameters do
-      # TODO: make this a more specific exonerate error.
-      raise "Duplicate parameter name: #{name}"
-    end
+    Tools.assert(name not in acc.parameters, "for unique parameters: the parameter `#{name}` is not unique (in operation `#{operation_id}`)")
 
     %{
       plugs: Map.update(acc.plugs, module, [subschema], &[subschema | &1]),

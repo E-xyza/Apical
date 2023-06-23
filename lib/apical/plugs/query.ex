@@ -14,7 +14,7 @@ defmodule Apical.Plugs.Query do
     conn = Apical.Conn.fetch_query_params!(conn, operations.parser_context)
 
     conn
-    |> Parameter.filter_required(conn.query_params, :query, operations)
+    |> Parameter.check_required(conn.query_params, :query, operations)
     |> Parameter.warn_deprecated(conn.query_params, :query, operations)
     |> Parameter.validate(conn.query_params, :query, operations)
   end
