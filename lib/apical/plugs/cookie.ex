@@ -1,14 +1,14 @@
 defmodule Apical.Plugs.Cookie do
-  @behaviour Plug
-  @behaviour Apical.Plugs.Parameter
-
   alias Apical.Parser.Query
-  alias Apical.Plugs.Common
+  alias Apical.Plugs.Parameter
   alias Apical.Exceptions.ParameterError
+
+  @behaviour Parameter
+  @behaviour Plug
 
   @impl Plug
   def init(opts) do
-    Common.init([__MODULE__ | opts])
+    Parameter.init([__MODULE__ | opts])
   end
 
   @impl Plug
@@ -64,8 +64,8 @@ defmodule Apical.Plugs.Cookie do
 
     conn
     |> Map.update!(:params, &Map.merge(&1, cookie_params))
-    |> Common.warn_deprecated(cookie_params, :cookie, operations)
-    |> Common.validate(cookie_params, :cookie, operations)
+    |> Parameter.warn_deprecated(cookie_params, :cookie, operations)
+    |> Parameter.validate(cookie_params, :cookie, operations)
   end
 
   @impl Apical.Plugs.Parameter

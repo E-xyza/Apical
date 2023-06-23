@@ -87,26 +87,8 @@ defmodule Apical.Paths do
           end
       end)
 
-    # generate exonerate validators.
-    parameter_validators =
-      operation
-      |> Map.get("parameters")
-      |> List.wrap()
-      |> Enum.with_index()
-      |> Enum.flat_map(fn
-        {subschema, index} ->
-          pointer = JsonPtr.join(pointer, ["parameters", "#{index}"])
-          name = Map.fetch!(subschema, "name")
-          fn_name = Parameter.validator_name(version, operation_id, name)
-
-          Validators.make_quoted(
-            subschema,
-            Keyword.fetch!(opts, :resource),
-            pointer,
-            fn_name,
-            opts
-          )
-      end)
+    {parameter_plugs, parameter_validators} =
+      Parameter.make(pointer, schema, operation_id, plug_opts)
 
     {body_plugs, body_validators} = RequestBody.make(pointer, schema, operation_id, plug_opts)
 
@@ -120,7 +102,7 @@ defmodule Apical.Paths do
 
         plug(Apical.Plugs.SetVersion, unquote(version))
         plug(Apical.Plugs.SetOperationId, unquote(operation_id))
-        unquote(parameter_plugs(operation, version, plug_opts))
+        unquote(parameter_plugs)
 
         unquote(body_plugs)
       end
@@ -130,74 +112,6 @@ defmodule Apical.Paths do
         unquote(verb)(unquote(canonical_path), unquote(controller), unquote(function))
       end
     end
-  end
-
-  @query_mappings %{
-    "query" => Apical.Plugs.Query,
-    "header" => Apical.Plugs.Header,
-    "path" => Apical.Plugs.Path,
-    "cookie" => Apical.Plugs.Cookie
-  }
-
-  defp parameter_plugs(
-         %{"parameters" => parameters, "operationId" => operation_id},
-         version,
-         plug_opts
-       ) do
-    verify_no_duplicate_parameters!(parameters, operation_id)
-
-    parameters
-    |> Enum.group_by(& &1["in"])
-    |> Enum.map(fn {location, parameter_opts} ->
-      verify_not_form_exploded_object!(parameter_opts, operation_id)
-
-      case Map.fetch(@query_mappings, location) do
-        {:ok, plug} ->
-          quote do
-            plug(
-              unquote(plug),
-              [__MODULE__] ++
-                unquote([version, operation_id, Macro.escape(parameter_opts), plug_opts])
-            )
-          end
-
-        _ ->
-          raise "Unsupported parameter location: #{location}"
-      end
-    end)
-  end
-
-  defp parameter_plugs(_, _, _), do: []
-
-  defp verify_no_duplicate_parameters!(parameters, operation_id) do
-    Enum.reduce(parameters, MapSet.new(), fn
-      %{"name" => name}, so_far ->
-        Tools.assert(
-          name not in so_far,
-          "for operation `#{operation_id}`: the parameter `#{name}` is not unique"
-        )
-
-        MapSet.put(so_far, name)
-    end)
-  end
-
-  defp verify_not_form_exploded_object!(parameter_opts, operation_id) do
-    Enum.each(parameter_opts, fn
-      %{
-        "explode" => true,
-        "style" => "form",
-        "schema" => %{"type" => type_or_types},
-        "name" => name
-      } ->
-        Tools.assert(
-          "object" not in List.wrap(type_or_types),
-          "for parameter `#{name}` in operation `#{operation_id}`: form exploded parameters may not be objects",
-          apical: true
-        )
-
-      _ ->
-        :ok
-    end)
   end
 
   @folded_opts ~w(controller styles parameters extra_plugs nest_all_json content_sources dump dump_validator)a

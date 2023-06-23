@@ -205,6 +205,8 @@ defmodule Apical.Plugs.RequestBody do
   end
 
   #############################################################################
+  ## builds request body plugs.  To be called at compilation step.
+
   @no_request_bodies {[], []}
 
   @spec make(JsonPtr.t(), schema :: map(), operation_id :: String.t(), plug_opts :: keyword()) ::
@@ -265,7 +267,6 @@ defmodule Apical.Plugs.RequestBody do
         end,
         Validators.make_quoted(
           content_schema,
-          Keyword.fetch!(plug_opts, :resource),
           JsonPtr.join(pointer, ["content", media_type]),
           validator_name(version, operation_id, media_type),
           plug_opts

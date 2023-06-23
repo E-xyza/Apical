@@ -6,8 +6,10 @@ defmodule Apical.Validators do
 
   @exonerate_opts ~w(metadata format decoders draft)a
 
-  @spec make_quoted(map, term, JsonPtr.t(), atom, keyword()) :: [Macro.t()]
-  def make_quoted(subschema, resource, pointer, fn_name, opts) do
+  @spec make_quoted(map, JsonPtr.t(), atom, keyword()) :: [Macro.t()]
+  def make_quoted(subschema, pointer, fn_name, opts) do
+    resource = Keyword.fetch!(opts, :resource)
+
     List.wrap(
       if Map.get(subschema, "schema") do
         schema_pointer =
