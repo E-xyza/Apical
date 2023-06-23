@@ -3,6 +3,7 @@ defmodule Apical.Plugs.Parameter do
   @callback default_style() :: String.t()
   @callback style_allowed?(String.t()) :: boolean
 
+  alias Apical.Plugs.Query
   alias Apical.Tools
   alias Apical.Validators
   alias Plug.Conn
