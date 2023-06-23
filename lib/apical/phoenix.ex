@@ -5,12 +5,12 @@ defmodule Apical.Phoenix do
   def router(schema = %{"info" => %{"version" => version}}, schema_string, opts) do
     Schema.verify_router!(schema)
 
-    name = Keyword.get_lazy(opts, :name, fn -> hash(schema) end)
+    resource = Keyword.get_lazy(opts, :resource, fn -> hash(schema) end)
     encode_opts = Keyword.take(opts, ~w(content_type mimetype_mapping)a)
 
     route_opts =
       Keyword.merge(opts,
-        name: name,
+        resource: resource,
         root: resolve_root(version, opts),
         version: version
       )
@@ -22,7 +22,7 @@ defmodule Apical.Phoenix do
 
     quote do
       require Exonerate
-      Exonerate.register_resource(unquote(schema_string), unquote(name), unquote(encode_opts))
+      Exonerate.register_resource(unquote(schema_string), unquote(resource), unquote(encode_opts))
 
       unquote(external_resource(opts))
 

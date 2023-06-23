@@ -5,13 +5,12 @@ defmodule Apical.Paths do
   alias Apical.Plugs.Parameter
   alias Apical.Plugs.RequestBody
   alias Apical.Tools
-  alias Plug.Conn
+  alias Apical.Validators
 
   def to_routes(_pointer, path, %{"$ref" => ref}, schema, opts) do
     # for now, don't handle the remote ref scenario, or the id scenario.
     new_pointer = JsonPtr.from_uri(ref)
     subschema = JsonPtr.resolve_json!(schema, new_pointer)
-
     to_routes(new_pointer, path, subschema, schema, opts)
   end
 
@@ -54,7 +53,9 @@ defmodule Apical.Paths do
 
     plug_opts =
       opts
-      |> Keyword.take(~w(styles parameters nest_all_json content_sources)a)
+      |> Keyword.take(
+        ~w(styles parameters nest_all_json content_sources version resource dump dump_validator)a
+      )
       |> Keyword.merge(path_parameters: path_parameters, path: path)
 
     controller =
@@ -97,19 +98,17 @@ defmodule Apical.Paths do
           pointer = JsonPtr.join(pointer, ["parameters", "#{index}"])
           name = Map.fetch!(subschema, "name")
           fn_name = Parameter.validator_name(version, operation_id, name)
-          validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
+
+          Validators.make_quoted(
+            subschema,
+            Keyword.fetch!(opts, :resource),
+            pointer,
+            fn_name,
+            opts
+          )
       end)
 
-    body_validators =
-      operation
-      |> get_in(~w(requestBody content))
-      |> Kernel.||([])
-      |> Enum.flat_map(fn
-        {mimetype, subschema} ->
-          pointer = JsonPtr.join(pointer, ["requestBody", "content", mimetype])
-          fn_name = RequestBody.validator_name(version, operation_id, mimetype)
-          validator(subschema, Keyword.fetch!(opts, :name), pointer, fn_name, opts)
-      end)
+    {body_plugs, body_validators} = RequestBody.make(pointer, schema, operation_id, plug_opts)
 
     quote do
       # TODO: make these functions
@@ -122,7 +121,8 @@ defmodule Apical.Paths do
         plug(Apical.Plugs.SetVersion, unquote(version))
         plug(Apical.Plugs.SetOperationId, unquote(operation_id))
         unquote(parameter_plugs(operation, version, plug_opts))
-        unquote(request_body_plugs(operation, version, plug_opts))
+
+        unquote(body_plugs)
       end
 
       scope unquote(root) do
@@ -200,67 +200,7 @@ defmodule Apical.Paths do
     end)
   end
 
-  defp request_body_plugs(
-         %{"requestBody" => %{"content" => content}, "operationId" => operation_id},
-         version,
-         plug_opts
-       ) do
-    # TODO: filter out content_sources. and pass that into the plug without sending it
-    # to the plug
-
-    matching_plugs =
-      content
-      |> Enum.sort_by(&Conn.Utils.media_type(elem(&1, 0)), Apical.Plugs.RequestBody)
-      |> Enum.map(fn {content_type, content_opts} ->
-        quote do
-          plug(
-            Apical.Plugs.RequestBody,
-            [__MODULE__] ++
-              unquote([version, operation_id, content_type, Macro.escape(content_opts), plug_opts])
-          )
-        end
-      end)
-
-    [
-      quote do
-        plug(Apical.Plugs.RequestBody, :match)
-      end
-    ] ++
-      matching_plugs ++
-      [
-        quote do
-          plug(Apical.Plugs.RequestBody, :not_matched)
-        end
-      ]
-  end
-
-  defp request_body_plugs(_, _, _), do: []
-
-  defp validator(body, resource, pointer, fn_name, opts) do
-    List.wrap(
-      if Map.get(body, "schema") do
-        schema_pointer =
-          pointer
-          |> JsonPtr.join("schema")
-          |> JsonPtr.to_uri()
-          |> to_string
-          |> String.trim_leading("#")
-
-        opts = Keyword.put(opts, :entrypoint, schema_pointer)
-
-        quote do
-          Exonerate.function_from_resource(
-            :def,
-            unquote(fn_name),
-            unquote(resource),
-            unquote(opts)
-          )
-        end
-      end
-    )
-  end
-
-  @folded_opts ~w(controller styles parameters extra_plugs nest_all_json content_sources)a
+  @folded_opts ~w(controller styles parameters extra_plugs nest_all_json content_sources dump dump_validator)a
 
   defp fold_opts(opts, tags, operation_id) do
     # NB it's totally okay if this process is unoptimized since it

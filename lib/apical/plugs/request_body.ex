@@ -11,6 +11,7 @@ defmodule Apical.Plugs.RequestBody do
   alias Apical.Plugs.RequestBody.FormEncoded
   alias Apical.Plugs.RequestBody.Json
   alias Apical.Plugs.RequestBody.Default
+  alias Apical.Validators
 
   @impl Plug
   def init(:match), do: :match
@@ -201,5 +202,76 @@ defmodule Apical.Plugs.RequestBody do
       type_a > type_b -> :gt
       type_a < type_b -> :lt
     end
+  end
+
+  #############################################################################
+  @no_request_bodies {[], []}
+
+  @spec make(JsonPtr.t(), schema :: map(), operation_id :: String.t(), plug_opts :: keyword()) ::
+          {plugs :: [Macro.t()], validations :: [Macro.t()]}
+  def make(pointer, schema, operation_id, plug_opts) do
+    request_body_pointer = JsonPtr.join(pointer, "requestBody")
+
+    case JsonPtr.resolve_json(schema, request_body_pointer) do
+      {:ok, subschema} ->
+        {plugs, validators} =
+          do_make(subschema, request_body_pointer, schema, operation_id, plug_opts)
+
+        bookended_plugs =
+          [
+            quote do
+              plug(Apical.Plugs.RequestBody, :match)
+            end
+          ] ++
+            plugs ++
+            [
+              quote do
+                plug(Apical.Plugs.RequestBody, :not_matched)
+              end
+            ]
+
+        {bookended_plugs, List.flatten(validators)}
+
+      _ ->
+        @no_request_bodies
+    end
+  end
+
+  defp do_make(%{"$ref" => ref}, _, schema, operation_id, plug_opts) do
+    # for now, don't handle remote refs
+    pointer = JsonPtr.from_uri(ref)
+
+    schema
+    |> JsonPtr.resolve_json!(pointer)
+    |> do_make(pointer, schema, operation_id, plug_opts)
+  end
+
+  defp do_make(%{"content" => content}, pointer, _schema, operation_id, plug_opts) do
+    # TODO: filter out content_sources. and pass that into the plug without sending it
+    # to the plug
+
+    version = Keyword.fetch!(plug_opts, :version)
+
+    content
+    |> Enum.sort_by(&Conn.Utils.media_type(elem(&1, 0)), Apical.Plugs.RequestBody)
+    |> Enum.map(fn {media_type, content_schema} ->
+      {
+        quote do
+          plug(
+            Apical.Plugs.RequestBody,
+            [__MODULE__] ++
+              unquote([version, operation_id, media_type, Macro.escape(content_schema), plug_opts])
+          )
+        end,
+        Validators.make_quoted(
+          content_schema,
+          Keyword.fetch!(plug_opts, :resource),
+          JsonPtr.join(pointer, ["content", media_type]),
+          validator_name(version, operation_id, media_type),
+          plug_opts
+        )
+      }
+    end)
+    |> Enum.unzip()
   end
 end

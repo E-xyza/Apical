@@ -31,6 +31,8 @@ defmodule ApicalTest.Refs.RequestBodyObjectTest do
   end
 
   use ApicalTest.EndpointCase
+
+  alias Apical.Exceptions.ParameterError
   alias Plug.Conn
 
   def testPost(conn, params) do
@@ -41,19 +43,26 @@ defmodule ApicalTest.Refs.RequestBodyObjectTest do
 
   @array ["foo", "bar"]
 
+  def do_post(conn, content) do
+    encoded = Jason.encode!(content)
+    length = byte_size(encoded)
+
+    conn
+    |> Conn.put_req_header("content-type", "application/json")
+    |> Conn.put_req_header("content-length", "#{length}")
+    |> post("/", Jason.encode!(content))
+    |> json_response(200)
+  end
+
   test "POST /", %{conn: conn} do
-    assert %{"_json" => @array} =
-             conn
-             |> Conn.put_req_header("content-type", "application/json")
-             |> post("/", Jason.encode!(@array))
-             |> json_response(200)
+    assert %{"_json" => @array} = do_post(conn, @array)
   end
 
   test "failure", %{conn: conn} do
-    assert_raise Foo, "", fn ->
-      conn
-      |> Conn.put_req_header("content-type", "application/json")
-      |> post("/", Jason.encode!(%{"foo" => "bar"}))
-    end
+    assert_raise ParameterError,
+                 "Parameter Error in operation testPost (in body): value `{\"foo\":\"bar\"}` at `/` fails schema criterion at `#/components/requestBodies/RequestBodyObjectTest/content/application~1json/schema/type`",
+                 fn ->
+                   do_post(conn, %{"foo" => "bar"})
+                 end
   end
 end

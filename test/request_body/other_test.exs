@@ -158,4 +158,8 @@ defmodule ApicalTest.RequestBody.OtherTest do
                do_post(conn, "/operation-parser", "foo", "application/x-bar")
     end
   end
+
+  test "generic missing content-type error"
+
+  test "generic missing content-length error"
 end
