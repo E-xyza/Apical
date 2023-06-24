@@ -464,6 +464,20 @@ defmodule Apical.Plugs.Parameter do
   }
   @locations Map.keys(@location_modules)
 
+  @object_types ["object", ["object"], [nil, "object"]]
+
+  defp do_make(
+         %{"explode" => true, "style" => "form", "schema" => %{"type" => type}, "name" => name},
+         _,
+         _,
+         _,
+         operation_id,
+         _
+       )
+       when type in @object_types do
+    Tools.assert(false, "for parameter `#{name}` in operation `#{operation_id}`: form exploded parameters may not be objects", apical: true)
+  end
+
   defp do_make(%{"$ref" => ref}, _parameter_pointer, acc, schema, operation_id, plug_opts) do
     # for now, don't handle remote refs
     pointer = JsonPtr.from_uri(ref)
