@@ -276,7 +276,8 @@ defmodule Apical.Plugs.Parameter do
          "name" => key
        })
        when is_map_key(context, key) do
-    outer_type = context[key].type
+
+    outer_type = Map.get(context[key], :type, [])
 
     cond do
       :array in outer_type ->
