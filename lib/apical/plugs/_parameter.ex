@@ -276,7 +276,6 @@ defmodule Apical.Plugs.Parameter do
          "name" => key
        })
        when is_map_key(context, key) do
-
     outer_type = Map.get(context[key], :type, [])
 
     cond do
@@ -481,13 +480,17 @@ defmodule Apical.Plugs.Parameter do
          _schema,
          operation_id,
          plug_opts
-       ) when in_ in @locations do
+       )
+       when in_ in @locations do
     module = Map.fetch!(@location_modules, in_)
 
     new_validator =
       make_parameter_validator(subschema, parameter_pointer, operation_id, plug_opts)
 
-    Tools.assert(name not in acc.parameters, "for unique parameters: the parameter `#{name}` is not unique (in operation `#{operation_id}`)")
+    Tools.assert(
+      name not in acc.parameters,
+      "for unique parameters: the parameter `#{name}` is not unique (in operation `#{operation_id}`)"
+    )
 
     %{
       plugs: Map.update(acc.plugs, module, [subschema], &[subschema | &1]),
@@ -497,7 +500,10 @@ defmodule Apical.Plugs.Parameter do
   end
 
   defp do_make(%{"in" => non_location}, _, _, _, operation_id, _) do
-    Tools.assert(false, "for parameters, invalid parameter location: `#{non_location}` (in operation `#{operation_id}`)")
+    Tools.assert(
+      false,
+      "for parameters, invalid parameter location: `#{non_location}` (in operation `#{operation_id}`)"
+    )
   end
 
   defp do_make(%{}, _, _, _, operation_id, _) do

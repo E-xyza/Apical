@@ -4,6 +4,6 @@ defmodule Apical.Schema do
   alias Apical.Tools
 
   def verify_router!(schema) do
-    Tools.assert(is_map_key(schema, "paths"), "the schema has a `paths` key")
+    Tools.assert(is_map_key(schema, "paths"), "that the schema has a `paths` key")
   end
 end
