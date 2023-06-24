@@ -24,7 +24,16 @@ defmodule Apical.Paths do
   @verb_mapping Map.new(~w(get put post delete options head patch trace)a, &{"#{&1}", &1})
   @verbs Map.keys(@verb_mapping)
 
-  defp to_route(pointer, verb, operation, {routes_so_far, operation_ids_so_far}, schema, path, opts) when verb in @verbs do
+  defp to_route(
+         pointer,
+         verb,
+         operation,
+         {routes_so_far, operation_ids_so_far},
+         schema,
+         path,
+         opts
+       )
+       when verb in @verbs do
     Tools.assert(
       Map.has_key?(operation, "operationId"),
       "that all operations have an operationId: (missing for operation at `#{JsonPtr.to_path(pointer)}`)"
@@ -93,26 +102,27 @@ defmodule Apical.Paths do
 
     {body_plugs, body_validators} = RequestBody.make(pointer, schema, operation_id, plug_opts)
 
-    route = quote do
-      # TODO: make these functions
-      unquote(parameter_validators)
-      unquote(body_validators)
+    route =
+      quote do
+        # TODO: make these functions
+        unquote(parameter_validators)
+        unquote(body_validators)
 
-      pipeline unquote(operation_pipeline) do
-        unquote(extra_plugs)
+        pipeline unquote(operation_pipeline) do
+          unquote(extra_plugs)
 
-        plug(Apical.Plugs.SetVersion, unquote(version))
-        plug(Apical.Plugs.SetOperationId, unquote(operation_id))
-        unquote(parameter_plugs)
+          plug(Apical.Plugs.SetVersion, unquote(version))
+          plug(Apical.Plugs.SetOperationId, unquote(operation_id))
+          unquote(parameter_plugs)
 
-        unquote(body_plugs)
+          unquote(body_plugs)
+        end
+
+        scope unquote(root) do
+          pipe_through(unquote(operation_pipeline))
+          unquote(verb)(unquote(canonical_path), unquote(controller), unquote(function))
+        end
       end
-
-      scope unquote(root) do
-        pipe_through(unquote(operation_pipeline))
-        unquote(verb)(unquote(canonical_path), unquote(controller), unquote(function))
-      end
-    end
 
     {[route | routes_so_far], MapSet.put(operation_ids_so_far, operation_id)}
   end

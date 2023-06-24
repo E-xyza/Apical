@@ -41,19 +41,18 @@ defmodule Apical.Plugs.RequestBody.Source do
     if false, the result *may* be an improper iolist.
   """
   def fetch_body(conn, opts) do
-    with [length_str] <- Conn.get_req_header(conn, "content-length"),
-         max_length = Keyword.get(opts, :length, 8_000_000),
-         {{length, ""}, _length_str} when length <= max_length <-
-           {Integer.parse(length_str), length_str} do
-      chunk_opts = [length: Keyword.get(opts, :read_length, 1_000_000)]
-      string? = Keyword.get(opts, :string, true)
-      fetch_body(conn, [], length, string?, chunk_opts)
-    else
-      # TODO: check all of these, and handle with error instead.
-      [] -> raise "no content-length header found"
-      {:error, _length_str} -> raise "not a length string"
-      {{_, _extra}, _length_str} -> raise "not a length string"
+    content_length = conn.private.content_length
+    max_length = Keyword.get(opts, :length, 8_000_000)
+    string? = Keyword.get(opts, :string, true)
+
+    if content_length > max_length do
+      raise Apical.Exceptions.RequestBodyTooLargeError,
+        max_length: max_length,
+        content_length: content_length
     end
+
+    chunk_opts = [length: Keyword.get(opts, :read_length, 1_000_000)]
+    fetch_body(conn, [], content_length, string?, chunk_opts)
   end
 
   defp fetch_body(conn, so_far, length, string?, chunk_opts) do

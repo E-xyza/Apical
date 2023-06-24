@@ -4,6 +4,12 @@ defmodule Apical.Exceptions.MissingContentTypeError do
   def message(_), do: "missing content-type header"
 end
 
+defmodule Apical.Exceptions.MultipleContentTypeError do
+  defexception plug_status: 400
+
+  def message(_), do: "multiple content-type headers found"
+end
+
 defmodule Apical.Exceptions.InvalidContentTypeError do
   defexception [:invalid_string, plug_status: 400]
 

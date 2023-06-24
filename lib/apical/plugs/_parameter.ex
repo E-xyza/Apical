@@ -476,7 +476,11 @@ defmodule Apical.Plugs.Parameter do
          _
        )
        when type in @object_types do
-    Tools.assert(false, "for parameter `#{name}` in operation `#{operation_id}`: form exploded parameters may not be objects", apical: true)
+    Tools.assert(
+      false,
+      "for parameter `#{name}` in operation `#{operation_id}`: form exploded parameters may not be objects",
+      apical: true
+    )
   end
 
   defp do_make(%{"$ref" => ref}, _parameter_pointer, acc, schema, operation_id, plug_opts) do

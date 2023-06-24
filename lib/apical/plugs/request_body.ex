@@ -88,19 +88,9 @@ defmodule Apical.Plugs.RequestBody do
   # have to perform the req_header dance more than once.  It's included as
   # a part of this plug so that the code can be organized in the same place.
   def call(conn, :match) do
-    with [content_type] <- Conn.get_req_header(conn, "content-type"),
-         {{:ok, type, subtype, params}, _} <- {Conn.Utils.media_type(content_type), content_type} do
-      Conn.put_private(conn, :content_type, {type, subtype, params})
-    else
-      {:error, _content_type} ->
-        raise "do better"
-
-      [] ->
-        raise Apical.Exceptions.MissingContentTypeError
-
-      [_ | _] ->
-        raise "robot butt"
-    end
+    conn
+    |> Conn.put_private(:content_type, fetch_content_type!(conn))
+    |> Conn.put_private(:content_length, fetch_content_length!(conn))
   end
 
   # once matched, we skip all further steps.
@@ -131,6 +121,40 @@ defmodule Apical.Plugs.RequestBody do
           |> Keyword.drop([:message])
 
         raise Apical.Exceptions.ParameterError, params
+    end
+  end
+
+  defp fetch_content_type!(conn) do
+    content_type_string =
+      case Conn.get_req_header(conn, "content-type") do
+        [content_type] -> content_type
+        [] -> raise Apical.Exceptions.MissingContentTypeError
+        [_ | _] -> raise Apical.Exceptions.MultipleContentTypeError
+      end
+
+    case Conn.Utils.media_type(content_type_string) do
+      {:ok, type, subtype, params} ->
+        {type, subtype, params}
+
+      :error ->
+        raise Apical.Exceptions.InvalidContentTypeError, invalid_string: content_type_string
+    end
+  end
+
+  defp fetch_content_length!(conn) do
+    content_length_string =
+      case Conn.get_req_header(conn, "content-length") do
+        [content_length] -> content_length
+        [] -> raise Apical.Exceptions.MissingContentLengthError
+        [_ | _] -> raise Apical.Exceptions.MultipleContentLengthError
+      end
+
+    case Integer.parse(content_length_string) do
+      {content_length, ""} ->
+        content_length
+
+      _ ->
+        raise Apical.Exceptions.InvalidContentLengthError, invalid_string: content_length_string
     end
   end
 

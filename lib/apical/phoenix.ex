@@ -20,7 +20,7 @@ defmodule Apical.Phoenix do
       "/paths"
       |> JsonPtr.from_path()
       |> JsonPtr.map(schema, &Paths.to_routes(&1, &2, &3, schema, route_opts))
-      |> Enum.unzip
+      |> Enum.unzip()
       |> process_paths
 
     quote do
@@ -80,9 +80,15 @@ defmodule Apical.Phoenix do
   end
 
   defp validate_no_duplicate_operation_ids!([], _so_far), do: :ok
+
   defp validate_no_duplicate_operation_ids!([set | rest], so_far) do
     intersection = MapSet.intersection(set, so_far)
-    Tools.assert(intersection == MapSet.new(), "that operationIds are unique: (got more than one `#{Enum.at(intersection, 0)}`)")
+
+    Tools.assert(
+      intersection == MapSet.new(),
+      "that operationIds are unique: (got more than one `#{Enum.at(intersection, 0)}`)"
+    )
+
     validate_no_duplicate_operation_ids!(rest, MapSet.union(set, so_far))
   end
 end

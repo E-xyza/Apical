@@ -83,6 +83,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
 
   use ApicalTest.EndpointCase
 
+  alias Apical.Exceptions.InvalidContentTypeError
   alias Plug.Conn
 
   def requestBodyNoParser(conn, _params) do
@@ -108,6 +109,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
   defp do_post(conn, route, payload, content_type) do
     conn
     |> Conn.put_req_header("content-type", content_type)
+    |> Conn.put_req_header("content-length", "#{byte_size(payload)}")
     |> post(route, payload)
     |> Map.get(:resp_body)
   end
@@ -159,7 +161,82 @@ defmodule ApicalTest.RequestBody.OtherTest do
     end
   end
 
-  test "generic missing content-type error"
+  @payload "foo,bar"
+  @payload_length byte_size(@payload)
 
-  test "generic missing content-length error"
+  alias Apical.Exceptions.MissingContentTypeError
+  alias Apical.Exceptions.MultipleContentTypeError
+  alias Apical.Exceptions.InvalidContentTypeError
+
+  alias Apical.Exceptions.MissingContentLengthError
+  alias Apical.Exceptions.MultipleContentLengthError
+  alias Apical.Exceptions.InvalidContentLengthError
+
+  defp manual_call(conn) do
+    # we have to do this manually since dispatch/5 doesn't let us have fun
+    conn
+    |> Plug.Adapters.Test.Conn.conn(:post, "/no-parser", @payload)
+    |> @endpoint.call(@endpoint.init([]))
+  end
+
+  test "generic missing content-type error", %{conn: conn} do
+    assert_raise MissingContentTypeError, fn ->
+      conn
+      |> Conn.put_req_header("content-length", "#{@payload_length}")
+      |> manual_call
+    end
+  end
+
+  test "duplicate content-type error", %{conn: conn} do
+    assert_raise MultipleContentTypeError, fn ->
+      # we have to do this manually since dispatch/5 doesn't let us have fun
+      conn
+      |> Map.update!(
+        :req_headers,
+        &[{"content-type", "text/csv"}, {"content-type", "text/csv"} | &1]
+      )
+      |> Conn.put_req_header("content-length", "#{@payload_length}")
+      |> manual_call
+    end
+  end
+
+  test "invalid content-type error", %{conn: conn} do
+    assert_raise InvalidContentTypeError, fn ->
+      do_post(conn, "/no-parser", @payload, "this-is-not-a-content-type")
+    end
+  end
+
+  test "generic missing content-length error", %{conn: conn} do
+    assert_raise MissingContentLengthError, fn ->
+      # we have to do this manually since dispatch/5 doesn't let us have fun
+      conn
+      |> Conn.put_req_header("content-type", "text/csv")
+      |> manual_call
+    end
+  end
+
+  test "generic multiple content-length error", %{conn: conn} do
+    assert_raise MultipleContentLengthError, fn ->
+      # we have to do this manually since dispatch/5 doesn't let us have fun
+      conn
+      |> Conn.put_req_header("content-type", "text/csv")
+      |> Map.update!(
+        :req_headers,
+        &[{"content-length", "#{@payload_length}"}, {"content-length", "#{@payload_length}"} | &1]
+      )
+      |> manual_call
+    end
+  end
+
+  test "generic invalid content-length error", %{conn: conn} do
+    assert_raise InvalidContentLengthError,
+                 "invalid content-length header provided: not-a-number",
+                 fn ->
+                   # we have to do this manually since dispatch/5 doesn't let us have fun
+                   conn
+                   |> Conn.put_req_header("content-type", "text/csv")
+                   |> Conn.put_req_header("content-length", "not-a-number")
+                   |> manual_call
+                 end
+  end
 end
