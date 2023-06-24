@@ -20,8 +20,6 @@ defmodule ApicalTest.CompileError.InvalidOpenApiTest do
                 parameters:
                   - name: parameter
                     in: query
-                  - name: parameter
-                    in: header
                 responses:
                   "200":
                     description: OK
@@ -36,7 +34,7 @@ defmodule ApicalTest.CompileError.InvalidOpenApiTest do
 
   test "an invalid openapi section triggers compile failure" do
     assert_raise CompileError,
-                 "",
+                 " Your schema violates the Apical requirement that the schema has a supported `openapi` version (got `foo`)",
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

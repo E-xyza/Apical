@@ -499,15 +499,28 @@ defmodule Apical.Plugs.Parameter do
     }
   end
 
-  defp do_make(%{"in" => non_location}, _, _, _, operation_id, _) do
+  defp do_make(%{"in" => non_location}, parameter_pointer, _, _, operation_id, _)
+       when non_location not in @locations do
+    {_, index} = JsonPtr.pop(parameter_pointer)
+
     Tools.assert(
       false,
-      "for parameters, invalid parameter location: `#{non_location}` (in operation `#{operation_id}`)"
+      "for parameters, invalid parameter location: `#{non_location}` (in operation `#{operation_id}`, parameter #{index})"
     )
   end
 
-  defp do_make(%{}, _, _, _, operation_id, _) do
-    Tools.assert(false, "for parameters, field `in` is required (in operation `#{operation_id}`)")
+  defp do_make(parameter, parameter_pointer, _, _, operation_id, _) do
+    {_, index} = JsonPtr.pop(parameter_pointer)
+
+    Tools.assert(
+      is_map_key(parameter, "in"),
+      "for parameters, field `in` is required (in operation `#{operation_id}`, parameter #{index})"
+    )
+
+    Tools.assert(
+      is_map_key(parameter, "name"),
+      "for parameters, field `name` is required (in operation `#{operation_id}`, parameter #{index})"
+    )
   end
 
   defp make_parameter_plug({module, plug_schemas}, operation_id, plug_opts) do

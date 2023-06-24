@@ -2,8 +2,8 @@ defmodule Apical.Phoenix do
   alias Apical.Paths
   alias Apical.Schema
 
-  def router(schema = %{"info" => %{"version" => version}}, schema_string, opts) do
-    Schema.verify_router!(schema)
+  def router(schema, schema_string, opts) do
+    %{"info" => %{"version" => version}} = Schema.verify_router!(schema)
 
     resource = Keyword.get_lazy(opts, :resource, fn -> hash(schema) end)
     encode_opts = Keyword.take(opts, ~w(content_type mimetype_mapping)a)
