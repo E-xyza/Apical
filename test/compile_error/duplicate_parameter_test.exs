@@ -3,7 +3,7 @@ defmodule ApicalTest.CompileError.DuplicateParameterTest do
 
   fails =
     quote do
-      defmodule DuplicateParameterFailsTest do
+      defmodule DuplicateParameter do
         require Apical
         use Phoenix.Router
 

@@ -3,7 +3,7 @@ defmodule ApicalTest.CompileError.DuplicateOperationIdTest do
 
   fails =
     quote do
-      defmodule DuplicateOperationIdFailsTest do
+      defmodule DuplicateOperationId do
         require Apical
         use Phoenix.Router
 

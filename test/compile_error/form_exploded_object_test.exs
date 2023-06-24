@@ -3,7 +3,7 @@ defmodule ApicalTest.CompileError.FormExplodedObjectTest do
 
   fails =
     quote do
-      defmodule FormExplodedObjectFailsTest do
+      defmodule FormExplodedObjectFails do
         require Apical
         use Phoenix.Router
 

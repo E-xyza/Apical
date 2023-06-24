@@ -500,6 +500,10 @@ defmodule Apical.Plugs.Parameter do
     Tools.assert(false, "for parameters, invalid parameter location: `#{non_location}` (in operation `#{operation_id}`)")
   end
 
+  defp do_make(%{}, _, _, _, operation_id, _) do
+    Tools.assert(false, "for parameters, field `in` is required (in operation `#{operation_id}`)")
+  end
+
   defp make_parameter_plug({module, plug_schemas}, operation_id, plug_opts) do
     version = Keyword.fetch!(plug_opts, :version)
 
