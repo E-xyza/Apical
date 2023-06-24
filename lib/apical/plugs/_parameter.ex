@@ -16,7 +16,7 @@ defmodule Apical.Plugs.Parameter do
 
   # INITIALIZATION
 
-  def init([in_, module, version, operation_id, parameters, plug_opts]) do
+  def init([in_, module, operation_id, parameters, plug_opts]) do
     operations =
       plug_opts
       |> opts_to_context
@@ -41,6 +41,8 @@ defmodule Apical.Plugs.Parameter do
         in_ == Query or !parameter["allowReserved"],
         "allowReserved is only supported for query parameters"
       )
+
+      version = Keyword.fetch!(plug_opts, :version)
 
       operations_so_far
       |> Map.update!(:parser_context, &Map.put(&1, name, %{}))
@@ -554,13 +556,11 @@ defmodule Apical.Plugs.Parameter do
   defp replace_schema_ref(subschema, _), do: subschema
 
   defp make_parameter_plug({module, plug_schemas}, operation_id, plug_opts) do
-    version = Keyword.fetch!(plug_opts, :version)
-
     quote do
       plug(
         unquote(module),
         [__MODULE__] ++
-          unquote([version, operation_id, Macro.escape(plug_schemas), plug_opts])
+          unquote([operation_id, Macro.escape(plug_schemas), plug_opts])
       )
     end
   end
