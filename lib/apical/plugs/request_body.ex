@@ -17,7 +17,7 @@ defmodule Apical.Plugs.RequestBody do
   def init(:match), do: :match
   def init(:not_matched), do: :not_matched
 
-  def init([module, version, operation_id, media_type_string, parameters, plug_opts]) do
+  def init([module, operation_id, media_type_string, parameters, plug_opts]) do
     {parsed_media_type, source} =
       with {:ok, type, subtype, params} <- Conn.Utils.media_type(media_type_string) do
         parsed_media_type = {type, subtype, params}
@@ -32,6 +32,8 @@ defmodule Apical.Plugs.RequestBody do
         {:error, description} ->
           raise CompileError, description: description
       end
+
+    version = Keyword.fetch!(plug_opts, :version)
 
     plug_opts
     |> Map.new()
@@ -286,7 +288,7 @@ defmodule Apical.Plugs.RequestBody do
           plug(
             Apical.Plugs.RequestBody,
             [__MODULE__] ++
-              unquote([version, operation_id, media_type, Macro.escape(content_schema), plug_opts])
+              unquote([operation_id, media_type, Macro.escape(content_schema), plug_opts])
           )
         end,
         Validators.make_quoted(

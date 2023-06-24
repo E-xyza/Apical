@@ -6,7 +6,7 @@ defmodule Apical.Plugs.Path do
   @behaviour Parameter
 
   @impl Plug
-  def init(opts = [_module, _version, operation_id, parameters, plug_opts]) do
+  def init(opts = [_module, operation_id, parameters, plug_opts]) do
     Enum.each(parameters, fn parameter = %{"name" => name} ->
       Tools.assert(
         parameter["required"],
