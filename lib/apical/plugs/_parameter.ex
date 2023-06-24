@@ -434,18 +434,18 @@ defmodule Apical.Plugs.Parameter do
 
   @no_parameters {[], []}
 
-  @spec make(JsonPtr.t(), schema :: map(), operation_id :: String.t(), plug_opts :: keyword()) ::
+  @spec make(JsonPtr.t(), subschema :: map(), operation_id :: String.t(), plug_opts :: keyword()) ::
           {plugs :: [Macro.t()], validations :: [Macro.t()]}
-  def make(operation_pointer, schema, operation_id, plug_opts) do
-    case JsonPtr.resolve_json!(schema, operation_pointer) do
+  def make(operation_pointer, subschema, operation_id, plug_opts) do
+    case JsonPtr.resolve_json!(subschema, operation_pointer) do
       %{"parameters" => _} ->
         %{plugs: plugs, validators: validators} =
           operation_pointer
           |> JsonPtr.join("parameters")
           |> JsonPtr.reduce(
-            schema,
+            subschema,
             @accumulator,
-            &do_make(&2, &1, &3, schema, operation_id, plug_opts)
+            &do_make(&2, &1, &3, subschema, operation_id, plug_opts)
           )
 
         {Enum.map(plugs, &make_parameter_plug(&1, operation_id, plug_opts)),
@@ -466,6 +466,7 @@ defmodule Apical.Plugs.Parameter do
 
   @object_types ["object", ["object"], [nil, "object"]]
 
+  # special case: reject form-exploded parameters, due to ambiguity.
   defp do_make(
          %{"explode" => true, "style" => "form", "schema" => %{"type" => type}, "name" => name},
          _,
@@ -491,7 +492,7 @@ defmodule Apical.Plugs.Parameter do
          subschema = %{"name" => name, "in" => in_},
          parameter_pointer,
          acc,
-         _schema,
+         schema,
          operation_id,
          plug_opts
        )
@@ -505,6 +506,8 @@ defmodule Apical.Plugs.Parameter do
       name not in acc.parameters,
       "for unique parameters: the parameter `#{name}` is not unique (in operation `#{operation_id}`)"
     )
+
+    subschema = replace_schema_ref(subschema, schema)
 
     %{
       plugs: Map.update(acc.plugs, module, [subschema], &[subschema | &1]),
@@ -537,6 +540,15 @@ defmodule Apical.Plugs.Parameter do
     )
   end
 
+  defp replace_schema_ref(subschema = %{"schema" => %{"$ref" => ref}}, full_schema) do
+    # for now, don't handle remote refs
+    pointer = JsonPtr.from_uri(ref)
+
+    %{subschema | "schema" => JsonPtr.resolve_json!(full_schema, pointer)}
+  end
+
+  defp replace_schema_ref(subschema, _), do: subschema
+
   defp make_parameter_plug({module, plug_schemas}, operation_id, plug_opts) do
     version = Keyword.fetch!(plug_opts, :version)
 
@@ -554,23 +566,4 @@ defmodule Apical.Plugs.Parameter do
     fn_name = validator_name(version, operation_id, name)
     Validators.make_quoted(subschema, pointer, fn_name, plug_opts)
   end
-
-  #  defp verify_not_form_exploded_object!(parameter_opts, operation_id) do
-  #    Enum.each(parameter_opts, fn
-  #      %{
-  #        "explode" => true,
-  #        "style" => "form",
-  #        "schema" => %{"type" => type_or_types},
-  #        "name" => name
-  #      } ->
-  #        Tools.assert(
-  #          "object" not in List.wrap(type_or_types),
-  #          "for parameter `#{name}` in operation `#{operation_id}`: form exploded parameters may not be objects",
-  #          apical: true
-  #        )
-  #
-  #      _ ->
-  #        :ok
-  #    end)
-  #  end
 end

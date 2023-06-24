@@ -38,7 +38,7 @@ defmodule ApicalTest.Refs.SchemaObjectTest do
             type: integer
       """,
       root: "/",
-      controller: ApicalTest.Refs.ParameterObjectTest,
+      controller: ApicalTest.Refs.SchemaObjectTest,
       content_type: "application/yaml"
     )
   end
