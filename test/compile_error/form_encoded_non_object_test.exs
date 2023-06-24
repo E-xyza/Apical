@@ -3,7 +3,7 @@ defmodule ApicalTest.CompileError.FormEncodedNonObjectTest do
 
   fails =
     quote do
-      defmodule FormEncodedNonObjectFailsTest do
+      defmodule FormEncodedNonObject do
         require Apical
         use Phoenix.Router
 
@@ -11,7 +11,7 @@ defmodule ApicalTest.CompileError.FormEncodedNonObjectTest do
           """
           openapi: 3.1.0
           info:
-            title: FormEncodedNonObjectFailsTest
+            title: FormEncodedNonObjectTest
             version: 1.0.0
           paths:
             "/":

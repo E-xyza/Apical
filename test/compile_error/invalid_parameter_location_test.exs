@@ -1,9 +1,9 @@
-defmodule ApicalTest.CompileError.DuplicateParameterTest do
+defmodule ApicalTest.CompileError.InvalidParameterLocationTest do
   use ExUnit.Case, async: true
 
   fails =
     quote do
-      defmodule DuplicateParameter do
+      defmodule InvalidParameterLocation do
         require Apical
         use Phoenix.Router
 
@@ -11,7 +11,7 @@ defmodule ApicalTest.CompileError.DuplicateParameterTest do
           """
           openapi: 3.1.0
           info:
-            title: DuplicateParameterTest
+            title: InvalidParameterLocationTest
             version: 1.0.0
           paths:
             "/":
@@ -19,9 +19,7 @@ defmodule ApicalTest.CompileError.DuplicateParameterTest do
                 operationId: fails
                 parameters:
                   - name: parameter
-                    in: query
-                  - name: parameter
-                    in: header
+                    in: not-a-location
                 responses:
                   "200":
                     description: OK
@@ -34,9 +32,9 @@ defmodule ApicalTest.CompileError.DuplicateParameterTest do
 
   @attempt_compile fails
 
-  test "duplicate parameter raises compile error" do
+  test "invalid parameter location raises compile error" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement for unique parameters: the parameter `parameter` is not unique (in operation `fails`)",
+                 " Your schema violates the OpenAPI requirement for parameters, invalid parameter location: `not-a-location` (in operation `fails`, parameter 0)",
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

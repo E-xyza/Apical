@@ -3,7 +3,7 @@ defmodule ApicalTest.CompileError.FormExplodedObjectTest do
 
   fails =
     quote do
-      defmodule FormExplodedObjectFailsTest do
+      defmodule FormExplodedObjectFails do
         require Apical
         use Phoenix.Router
 
@@ -37,7 +37,7 @@ defmodule ApicalTest.CompileError.FormExplodedObjectTest do
 
   @attempt_compile fails
 
-  test "nonexistent path parameter raises compile error" do
+  test "form exploded parameters raises compile error" do
     assert_raise CompileError,
                  " Your schema violates the Apical requirement for parameter `parameter` in operation `fails`: form exploded parameters may not be objects",
                  fn ->

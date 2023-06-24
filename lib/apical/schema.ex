@@ -3,33 +3,28 @@ defmodule Apical.Schema do
 
   alias Apical.Tools
 
-  def verify_schema_basics!(%{"paths" => paths}) do
-    Enum.reduce(paths, MapSet.new(), &verify_operation_id_path/2)
-  end
+  @openapi_versions ["3.1.0"]
 
-  def verify_operation_id_path({path, verbs}, set) do
-    Enum.reduce(verbs, set, &verify_operation_id_verb(path, &1, &2))
-  end
+  def verify_router!(schema) do
+    Tools.assert(is_map_key(schema, "paths"), "that the schema has a `paths` key")
 
-  defp verify_operation_id_verb(_path, {_verb, %{"operationId" => name}}, so_far) do
-    Tools.assert(
-      name not in so_far,
-      "that operationIds are unique: (got more than one `#{name}`)"
-    )
+    Tools.assert(is_map_key(schema, "openapi"), "that the schema has an `openapi` key")
 
-    MapSet.put(so_far, name)
-  end
-
-  defp verify_operation_id_verb(path, {verb, _}, _) do
-    path =
-      "/"
-      |> JsonPtr.from_path()
-      |> JsonPtr.join(["paths", path, verb])
-      |> JsonPtr.to_path()
+    openapi = Map.fetch!(schema, "openapi")
 
     Tools.assert(
-      false,
-      "that all operations have an operationId: (missing for operation at `#{path}`)"
+      openapi in @openapi_versions,
+      "that the schema has a supported `openapi` version (got `#{openapi}`)",
+      apical: true
     )
+
+    Tools.assert(is_map_key(schema, "info"), "that the schema has an `info` key")
+
+    Tools.assert(
+      is_map_key(schema["info"], "version"),
+      "that the schema `info` field has a `version` key"
+    )
+
+    schema
   end
 end

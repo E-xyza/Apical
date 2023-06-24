@@ -21,6 +21,7 @@
   - application/json
   - application/form-encoded
 - options targettable by tag or operation_id
+- supports internal $refs
 
 ## Future planned support 
 
@@ -33,5 +34,7 @@
 - support for auto-rejecting based on accept: information
 - multipart/form-data support
 - authorization schema support (use `extra_plugs:` for now)
+- remote $ref support
+- $id-based $ref support
 - Openapi 3.0 support
 - Openapi 4.0 support

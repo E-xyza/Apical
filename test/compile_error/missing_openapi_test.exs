@@ -1,17 +1,16 @@
-defmodule ApicalTest.CompileError.DuplicateParameterTest do
+defmodule ApicalTest.CompileError.MissingOpenApiTest do
   use ExUnit.Case, async: true
 
   fails =
     quote do
-      defmodule DuplicateParameter do
+      defmodule MissingOpenApi do
         require Apical
         use Phoenix.Router
 
         Apical.router_from_string(
           """
-          openapi: 3.1.0
           info:
-            title: DuplicateParameterTest
+            title: MissingOpenApiTest
             version: 1.0.0
           paths:
             "/":
@@ -20,8 +19,6 @@ defmodule ApicalTest.CompileError.DuplicateParameterTest do
                 parameters:
                   - name: parameter
                     in: query
-                  - name: parameter
-                    in: header
                 responses:
                   "200":
                     description: OK
@@ -34,9 +31,9 @@ defmodule ApicalTest.CompileError.DuplicateParameterTest do
 
   @attempt_compile fails
 
-  test "duplicate parameter raises compile error" do
+  test "missing the openapi section triggers compile failure" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement for unique parameters: the parameter `parameter` is not unique (in operation `fails`)",
+                 " Your schema violates the OpenAPI requirement that the schema has an `openapi` key",
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

@@ -1,9 +1,9 @@
 defmodule Apical.Plugs.Path do
-  @behaviour Plug
-  @behaviour Apical.Plugs.Parameter
-
   alias Apical.Tools
-  alias Apical.Plugs.Common
+  alias Apical.Plugs.Parameter
+
+  @behaviour Plug
+  @behaviour Parameter
 
   @impl Plug
   def init(opts = [_module, _version, operation_id, parameters, plug_opts]) do
@@ -22,7 +22,7 @@ defmodule Apical.Plugs.Path do
       )
     end)
 
-    Common.init([__MODULE__ | opts])
+    Parameter.init([__MODULE__ | opts])
   end
 
   @impl Plug
@@ -31,8 +31,8 @@ defmodule Apical.Plugs.Path do
 
     conn
     |> Map.update!(:params, &Map.merge(&1, params))
-    |> Common.warn_deprecated(params, :path, operations)
-    |> Common.validate(params, :path, operations)
+    |> Parameter.warn_deprecated(params, :path, operations)
+    |> Parameter.validate(params, :path, operations)
   end
 
   @impl Apical.Plugs.Parameter

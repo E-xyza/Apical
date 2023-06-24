@@ -1,20 +1,31 @@
 defmodule Apical.Phoenix do
   alias Apical.Paths
   alias Apical.Schema
+  alias Apical.Tools
 
-  def router(openapi = %{"info" => %{"version" => version}, "paths" => paths}, schema, opts) do
-    Schema.verify_schema_basics!(openapi)
+  def router(schema, schema_string, opts) do
+    %{"info" => %{"version" => version}} = Schema.verify_router!(schema)
 
-    name = Keyword.get_lazy(opts, :name, fn -> hash(openapi) end)
+    resource = Keyword.get_lazy(opts, :resource, fn -> hash(schema) end)
     encode_opts = Keyword.take(opts, ~w(content_type mimetype_mapping)a)
-    route_opts = Keyword.put(opts, :name, name)
 
-    root = resolve_root(version, opts)
-    routes = Enum.flat_map(paths, &Paths.to_routes(root, &1, version, route_opts))
+    route_opts =
+      Keyword.merge(opts,
+        resource: resource,
+        root: resolve_root(version, opts),
+        version: version
+      )
+
+    routes =
+      "/paths"
+      |> JsonPtr.from_path()
+      |> JsonPtr.map(schema, &Paths.to_routes(&1, &2, &3, schema, route_opts))
+      |> Enum.unzip()
+      |> process_paths
 
     quote do
       require Exonerate
-      Exonerate.register_resource(unquote(schema), unquote(name), unquote(encode_opts))
+      Exonerate.register_resource(unquote(schema_string), unquote(resource), unquote(encode_opts))
 
       unquote(external_resource(opts))
 
@@ -60,5 +71,24 @@ defmodule Apical.Phoenix do
           - use semver version in `info` -> `version` in schema.
           """
     end
+  end
+
+  defp process_paths({routes, operation_ids}) do
+    validate_no_duplicate_operation_ids!(operation_ids, MapSet.new())
+
+    Enum.flat_map(routes, &Enum.reverse/1)
+  end
+
+  defp validate_no_duplicate_operation_ids!([], _so_far), do: :ok
+
+  defp validate_no_duplicate_operation_ids!([set | rest], so_far) do
+    intersection = MapSet.intersection(set, so_far)
+
+    Tools.assert(
+      intersection == MapSet.new(),
+      "that operationIds are unique: (got more than one `#{Enum.at(intersection, 0)}`)"
+    )
+
+    validate_no_duplicate_operation_ids!(rest, MapSet.union(set, so_far))
   end
 end

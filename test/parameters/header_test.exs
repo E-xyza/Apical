@@ -166,7 +166,7 @@ defmodule ApicalTest.Parameters.HeaderTest do
 
     test "it fails when not present", %{conn: conn} do
       assert_raise ParameterError,
-                   "Parameter Error in operation headerParamRequired (in header): required header `required` not present",
+                   "Parameter Error in operation headerParamRequired (in header): required parameter `required` not present",
                    fn ->
                      get(conn, "/required")
                    end

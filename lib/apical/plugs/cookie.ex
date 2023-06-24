@@ -1,19 +1,19 @@
 defmodule Apical.Plugs.Cookie do
-  @behaviour Plug
-  @behaviour Apical.Plugs.Parameter
-
   alias Apical.Parser.Query
-  alias Apical.Plugs.Common
+  alias Apical.Plugs.Parameter
   alias Apical.Exceptions.ParameterError
+
+  @behaviour Parameter
+  @behaviour Plug
 
   @impl Plug
   def init(opts) do
-    Common.init([__MODULE__ | opts])
+    Parameter.init([__MODULE__ | opts])
   end
 
   @impl Plug
   def call(conn, operations = %{parser_context: parser_context}) do
-    cookie_params =
+    params =
       with {_, value} <- List.keyfind(conn.req_headers, "cookie", 0) do
         case Query.parse(value, parser_context) do
           {:ok, result} ->
@@ -49,23 +49,12 @@ defmodule Apical.Plugs.Cookie do
       end
 
     # TODO: make this recursive
-    operations
-    |> Map.get(:required, [])
-    |> Enum.each(fn
-      required_cookie when is_map_key(cookie_params, required_cookie) ->
-        :ok
-
-      missing_cookie ->
-        raise ParameterError,
-          operation_id: conn.private.operation_id,
-          in: :cookie,
-          reason: "required cookie `#{missing_cookie}` not present"
-    end)
 
     conn
-    |> Map.update!(:params, &Map.merge(&1, cookie_params))
-    |> Common.warn_deprecated(cookie_params, :cookie, operations)
-    |> Common.validate(cookie_params, :cookie, operations)
+    |> Parameter.check_required(params, :cookie, operations)
+    |> Map.update!(:params, &Map.merge(&1, params))
+    |> Parameter.warn_deprecated(params, :cookie, operations)
+    |> Parameter.validate(params, :cookie, operations)
   end
 
   @impl Apical.Plugs.Parameter
