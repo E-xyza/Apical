@@ -463,6 +463,7 @@ defmodule Apical.Plugs.Parameter do
     "path" => Apical.Plugs.Path,
     "cookie" => Apical.Plugs.Cookie
   }
+  @locations Map.keys(@location_modules)
 
   defp do_make(%{"$ref" => ref}, _parameter_pointer, acc, schema, operation_id, plug_opts) do
     # for now, don't handle remote refs
@@ -480,12 +481,8 @@ defmodule Apical.Plugs.Parameter do
          _schema,
          operation_id,
          plug_opts
-       ) do
-    module =
-      case Map.fetch(@location_modules, in_) do
-        {:ok, module} -> module
-        :error -> raise "Unknown parameter location: #{in_}"
-      end
+       ) when in_ in @locations do
+    module = Map.fetch!(@location_modules, in_)
 
     new_validator =
       make_parameter_validator(subschema, parameter_pointer, operation_id, plug_opts)
@@ -497,6 +494,10 @@ defmodule Apical.Plugs.Parameter do
       validators: [new_validator | acc.validators],
       parameters: MapSet.put(acc.parameters, name)
     }
+  end
+
+  defp do_make(%{"in" => non_location}, _, _, _, operation_id, _) do
+    Tools.assert(false, "for parameters, invalid parameter location: `#{non_location}` (in operation `#{operation_id}`)")
   end
 
   defp make_parameter_plug({module, plug_schemas}, operation_id, plug_opts) do

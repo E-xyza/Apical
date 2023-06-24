@@ -34,7 +34,7 @@ defmodule ApicalTest.CompileError.DuplicateParameterTest do
 
   @attempt_compile fails
 
-  test "nonexistent path parameter raises compile error" do
+  test "duplicate parameter raises compile error" do
     assert_raise CompileError,
                  " Your schema violates the OpenAPI requirement for unique parameters: the parameter `parameter` is not unique (in operation `fails`)",
                  fn ->
