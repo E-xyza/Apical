@@ -1,6 +1,7 @@
 defmodule Apical.Phoenix do
   alias Apical.Paths
   alias Apical.Schema
+  alias Apical.Tools
 
   def router(schema, schema_string, opts) do
     %{"info" => %{"version" => version}} = Schema.verify_router!(schema)
@@ -18,7 +19,9 @@ defmodule Apical.Phoenix do
     routes =
       "/paths"
       |> JsonPtr.from_path()
-      |> JsonPtr.flat_map(schema, &Paths.to_routes(&1, &2, &3, schema, route_opts))
+      |> JsonPtr.map(schema, &Paths.to_routes(&1, &2, &3, schema, route_opts))
+      |> Enum.unzip
+      |> process_paths
 
     quote do
       require Exonerate
@@ -68,5 +71,18 @@ defmodule Apical.Phoenix do
           - use semver version in `info` -> `version` in schema.
           """
     end
+  end
+
+  defp process_paths({routes, operation_ids}) do
+    validate_no_duplicate_operation_ids!(operation_ids, MapSet.new())
+
+    Enum.flat_map(routes, &Enum.reverse/1)
+  end
+
+  defp validate_no_duplicate_operation_ids!([], _so_far), do: :ok
+  defp validate_no_duplicate_operation_ids!([set | rest], so_far) do
+    intersection = MapSet.intersection(set, so_far)
+    Tools.assert(intersection == MapSet.new(), "that operationIds are unique: (got more than one `#{Enum.at(intersection, 0)}`)")
+    validate_no_duplicate_operation_ids!(rest, MapSet.union(set, so_far))
   end
 end

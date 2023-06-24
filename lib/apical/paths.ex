@@ -5,7 +5,8 @@ defmodule Apical.Paths do
   alias Apical.Plugs.Parameter
   alias Apical.Plugs.RequestBody
   alias Apical.Tools
-  alias Apical.Validators
+
+  @routes {[], MapSet.new()}
 
   def to_routes(_pointer, path, %{"$ref" => ref}, schema, opts) do
     # for now, don't handle the remote ref scenario, or the id scenario.
@@ -17,13 +18,13 @@ defmodule Apical.Paths do
   def to_routes(pointer, path, _subschema, schema, opts) do
     # each route contains a map of verbs to operations.
     # map over that content to generate routes.
-    JsonPtr.map(pointer, schema, &to_route(&1, &2, &3, schema, path, opts))
+    JsonPtr.reduce(pointer, schema, @routes, &to_route(&1, &2, &3, &4, schema, path, opts))
   end
 
   @verb_mapping Map.new(~w(get put post delete options head patch trace)a, &{"#{&1}", &1})
   @verbs Map.keys(@verb_mapping)
 
-  defp to_route(pointer, verb, operation, schema, path, opts) when verb in @verbs do
+  defp to_route(pointer, verb, operation, {routes_so_far, operation_ids_so_far}, schema, path, opts) when verb in @verbs do
     Tools.assert(
       Map.has_key?(operation, "operationId"),
       "that all operations have an operationId: (missing for operation at `#{JsonPtr.to_path(pointer)}`)"
@@ -92,7 +93,7 @@ defmodule Apical.Paths do
 
     {body_plugs, body_validators} = RequestBody.make(pointer, schema, operation_id, plug_opts)
 
-    quote do
+    route = quote do
       # TODO: make these functions
       unquote(parameter_validators)
       unquote(body_validators)
@@ -112,6 +113,8 @@ defmodule Apical.Paths do
         unquote(verb)(unquote(canonical_path), unquote(controller), unquote(function))
       end
     end
+
+    {[route | routes_so_far], MapSet.put(operation_ids_so_far, operation_id)}
   end
 
   @folded_opts ~w(controller styles parameters extra_plugs nest_all_json content_sources dump dump_validator)a
