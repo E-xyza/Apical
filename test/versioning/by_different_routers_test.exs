@@ -25,7 +25,7 @@ defmodule ApicalTest.Versioning.ByDifferentRoutersTest do
                 description: OK
       """,
       controller: ApicalTest.Versioning.ByDifferentRoutersTest,
-      content_type: "application/yaml",
+      encoding: "application/yaml",
       root: "/"
     )
   end
@@ -56,7 +56,7 @@ defmodule ApicalTest.Versioning.ByDifferentRoutersTest do
                 description: OK
       """,
       controller: ApicalTest.Versioning.ByDifferentRoutersTest,
-      content_type: "application/yaml",
+      encoding: "application/yaml",
       root: "/"
     )
   end

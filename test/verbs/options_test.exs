@@ -20,7 +20,7 @@ defmodule ApicalTest.Verbs.OptionsTest do
       """,
       root: "/",
       controller: ApicalTest.Verbs.OptionsTest,
-      content_type: "application/yaml"
+      encoding: "application/yaml"
     )
   end
 

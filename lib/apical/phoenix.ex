@@ -14,7 +14,7 @@ defmodule Apical.Phoenix do
     %{"info" => %{"version" => version}} = Schema.verify_router!(schema)
 
     resource = Keyword.get_lazy(opts, :resource, fn -> hash(schema) end)
-    encode_opts = Keyword.take(opts, ~w(content_type mimetype_mapping)a)
+    encode_opts = Keyword.take(opts, ~w(encoding mimetype_mapping)a)
 
     route_opts =
       Keyword.merge(opts,

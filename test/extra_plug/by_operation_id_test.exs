@@ -58,7 +58,7 @@ defmodule ApicalTest.ExtraPlug.ByOperationIdTest do
         ApicalTest.ExtraPlug,
         {ApicalTest.ExtraPlug, ["module option"]}
       ],
-      content_type: "application/yaml"
+      encoding: "application/yaml"
     )
 
     def local_plug(conn, []) do

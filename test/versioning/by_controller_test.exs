@@ -28,7 +28,7 @@ defmodule ApicalTest.Versioning.ByControllerTest do
         sharedOp: [controller: ApicalTest.Versioning.ByControllerTest.SharedController],
         forkedOp: [controller: ApicalTest.Versioning.ByControllerTest.V1.Controller]
       ],
-      content_type: "application/yaml"
+      encoding: "application/yaml"
     )
 
     Apical.router_from_string(
@@ -55,7 +55,7 @@ defmodule ApicalTest.Versioning.ByControllerTest do
         sharedOp: [controller: ApicalTest.Versioning.ByControllerTest.SharedController],
         forkedOp: [controller: ApicalTest.Versioning.ByControllerTest.V2.Controller]
       ],
-      content_type: "application/yaml"
+      encoding: "application/yaml"
     )
   end
 

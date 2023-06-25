@@ -34,7 +34,7 @@ defmodule ApicalTest.CompileError.DuplicateOperationIdTest do
                     description: OK
           """,
           controller: Undefined,
-          content_type: "application/yaml"
+          encoding: "application/yaml"
         )
       end
     end

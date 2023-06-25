@@ -7,8 +7,7 @@ defmodule ApicalTest.FromFileTest do
     Apical.router_from_file(
       "test/_support/from_file_test.yaml",
       root: "/",
-      controller: ApicalTest.FromFileTest,
-      content_type: "application/yaml"
+      controller: ApicalTest.FromFileTest
     )
   end
 

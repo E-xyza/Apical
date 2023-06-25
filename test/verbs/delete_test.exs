@@ -20,7 +20,7 @@ defmodule ApicalTest.Verbs.DeleteTest do
       """,
       root: "/",
       controller: ApicalTest.Verbs.DeleteTest,
-      content_type: "application/yaml"
+      encoding: "application/yaml"
     )
   end
 

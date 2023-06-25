@@ -25,7 +25,7 @@ defmodule ApicalTest.Versioning.ByAssignsTest do
                 description: OK
       """,
       controller: ApicalTest.Versioning.ByAssignsTest,
-      content_type: "application/yaml"
+      encoding: "application/yaml"
     )
 
     Apical.router_from_string(
@@ -49,7 +49,7 @@ defmodule ApicalTest.Versioning.ByAssignsTest do
                 description: OK
       """,
       controller: ApicalTest.Versioning.ByAssignsTest,
-      content_type: "application/yaml"
+      encoding: "application/yaml"
     )
   end
 

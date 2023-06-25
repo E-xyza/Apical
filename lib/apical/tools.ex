@@ -5,16 +5,16 @@ defmodule Apical.Tools do
 
   @default_content_mapping [{"application/yaml", YamlElixir}, {"application/json", Jason}]
   def decode(string, opts) do
-    # content_type defaults to "application/yaml"
-    content_type = Keyword.get(opts, :content_type, "application/yaml")
+    encoding = Keyword.fetch!(opts, :encoding)
 
     opts
     |> Keyword.get(:decoders, [])
-    |> List.keyfind(content_type, 0, List.keyfind(@default_content_mapping, content_type, 0))
+    |> List.keyfind(encoding, 0, List.keyfind(@default_content_mapping, encoding, 0))
     |> case do
       {_, YamlElixir} -> YamlElixir.read_from_string!(string)
       {_, Jason} -> Jason.decode!(string)
-      nil -> raise "decoder for #{content_type} not found"
+      {_, {module, function}} -> apply(module, function, [string])
+      nil -> raise "decoder for #{encoding} not found"
     end
   end
 

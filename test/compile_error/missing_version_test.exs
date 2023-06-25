@@ -25,7 +25,7 @@ defmodule ApicalTest.CompileError.MissingVersionTest do
                     description: OK
           """,
           controller: Undefined,
-          content_type: "application/yaml"
+          encoding: "application/yaml"
         )
       end
     end

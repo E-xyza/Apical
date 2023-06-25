@@ -20,7 +20,7 @@ defmodule ApicalTest.Verbs.HeadTest do
       """,
       root: "/",
       controller: ApicalTest.Verbs.HeadTest,
-      content_type: "application/yaml"
+      encoding: "application/yaml"
     )
   end
 
