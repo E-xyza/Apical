@@ -1,4 +1,14 @@
 defmodule Apical.Parser.Query do
+  @moduledoc false
+
+  # module which contains a comprehensive parser for the query string.  The
+  # parser built by this module is more powerful than what is provided with
+  # `Plug.Conn.parse_query/1` and adheres to the query parsing demanded by
+  # the OpenAPI spec.
+  #
+  # this module is dual purporsed, it is also used by the parser for cookie
+  # parsing, as the cookie format is equivalent to the query format.
+
   require Pegasus
   import NimbleParsec
 

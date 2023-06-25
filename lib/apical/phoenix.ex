@@ -1,4 +1,11 @@
 defmodule Apical.Phoenix do
+  @moduledoc false
+
+  # adapter for generating phoenix routers from OpenAPI schemas.
+  #
+  # note: that this API will be generalized to also produce plug routers
+  # as well.
+
   alias Apical.Paths
   alias Apical.Schema
   alias Apical.Tools

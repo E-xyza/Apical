@@ -13,25 +13,41 @@ defmodule Apical.Plugs.RequestBody.Source do
   In the generic case, keyword should contain the key `:message` which determines
   what the request body error message will be.
 
-  for more specific cases, see the documentation for `Exonerate` which describes
+  For more specific cases, see the documentation for `Exonerate` which describes
   the fields available.
 
   The default validator (if no validation is to be performed) will return `:ok`
   on any input.
   """
-  @type validator :: nil | {module, atom} | {module, atom, list}
+  @type validator :: nil | {module, atom} | {module, atom, keyword}
 
+  @doc """
+  """
   @callback fetch(Conn.t(), validator, opts :: keyword) :: {:ok, Conn.t()} | {:error, keyword}
-  @callback validate!(schema :: map, operation_id :: String.t()) :: :ok
+
+  @doc """
+  Compile-time check to see if the validator is valid for the given requestBody
+  subschema.
+
+  This may reject for any reason and should raise a CompileError if the validator
+  cannot be used for that subschema.
+  """
+  @callback validate!(subschema :: map, operation_id :: String.t()) :: :ok
 
   @spec fetch_body(Conn.t(), keyword) :: {:ok, body :: iodata, Conn.t()} | {:error, any}
   @doc """
   Utility function that grabs request bodies.
 
-  `Source` modules are expected to use this function if they need the request
-  body, since it conforms to the options keyword that plug uses natively.
-  However, this is not required.  If the request body needs to process data
-  in a streaming fashion, this function should not be used.
+  `Apical.Plugs.RequestBody.Source` modules are expected to use this function
+  if they need the request body, since it conforms to the options keyword that
+  plug uses natively.  This function will exhaust the ability of the `conn` to
+  have its body fetched.  Thus, the use of this function is *not* required
+
+  > ### Streaming request bodies {: .warning }
+  >
+  > If the request body source plugin processes data in a streaming fashion, this
+  > function should not be used, instead manually call `Plug.Conn.read_body/2`
+  > in your plugin's `c:fetch/3` function
 
   ### options
 
@@ -78,6 +94,9 @@ defmodule Apical.Plugs.RequestBody.Source do
     end
   end
 
+  @doc false
+  # private utility function to consistently apply validators to request body
+  # fetch results.
   def apply_validator(_content, nil), do: :ok
 
   def apply_validator(content, {module, fun}) do

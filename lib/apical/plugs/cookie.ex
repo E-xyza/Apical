@@ -1,4 +1,26 @@
 defmodule Apical.Plugs.Cookie do
+  @moduledoc """
+  `Plug` module for parsing cookie parameters and placing them into params.
+
+  ### init options
+
+  the plug initialization options are as follows:
+
+  `[router_module, operation_id, parameters, plug_opts]`
+
+  The router module is passed itself, the operation_id (as an atom),
+  a list of parameters maps from the OpenAPI schema, one for each cookie
+  parameter, and the plug_opts keyword list as elucidated by the router
+  compiler.  Initialization will compile an optimized `operations` object
+  which is used to parse cookie parameters from the request.
+
+  ### conn output
+
+  The `conn` struct after calling this plug will have cookie parameters
+  declared in the OpenAPI schema placed into the `params` map.  Cookie
+  parameters not declared in the OpenAPI schema are allowed.
+  """
+
   alias Apical.Parser.Query
   alias Apical.Plugs.Parameter
   alias Apical.Exceptions.ParameterError

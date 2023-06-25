@@ -1,5 +1,8 @@
 defmodule Apical.Conn do
-  # stuff to do with the Plug.Conn struct that is specialized for Apical.
+  @moduledoc false
+
+  # module that contains specialized function that act on the Plug.Conn struct
+  # these operations are specialized for Apical.
 
   alias Apical.Exceptions.ParameterError
   alias Apical.Parser.Marshal

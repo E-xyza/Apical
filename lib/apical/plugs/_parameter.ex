@@ -1,4 +1,12 @@
 defmodule Apical.Plugs.Parameter do
+  @moduledoc false
+
+  # common functions for parameter plugs to use generally
+  # note that this module is not a plug itself (this is why it's in an
+  # underscored file)
+  #
+  # the behaviour defined by this module should be considered private.
+
   @callback name() :: atom()
   @callback default_style() :: String.t()
   @callback style_allowed?(String.t()) :: boolean
@@ -9,10 +17,6 @@ defmodule Apical.Plugs.Parameter do
   alias Apical.Exceptions.ParameterError
 
   alias Plug.Conn
-
-  # common functions for parameter plugs to use generally
-  # note that this module is not a plug itself (this is why it's in an
-  # underscored file)
 
   # INITIALIZATION
 

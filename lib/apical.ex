@@ -8,7 +8,7 @@ defmodule Apical do
     router(string, opts)
   end
 
-  @spec router_from_string(File.t(), Keyword.t()) :: any()
+  @spec router_from_file(Path.t(), Keyword.t()) :: any()
   defmacro router_from_file(file, opts) do
     opts = Macro.expand_literals(opts, __CALLER__)
 

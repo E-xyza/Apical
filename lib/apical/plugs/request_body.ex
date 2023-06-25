@@ -1,7 +1,50 @@
 defmodule Apical.Plugs.RequestBody do
   @moduledoc """
-  performs matching, marshalling of request bodies, and fallthrough error
-  for when no matching media type is found.
+  `Plug` module for parsing request bodies and placing them into params.
+
+  ### init options
+
+  There are several forms that the RequestBody plug may take.  The following
+  forms are recognized:
+
+  - `[:match]`
+
+    Prepare the `conn` object for parsing the RequestBody plugs by obtaining
+    the `content-type` and `content-length` header and setting private
+    `:content_type` and `:content_length` keys, respectively.
+
+    Raises appropriate errors early in the case that these headers are missing.
+
+  - `[:not_matched]`
+
+    Rejects request bodies with a 415 error since the supplied content-type
+    does not match any media-types declared in the OpenAPI schema.
+
+  - `[router_module, operation_id, media_type_string, parameters, plug_opts]`
+
+    The router module is passed itself, the operation_id (as an atom),
+    the media-type string for which the module applies, the requestBody
+    map from the OpenAPI schema, and the plug_opts keyword list as elucidated
+    by the router compiler.
+
+  ### conn output for media-type plugs
+
+  If the `content-type` header doesn't match the media-type string declared in
+  the OpenApi schema, it is untouched.  Note that if it fails to match it
+  should be caught by a `:not_matched` variant of the plug downstream.
+
+  Depending on the RequestBody source plugin supplied, the `conn` struct after
+  calling this plug may have the request body placed into the `params` map.
+  It may or may not also trigger reading the conn's request body.  Note that
+  fetching the request body may happen only once in the `conn`'s lifecycle.
+
+  By default, the plugins are assigned to the media types as follows:
+
+  | `application/json`                  | `Apical.Plugs.RequestBody.Json`        |
+  | `application/x-www-form-urlencoded` | `Apical.Plugs.RequestBody.FormEncoded` |
+  | `*/*`                               | `Apical.Plugs.RequestBody.Default`     |
+
+  See documentation for the respective source plugins for more information.
   """
 
   @behaviour Plug

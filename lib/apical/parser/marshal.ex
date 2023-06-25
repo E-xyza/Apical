@@ -1,4 +1,15 @@
 defmodule Apical.Parser.Marshal do
+  @moduledoc false
+
+  # this module contains functions for marshalling values based on settings
+  # passed from `schema` fields of parameters that are textual.  The
+  # marshalling functions will respect JsonSchema to the point where it can.
+  # This supports peeking into textual content and attempting to marshal
+  # numbers, integers, booleans, and nulls.  These actions will tunnel into
+  # nested arrays and objects but not will not traverse JSON Schema's `oneOf`,
+  # `anyOf`, `allOf`, `not` or conditional keywords.  You may use these
+  # keywords if your contents are string contents at the top level.
+
   def marshal(value, settings, _type) when is_list(value) do
     {:ok, array(value, settings)}
   end

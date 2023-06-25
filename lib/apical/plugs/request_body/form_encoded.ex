@@ -1,5 +1,6 @@
 defmodule Apical.Plugs.RequestBody.FormEncoded do
-  @moduledoc false
+  @moduledoc """
+  """
 
   alias Apical.Plugs.RequestBody.Source
   @behaviour Source

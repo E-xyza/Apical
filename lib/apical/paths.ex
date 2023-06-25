@@ -1,6 +1,12 @@
 defmodule Apical.Paths do
-  # see: https://datatracker.ietf.org/doc/html/rfc6570#section-3.2.3
-  #   to understand path expansion rules.
+  @moduledoc false
+
+  # module which handles the `pathsObject` and `pathItemObject` from the
+  # OpenAPI spec.
+  #
+  # note: only the `pathsObject` may be substituted with a `$ref` pointer.
+  #
+  # see: https://spec.openapis.org/oas/v3.1.0#paths-object
 
   alias Apical.Plugs.Parameter
   alias Apical.Plugs.RequestBody

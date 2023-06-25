@@ -1,4 +1,30 @@
 defmodule Apical.Plugs.Query do
+  @moduledoc """
+  `Plug` module for parsing query parameters and placing them into params.
+
+  ### init options
+
+  the plug initialization options are as follows:
+
+  `[router_module, operation_id, parameters, plug_opts]`
+
+  The router module is passed itself, the operation_id (as an atom),
+  a list of parameters maps from the OpenAPI schema, one for each cookie
+  parameter, and the plug_opts keyword list as elucidated by the router
+  compiler.  Initialization will compile an optimized `operations` object
+  which is used to parse query parameters from the request.
+
+  ### conn output
+
+  The `conn` struct after calling this plug will have query parameters
+  declared in the OpenAPI schema placed into the `params` map.
+
+  > ### Important {: .warning}
+  >
+  > If the client produces a query parameter that is not a part of the
+  > OpenAPI schema, the request will fail with a 400 error.
+  """
+
   alias Apical.Plugs.Parameter
 
   @behaviour Parameter

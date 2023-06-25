@@ -1,4 +1,30 @@
 defmodule Apical.Plugs.Path do
+  @moduledoc """
+  `Plug` module for parsing path parameters and placing them into params.
+
+  ### init options
+
+  the plug initialization options are as follows:
+
+  `[router_module, operation_id, parameters, plug_opts]`
+
+  The router module is passed itself, the operation_id (as an atom),
+  a list of parameters maps from the OpenAPI schema, one for each cookie
+  parameter, and the plug_opts keyword list as elucidated by the router
+  compiler.  Initialization will compile an optimized `operations` object
+  which is used to parse path parameters from the request.
+
+  ### conn output
+
+  The `conn` struct after calling this plug will have path parameters
+  declared in the OpenAPI schema placed into the `params` map.
+
+  > ### Important {: .warning}
+  >
+  > As part of the OpenAPI spec, path parameters must be declared in the
+  > path key under the `paths` field of the schema.
+  """
+
   alias Apical.Tools
   alias Apical.Plugs.Parameter
 

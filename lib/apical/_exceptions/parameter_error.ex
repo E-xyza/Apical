@@ -1,4 +1,12 @@
 defmodule Apical.Exceptions.ParameterError do
+  @moduledoc """
+  Error raised when parameters are invalid.  Note that many of the fields
+  correspond to error parameters returned by `Exonerate` validators.
+
+  This error should result in a http 400 status code.
+  see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+  """
+
   @optional_keys ~w(operation_id
   in
   misparsed

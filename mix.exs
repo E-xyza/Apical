@@ -8,7 +8,8 @@ defmodule Apical.MixProject do
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
-      deps: deps()
+      deps: deps(),
+      docs: docs()
     ]
   end
 
@@ -30,7 +31,36 @@ defmodule Apical.MixProject do
       {:phoenix_html, "~> 3.3.1", only: :test},
       {:yaml_elixir, "~> 2.7", optional: true},
       {:jason, "~> 1.4", optional: true},
-      {:json_ptr, "~> 1.2"}
+      {:plug, "~> 1.14"},
+      {:json_ptr, "~> 1.2"},
+      {:ex_doc, "~> 0.27", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "Apical",
+      extra_section: "GUIDES",
+      groups_for_modules: [
+        Behaviours: [
+          Apical.Plugs.RequestBody.Source
+        ],
+        Plugs: [
+          Apical.Plugs.Cookie,
+          Apical.Plugs.Header,
+          Apical.Plugs.Path,
+          Apical.Plugs.Query,
+          Apical.Plugs.RequestBody,
+          Apical.Plugs.SetOperationId,
+          Apical.Plugs.SetVersion
+        ],
+        "RequestBody Source Plugins": [
+          Apical.Plugs.RequestBody.Default,
+          Apical.Plugs.RequestBody.Json,
+          Apical.Plugs.RequestBody.FormEncoded
+        ]
+      ],
+      extras: []
     ]
   end
 end

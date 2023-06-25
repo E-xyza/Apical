@@ -1,4 +1,8 @@
 defmodule Apical.Tools do
+  @moduledoc false
+
+  # private tools shared across multiple modules in the Apical library
+
   @default_content_mapping [{"application/yaml", YamlElixir}, {"application/json", Jason}]
   def decode(string, opts) do
     # content_type defaults to "application/yaml"
