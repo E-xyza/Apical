@@ -1,6 +1,6 @@
 # Apical
 
-https://github.com/e-xyza/apical/actions/workflows/on-push-pr.yaml/badge.svg
+![test status](https://github.com/e-xyza/apical/actions/workflows/on-push-pr.yaml/badge.svg)
 
 Elixir Routers from OpenAPI schemas
 
