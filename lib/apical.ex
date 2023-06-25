@@ -2,6 +2,19 @@ defmodule Apical do
   @moduledoc """
   Generates a web router from an OpenAPI document.
 
+  Building an OpenAPI-compliant Phoenix router can be as simple as:
+
+  ```elixir
+  defmodule MyRouter do
+    require Apical
+
+    Apical.router_from_file(
+      "path/to/openapi.yaml",
+      controller: MyProjectWeb.ApiController
+    )
+  end
+  ```
+
   See https://spec.openapis.org/oas/v3.1.0 for details on how to compose an OpenAPI
   schema.
 
@@ -242,8 +255,7 @@ defmodule Apical do
 
     Apical.router_from_file(
       "path/to/openapi.yaml",
-      controller: MyProjectWeb.ApiController,
-      encoding: "application/yaml"
+      controller: MyProjectWeb.ApiController
     )
   end
   ```
