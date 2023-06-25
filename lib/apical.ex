@@ -69,7 +69,8 @@ defmodule Apical do
 
   #### Scopable options
 
-  The following options are *scopable*.
+  The following options are *scopable*.  They may be placed as top-level options
+  or under the scopes (see below)
 
   - `controller`:  Plug module which contains code implementing the API.
 
@@ -165,6 +166,10 @@ defmodule Apical do
     if this is not true, objects payloads will be merged into `conn.params`.
 
   #### Available scopes
+
+  The scopes have the following precedence:
+
+  operation_ids > tags > parameters > global
 
   - `operation_ids`: A keywordlist of `operationId`s (as atom keys) and options
     to target to these operations.

@@ -8,6 +8,13 @@ defmodule Apical.MixProject do
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
+      package: [
+        description: "OpenAPI 3.1.0 router generator for Elixir",
+        licenses: ["MIT"],
+        files: ~w(lib mix.exs README* LICENSE* CHANGELOG*),
+        links: %{"GitHub" => "https://github.com/E-xyza/Apical"}
+      ],
+      source_url: "https://github.com/E-xyza/Apical/",
       deps: deps(),
       docs: docs()
     ]
@@ -40,6 +47,7 @@ defmodule Apical.MixProject do
   defp docs do
     [
       main: "Apical",
+      source_ref: "main",
       extra_section: "GUIDES",
       groups_for_modules: [
         Behaviours: [
@@ -59,8 +67,7 @@ defmodule Apical.MixProject do
           Apical.Plugs.RequestBody.Json,
           Apical.Plugs.RequestBody.FormEncoded
         ]
-      ],
-      extras: []
+      ]
     ]
   end
 end
