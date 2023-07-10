@@ -182,7 +182,7 @@ defmodule Apical do
 
   The scopes have the following precedence:
 
-  operation_ids > tags > parameters > global
+  operation_ids > groups > tags > parameters > global
 
   - `operation_ids`: A keywordlist of `operationId`s (as atom keys) and options
     to target to these operations.
@@ -201,6 +201,11 @@ defmodule Apical do
     The parameter keys must be cased in the same fashion (including kebab-case)
     Note that this scope may be further nested inside of `tag` and
     `operation_ids` scopes.
+
+  - `groups`: A keywordlist of groups (as atom keys) and options to target to
+    those groups.  The group definition should start off with the names of the
+    operationIds that are in the group (as atoms), followed by the options to
+    send to them (as keyword lists)
   """
 
   alias Apical.Tools

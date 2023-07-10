@@ -1,6 +1,6 @@
 # Apical Changelog
 
-## 0.1
+## 0.1.0
 
 ### initial release
 
@@ -22,6 +22,10 @@
   - application/form-encoded
 - options targettable by tag or operation_id
 - supports internal $refs
+
+## 0.2.0
+
+- support for grouping operationId by "group"
 
 ## Future planned support 
 
