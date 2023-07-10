@@ -59,7 +59,11 @@ defmodule Apical.Paths do
     verb = Map.fetch!(@verb_mapping, verb)
 
     tags = Map.get(operation, "tags", [])
-    opts = fold_opts(opts, tags, operation_id)
+    opts = opts
+    |> fold_tag_opts(tags)
+    |> fold_group_opts(operation_id)
+    |> fold_operation_id_opts(operation_id)
+
     version = Keyword.fetch!(opts, :version)
     root = Keyword.fetch!(opts, :root)
 
@@ -135,14 +139,30 @@ defmodule Apical.Paths do
 
   @folded_opts ~w(controller styles parameters extra_plugs nest_all_json content_sources dump dump_validator)a
 
-  defp fold_opts(opts, tags, operation_id) do
-    # NB it's totally okay if this process is unoptimized since it
+  defp fold_tag_opts(opts, tags) do
+    # NB it's totallgroup_opts(operation_id)y okay if this process is unoptimized since it
     # should be running at compile time.
     tags
     |> Enum.reverse()
     |> Enum.reduce(opts, &merge_opts(&2, &1, :tags))
-    |> merge_opts(operation_id, :operation_ids)
   end
+
+  defp fold_group_opts(opts, operation_id) do
+    group_opts = opts
+    |> Keyword.get(:groups, [])
+    |> Enum.find_value(fn group_spec ->
+      {ids, opts} = Enum.split_while(group_spec, &is_atom/1)
+      
+      if Enum.any?(ids, &(Atom.to_string(&1) == operation_id)) do
+        opts
+      end
+    end)
+    |> List.wrap
+
+    Tools.deepmerge(opts, group_opts)
+  end
+
+  defp fold_operation_id_opts(opts, operation_id), do: merge_opts(opts, operation_id, :operation_ids)
 
   defp merge_opts(opts, key, class) do
     merge_opts =

@@ -1,6 +1,8 @@
 defmodule ApicalTest.CompileError.MissingInfoTest do
   use ExUnit.Case, async: true
 
+  import ApicalTest.Support.Error
+
   fails =
     quote do
       defmodule MissingInfo do
@@ -31,7 +33,7 @@ defmodule ApicalTest.CompileError.MissingInfoTest do
 
   test "missing the openapi section triggers compile failure" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement that the schema has an `info` key",
+                 error_message("Your schema violates the OpenAPI requirement that the schema has an `info` key"),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

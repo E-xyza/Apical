@@ -1,6 +1,8 @@
 defmodule ApicalTest.CompileError.MissingParameterNameTest do
   use ExUnit.Case, async: true
 
+  import ApicalTest.Support.Error
+
   fails =
     quote do
       defmodule MissingParameterName do
@@ -33,7 +35,7 @@ defmodule ApicalTest.CompileError.MissingParameterNameTest do
 
   test "missing parameter name raises compile error" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement for parameters, field `name` is required (in operation `fails`, parameter 0)",
+                 error_message("Your schema violates the OpenAPI requirement for parameters, field `name` is required (in operation `fails`, parameter 0)"),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

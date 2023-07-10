@@ -1,6 +1,8 @@
 defmodule ApicalTest.CompileError.NonexistentPathParameterTest do
   use ExUnit.Case, async: true
 
+  import ApicalTest.Support.Error
+
   fails =
     quote do
       defmodule NonexistentPathParameterFails do
@@ -35,7 +37,7 @@ defmodule ApicalTest.CompileError.NonexistentPathParameterTest do
 
   test "nonexistent path parameter raises compile error" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement that the parameter `parameter` in operation `fails` exists as a match in its path definition: (got: `/`)",
+                 error_message("Your schema violates the OpenAPI requirement that the parameter `parameter` in operation `fails` exists as a match in its path definition: (got: `/`)"),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end
