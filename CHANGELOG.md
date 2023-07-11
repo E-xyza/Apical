@@ -26,6 +26,7 @@
 ## 0.2.0
 
 - support for grouping operationId by "group"
+- support for using Plug only, with no Phoenix dependency
 
 ## Future planned support 
 

@@ -36,7 +36,9 @@ defmodule ApicalTest.CompileError.InvalidParameterLocationTest do
 
   test "invalid parameter location raises compile error" do
     assert_raise CompileError,
-                 error_message("Your schema violates the OpenAPI requirement for parameters, invalid parameter location: `not-a-location` (in operation `fails`, parameter 0)"),
+                 error_message(
+                   "Your schema violates the OpenAPI requirement for parameters, invalid parameter location: `not-a-location` (in operation `fails`, parameter 0)"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

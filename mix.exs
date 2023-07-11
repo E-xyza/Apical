@@ -32,10 +32,12 @@ defmodule Apical.MixProject do
   defp deps do
     [
       {:pegasus, "~> 0.2", runtime: false},
-      {:exonerate, "~> 1.1.0", runtime: false},
+      {:exonerate, "~> 1.1.1", runtime: false},
       {:bandit, ">= 0.7.6", only: :test},
-      {:phoenix, "~> 1.7.2", only: [:test, :dev]},
-      {:phoenix_html, "~> 3.3.1", only: :test},
+      # note that phoenix is an optional dependency.
+      {:phoenix, "~> 1.7.2", only: [:test, :dev], optional: true},
+      {:phoenix_html, "~> 3.3.1", only: :test, optional: true},
+      {:req, "~> 0.3.10", only: :test},
       {:yaml_elixir, "~> 2.7", optional: true},
       {:jason, "~> 1.4", optional: true},
       {:plug, "~> 1.14"},
