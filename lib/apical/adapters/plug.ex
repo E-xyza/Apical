@@ -16,6 +16,7 @@ defmodule Apical.Adapters.Plug do
       |> String.split("/")
       |> Enum.map(&split_on_matches/1)
       |> Enum.reject(&(&1 == ""))
+      |> Macro.escape
 
     quote do
       previous = Module.get_attribute(__MODULE__, :operations, [])
@@ -57,8 +58,6 @@ defmodule Apical.Adapters.Plug do
 
   def _path_match(conn, match_parts) do
     find_match(conn, conn.path_info, match_parts)
-    # IO.puts([IO.ANSI.red(), "matching path: #{path}", IO.ANSI.reset()])
-    conn
   end
 
   defp split_on_matches(string) do
@@ -106,7 +105,11 @@ defmodule Apical.Adapters.Plug do
 
   defp find_match(_, _, _), do: nil
 
-  defp put_path_param(conn, _key, _value) do
-    conn
+  defp put_path_param(conn = %{params: %Plug.Conn.Unfetched{}}, key, value) do
+    %{conn | params: %{key => value}}
+  end
+
+  defp put_path_param(conn = %{params: params}, key, value) do
+    %{conn | params: Map.put(params, key, value)}
   end
 end

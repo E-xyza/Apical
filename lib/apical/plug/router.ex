@@ -1,4 +1,11 @@
 defmodule Apical.Plug.Router do
+  @moduledoc """
+  boilerplate code setting up a router using the `Plug`
+  framework *without* using `Phoenix`.  Note that although
+  this reduces the needed dependencies, this doesn't provide
+  you with some Phoenix affordances such as route helpers.
+  """
+
   defmacro __using__(opts) do
     quote do
       import Apical.Plug.Router, only: [match: 2]
@@ -11,6 +18,9 @@ defmodule Apical.Plug.Router do
     end
   end
 
+  @doc """
+  returns a 404 error since none of the routes have matched
+  """
   def match(conn, _opts) do
     Plug.Conn.send_resp(conn, 404, "not found")
   end

@@ -1,22 +1,27 @@
-defmodule ApicalTest.Plug.GetTest do
+defmodule ApicalTest.Plug.GetPathTest do
   use ApicalTest.EndpointCase, with: Plug
   alias Plug.Conn
 
   use Apical.Plug.Controller
 
-  def testGet(conn, _params) do
-    Conn.send_resp(conn, 200, "OK")
+  def testGet(conn, params) do
+    conn
+    |> Conn.put_resp_header("content-type", "application/json")
+    |> Conn.send_resp(200, Jason.encode!(params))
   end
 
-  test "GET /" do
+  test "GET /one/two2" do
     assert %{
              status: 200,
-             body: "OK"
-           } = Req.get!("http://localhost:#{@port}/")
+             body: %{
+               "one" => "one",
+               "two" => "2"
+             }
+           } = Req.get!("http://localhost:#{@port}/one/two2")
   end
 end
 
-defmodule ApicalTest.Plug.GetTest.Router do
+defmodule ApicalTest.Plug.GetPathTest.Router do
   use Apical.Plug.Router
 
   require Apical
@@ -28,7 +33,7 @@ defmodule ApicalTest.Plug.GetTest.Router do
       title: TestGet
       version: 1.0.0
     paths:
-      "/":
+      "/{one}/two{two}":
         get:
           operationId: testGet
           responses:
@@ -37,7 +42,7 @@ defmodule ApicalTest.Plug.GetTest.Router do
     """,
     for: Plug,
     root: "/",
-    controller: ApicalTest.Plug.GetTest,
+    controller: ApicalTest.Plug.GetPathTest,
     encoding: "application/yaml"
   )
 end
