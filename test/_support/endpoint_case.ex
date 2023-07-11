@@ -17,6 +17,8 @@ defmodule ApicalTest.EndpointCase do
 
   defp plug_endpoint(port) do
     quote do
+      use Apical.Plug.Controller
+
       @port unquote(port)
 
       setup_all do
