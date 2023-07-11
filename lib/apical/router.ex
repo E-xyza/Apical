@@ -1,16 +1,11 @@
-defmodule Apical.Phoenix do
+defmodule Apical.Router do
   @moduledoc false
 
-  # adapter for generating phoenix routers from OpenAPI schemas.
-  #
-  # note: that this API will be generalized to also produce plug routers
-  # as well.
-
-  alias Apical.Paths
+  alias Apical.Path
   alias Apical.Schema
   alias Apical.Tools
 
-  def router(schema, schema_string, opts) do
+  def build(schema, schema_string, opts) do
     %{"info" => %{"version" => version}} = Schema.verify_router!(schema)
 
     resource = Keyword.get_lazy(opts, :resource, fn -> hash(schema) end)
@@ -26,9 +21,9 @@ defmodule Apical.Phoenix do
     routes =
       "/paths"
       |> JsonPtr.from_path()
-      |> JsonPtr.map(schema, &Paths.to_routes(&1, &2, &3, schema, route_opts))
+      |> JsonPtr.map(schema, &Path.to_plug_routes(&1, &2, &3, schema, route_opts))
       |> Enum.unzip()
-      |> process_paths
+      |> paths_to_route
 
     quote do
       require Exonerate
@@ -80,7 +75,7 @@ defmodule Apical.Phoenix do
     end
   end
 
-  defp process_paths({routes, operation_ids}) do
+  defp paths_to_route({routes, operation_ids}) do
     validate_no_duplicate_operation_ids!(operation_ids, MapSet.new())
 
     Enum.flat_map(routes, &Enum.reverse/1)

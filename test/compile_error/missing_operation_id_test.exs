@@ -35,7 +35,9 @@ defmodule ApicalTest.CompileError.MissingOperationIdTest do
 
   test "nonexistent path parameter raises compile error" do
     assert_raise CompileError,
-                 error_message("Your schema violates the OpenAPI requirement that all operations have an operationId: (missing for operation at `/paths/~1/get`)"),
+                 error_message(
+                   "Your schema violates the OpenAPI requirement that all operations have an operationId: (missing for operation at `/paths/~1/get`)"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

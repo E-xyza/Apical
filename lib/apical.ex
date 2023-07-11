@@ -208,6 +208,7 @@ defmodule Apical do
     send to them (as keyword lists)
   """
 
+  alias Apical.Router
   alias Apical.Tools
 
   @spec router_from_string(String.t(), Keyword.t()) :: any()
@@ -283,7 +284,7 @@ defmodule Apical do
   defp router(string, opts) do
     string
     |> Tools.decode(opts)
-    |> Apical.Phoenix.router(string, opts)
+    |> Router.build(string, opts)
     |> Tools.maybe_dump(opts)
   end
 

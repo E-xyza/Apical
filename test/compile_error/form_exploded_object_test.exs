@@ -41,7 +41,9 @@ defmodule ApicalTest.CompileError.FormExplodedObjectTest do
 
   test "form exploded parameters raises compile error" do
     assert_raise CompileError,
-                 error_message("Your schema violates the Apical requirement for parameter `parameter` in operation `fails`: form exploded parameters may not be objects"),
+                 error_message(
+                   "Your schema violates the Apical requirement for parameter `parameter` in operation `fails`: form exploded parameters may not be objects"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

@@ -35,7 +35,9 @@ defmodule ApicalTest.CompileError.MissingParameterInTest do
 
   test "invalid parameter location raises compile error" do
     assert_raise CompileError,
-                 error_message("Your schema violates the OpenAPI requirement for parameters, field `in` is required (in operation `fails`, parameter 0)"),
+                 error_message(
+                   "Your schema violates the OpenAPI requirement for parameters, field `in` is required (in operation `fails`, parameter 0)"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

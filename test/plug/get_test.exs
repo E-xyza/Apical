@@ -1,4 +1,4 @@
-defmodule ApicalTest.Verbs.GetTest do
+defmodule ApicalTest.Plug.GetTest do
   defmodule Router do
     require Apical
 

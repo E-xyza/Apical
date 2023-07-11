@@ -36,7 +36,9 @@ defmodule ApicalTest.CompileError.UnrequiredPathParameterTest do
 
   test "unrequired path parameter raises compile error" do
     assert_raise CompileError,
-                 error_message("Your schema violates the OpenAPI requirement for parameter `parameter` in operation `fails`: path parameters must be `required: true`"),
+                 error_message(
+                   "Your schema violates the OpenAPI requirement for parameter `parameter` in operation `fails`: path parameters must be `required: true`"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

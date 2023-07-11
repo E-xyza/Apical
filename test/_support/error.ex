@@ -4,9 +4,10 @@ defmodule ApicalTest.Support.Error do
 
   changeover = Version.parse!("1.15.0")
 
-  version_compare = System.version()
-  |> Version.parse!()
-  |> Version.compare(changeover)
+  version_compare =
+    System.version()
+    |> Version.parse!()
+    |> Version.compare(changeover)
 
   if version_compare == :lt do
     def error_message(string) do

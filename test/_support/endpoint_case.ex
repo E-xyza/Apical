@@ -5,11 +5,11 @@ defmodule ApicalTest.EndpointCase do
     opts
     |> Keyword.get(:with, Phoenix)
     |> Macro.expand(__ENV__)
-    |> dbg(limit: 25)
     |> case do
       Plug ->
         port = Enum.random(2000..3000)
         plug_endpoint(port)
+
       Phoenix ->
         phoenix_endpoint()
     end
