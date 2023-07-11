@@ -41,8 +41,9 @@ defmodule Apical.Plugs.Query do
 
     conn
     |> Parameter.check_required(conn.query_params, :query, operations)
-    |> Parameter.warn_deprecated(conn.query_params, :query, operations)
-    |> Parameter.validate(conn.query_params, :query, operations)
+    |> Map.update!(:params, &Map.merge(&1, conn.query_params))
+    |> Parameter.warn_deprecated(:query, operations)
+    |> Parameter.validate(:query, operations)
   end
 
   @impl Apical.Plugs.Parameter

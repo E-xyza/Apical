@@ -16,7 +16,7 @@ defmodule Apical.Adapters.Plug do
       |> String.split("/")
       |> Enum.map(&split_on_matches/1)
       |> Enum.reject(&(&1 == ""))
-      |> Macro.escape
+      |> Macro.escape()
 
     quote do
       previous = Module.get_attribute(__MODULE__, :operations, [])

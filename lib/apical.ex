@@ -214,6 +214,19 @@ defmodule Apical do
     those groups.  The group definition should start off with the names of the
     operationIds that are in the group (as atoms), followed by the options to
     send to them (as keyword lists)
+
+  #### Scoped options
+
+  The following options are only valid in a single scope:
+
+  - `alias`: (scoped to `:operation_ids`) overrides the name of the function
+    pointed to by the `operationId` in the schema.
+
+  - `marshal`: (scoped to `parameters`) overrides the marshaller to use for
+    parameter.  May be `atom` for a local function, `{atom, list}` for a
+    local function with extra parameters, `{module, atom}` for a remote
+    function, or `{module, atom, list}` for a remote function with extra
+    parameters.
   """
 
   alias Apical.Router

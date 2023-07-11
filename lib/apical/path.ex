@@ -159,10 +159,11 @@ defmodule Apical.Path do
     do: merge_opts(opts, operation_id, :operation_ids)
 
   defp merge_opts(opts, key, class) do
-    opts_to_fold = case class do
-      :operation_ids -> [:alias | @folded_opts]
-      _ -> @folded_opts
-    end
+    opts_to_fold =
+      case class do
+        :operation_ids -> [:alias | @folded_opts]
+        _ -> @folded_opts
+      end
 
     merge_opts =
       opts
