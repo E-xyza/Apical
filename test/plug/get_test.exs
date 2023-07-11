@@ -1,5 +1,7 @@
 defmodule ApicalTest.Plug.GetTest do
   defmodule Router do
+    use Apical.Plug.Router
+
     require Apical
 
     Apical.router_from_string(
@@ -19,7 +21,8 @@ defmodule ApicalTest.Plug.GetTest do
       for: Plug,
       root: "/",
       controller: ApicalTest.Verbs.GetTest,
-      encoding: "application/yaml"
+      encoding: "application/yaml",
+      dump: true
     )
   end
 
