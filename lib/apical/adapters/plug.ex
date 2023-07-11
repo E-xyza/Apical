@@ -1,4 +1,7 @@
 defmodule Apical.Adapters.Plug do
+
+  @methods Map.new(~w(get post put patch delete head options trace)a, &{&1, String.upcase(to_string(&1))})
+
   @moduledoc false
   def build_path(path) do
     # to get proper plug segregation, we have to create a module for each
@@ -17,6 +20,8 @@ defmodule Apical.Adapters.Plug do
       |> Enum.map(&split_on_matches/1)
       |> Enum.reject(&(&1 == ""))
       |> Macro.escape()
+
+    method = Map.fetch!(@methods, path.verb)
 
     quote do
       previous = Module.get_attribute(__MODULE__, :operations, [])
@@ -45,13 +50,15 @@ defmodule Apical.Adapters.Plug do
         def init(_), do: []
 
         @impl Plug
-        def call(conn, opts) do
+        def call(conn = %{method: unquote(method)}, opts) do
           if matched_conn = Apical.Adapters.Plug._path_match(conn, unquote(match_parts)) do
             super(matched_conn, opts)
           else
             conn
           end
         end
+
+        def call(conn, _opts), do: conn
       end
     end
   end
