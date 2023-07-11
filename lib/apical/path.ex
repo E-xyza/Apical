@@ -75,9 +75,7 @@ defmodule Apical.Path do
 
     version = Keyword.fetch!(opts, :version)
     root = Keyword.fetch!(opts, :root)
-
-    # TODO: resolve function using operationId options
-    function = String.to_atom(operation_id)
+    function = Keyword.get(opts, :alias, String.to_atom(operation_id))
 
     plug_opts =
       opts
@@ -161,12 +159,17 @@ defmodule Apical.Path do
     do: merge_opts(opts, operation_id, :operation_ids)
 
   defp merge_opts(opts, key, class) do
+    opts_to_fold = case class do
+      :operation_ids -> [:alias | @folded_opts]
+      _ -> @folded_opts
+    end
+
     merge_opts =
       opts
       |> Keyword.get(class, [])
       |> Enum.find_value(&if Atom.to_string(elem(&1, 0)) == key, do: elem(&1, 1))
       |> List.wrap()
-      |> Keyword.take(@folded_opts)
+      |> Keyword.take(opts_to_fold)
 
     Tools.deepmerge(opts, merge_opts)
   end
