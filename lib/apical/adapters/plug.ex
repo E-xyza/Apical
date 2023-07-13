@@ -1,6 +1,8 @@
 defmodule Apical.Adapters.Plug do
-
-  @methods Map.new(~w(get post put patch delete head options trace)a, &{&1, String.upcase(to_string(&1))})
+  @methods Map.new(
+             ~w(get post put patch delete head options trace)a,
+             &{&1, String.upcase(to_string(&1))}
+           )
 
   @moduledoc false
   def build_path(path) do

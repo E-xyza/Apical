@@ -58,6 +58,7 @@ defmodule Apical.Plugs.Path do
     conn
     |> Map.update!(:params, &Map.merge(&1, params))
     |> Parameter.warn_deprecated(:path, operations)
+    |> Parameter.custom_marshal(:path, operations)
     |> Parameter.validate(:path, operations)
   end
 

@@ -297,6 +297,17 @@ defmodule ApicalTest.Parameters.PathTest do
                 in: path
                 required: true
                 style: x-custom
+        "/marshal/custom/{custom_marshal}":
+          get:
+            operationId: pathParamMarshalCustom
+            parameters:
+              - name: custom_marshal
+                required: true
+                in: path
+                schema:
+                  oneOf:
+                    - type: integer
+                    - type: boolean
       """,
       root: "/",
       controller: ApicalTest.Parameters.PathTest,
@@ -305,6 +316,9 @@ defmodule ApicalTest.Parameters.PathTest do
       parameters: [
         custom: [
           styles: [{"x-custom", {__MODULE__, :x_custom, ["parameter"]}}]
+        ],
+        custom_marshal: [
+          marshal: :defined_marshalling
         ]
       ],
       operation_ids: [
@@ -323,6 +337,10 @@ defmodule ApicalTest.Parameters.PathTest do
     def x_custom("error_list"), do: {:error, message: "list"}
     def x_custom(_, true), do: {:ok, "explode"}
     def x_custom(_, payload), do: {:ok, payload}
+
+    def defined_marshalling("true"), do: {:ok, true}
+    def defined_marshalling("47"), do: {:ok, 47}
+    def defined_marshalling(_), do: {:error, "invalid"}
   end
 
   use ApicalTest.EndpointCase
@@ -335,7 +353,8 @@ defmodule ApicalTest.Parameters.PathTest do
       pathParamDefaultObject pathParamMatrixObject pathParamMatrixObjectExplode
       pathParamLabelObject pathParamLabelObjectExplode
       pathParamSimpleObject pathParamSimpleObjectExplode
-      pathParamMarshalObject pathParamMarshalBoolean pathParamBooleanMatrix pathParamBooleanLabel
+      pathParamMarshalObject pathParamMarshalBoolean pathParamMarshalCustom
+      pathParamBooleanMatrix pathParamBooleanLabel
       pathParamNumber pathParamMultitype pathParamNullableArray pathParamNullableObject
       schemaNumber styleCustom styleCustomExplode styleCustomParameter styleCustomOperationParameter
     )a do
@@ -682,7 +701,7 @@ defmodule ApicalTest.Parameters.PathTest do
     end
   end
 
-  describe "for multitype schemas" do
+  describe "for multi-type schemas" do
     test "floating point works", %{conn: conn} do
       assert %{"multitype" => 4.5} =
                conn
@@ -832,6 +851,28 @@ defmodule ApicalTest.Parameters.PathTest do
                conn
                |> get("/style-custom-operation-parameter/ok")
                |> json_response(200)
+    end
+  end
+
+  describe "for custom marshalling" do
+    test "works with a valid value", %{conn: conn} do
+      assert %{"custom_marshal" => true} =
+               conn
+               |> get("/marshal/custom/true")
+               |> json_response(200)
+
+      assert %{"custom_marshal" => 47} =
+               conn
+               |> get("/marshal/custom/47")
+               |> json_response(200)
+    end
+
+    test "422 with an invalid value", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMarshalCustom (in path): invalid",
+                   fn ->
+                     get(conn, "/marshal/custom/invalid")
+                   end
     end
   end
 end
