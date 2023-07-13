@@ -118,6 +118,14 @@ defmodule ApicalTest.Parameters.CookieTest do
                   oneOf:
                     - type: integer
                     - type: boolean
+              - name: validate-disabled
+                in: cookie
+                schema:
+                  type: boolean
+              - name: marshal-disabled
+                in: cookie
+                schema:
+                  type: integer
         "/override":
           get:
             operationId: cookieParamOverride
@@ -137,6 +145,12 @@ defmodule ApicalTest.Parameters.CookieTest do
         "marshal-defined": [
           # also test `atom` style here
           marshal: :defined_marshalling
+        ],
+        "validate-disabled": [
+          validate: false
+        ],
+        "marshal-disabled": [
+          marshal: false
         ]
       ],
       operation_ids: [
@@ -580,6 +594,31 @@ defmodule ApicalTest.Parameters.CookieTest do
                      |> put_req_cookie("marshal-defined", "invalid")
                      |> get("/optional/")
                    end
+    end
+  end
+
+  describe "disabled validations" do
+    test "happens with validate: false", %{conn: conn} do
+      # note that this is still marshalled
+      assert %{"validate-disabled" => true} =
+               conn
+               |> put_req_cookie("validate-disabled", "true")
+               |> get("/optional/")
+               |> json_response(200)
+
+      assert %{"validate-disabled" => "invalid"} =
+               conn
+               |> put_req_cookie("validate-disabled", "invalid")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "happens with marshal: false", %{conn: conn} do
+      assert %{"marshal-disabled" => "47"} =
+               conn
+               |> put_req_cookie("marshal-disabled", "47")
+               |> get("/optional/")
+               |> json_response(200)
     end
   end
 end

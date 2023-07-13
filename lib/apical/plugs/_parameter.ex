@@ -27,13 +27,13 @@ defmodule Apical.Plugs.Parameter do
       |> Map.put(:parser_context, %{})
 
     Enum.reduce(parameters, operations, fn parameter = %{"name" => name}, operations_so_far ->
-      merge_opts =
+      merged_opts =
         plug_opts
         |> Keyword.get(:parameters, [])
-        |> Enum.find(&(Atom.to_string(elem(&1, 0)) == name))
+        |> Enum.find_value(&if Atom.to_string(elem(&1, 0)) == name, do: elem(&1, 1))
         |> List.wrap()
 
-      plug_opts = Tools.deepmerge(plug_opts, merge_opts)
+      plug_opts = Tools.deepmerge(plug_opts, merged_opts)
 
       Tools.assert(
         !parameter["allowEmptyValue"],
@@ -50,8 +50,10 @@ defmodule Apical.Plugs.Parameter do
 
       marshal_opts =
         plug_opts
-        |> get_in([:parameters, String.to_atom(name), :marshal])
+        |> Keyword.get(:marshal)
         |> normalize_marshal(module)
+
+      should_validate = (marshal_opts !== false) and Keyword.get(plug_opts, :validate, true)
 
       operations_so_far
       |> Map.update!(:parser_context, &Map.put(&1, name, %{}))
@@ -61,7 +63,7 @@ defmodule Apical.Plugs.Parameter do
       |> add_style(in_, parameter, plug_opts)
       |> add_inner_marshal(parameter, marshal_opts)
       |> add_allow_reserved(parameter)
-      |> add_validations(module, version, operation_id, parameter)
+      |> add_validations(module, version, operation_id, parameter, should_validate)
       |> add_custom_marshal(name, marshal_opts)
     end)
   end
@@ -378,18 +380,24 @@ defmodule Apical.Plugs.Parameter do
   defp add_validations(operations, module, version, operation_id, %{
          "schema" => _schema,
          "name" => name
-       }) do
-    fun = {module, validator_name(version, operation_id, name)}
+       }, should_validate) do
 
-    Map.update(operations, :validations, %{name => fun}, &Map.put(&1, name, fun))
+    if should_validate do
+      fun = {module, validator_name(version, operation_id, name)}
+      Map.update(operations, :validations, %{name => fun}, &Map.put(&1, name, fun))
+    else
+      operations
+    end
   end
 
-  defp add_validations(operations, _, _, _, _), do: operations
-
-  defp add_custom_marshal(operations, _, nil), do: operations
+  defp add_validations(operations, _, _, _, _, _), do: operations
 
   defp add_custom_marshal(operations, name, marshal) do
-    Map.update(operations, :custom_marshal, %{name => marshal}, &Map.put(&1, name, marshal))
+    if marshal do
+      Map.update(operations, :custom_marshal, %{name => marshal}, &Map.put(&1, name, marshal))
+    else
+      operations
+    end
   end
 
   # REQUIRED PARAMETERS
@@ -621,6 +629,8 @@ defmodule Apical.Plugs.Parameter do
   end
 
   defp normalize_marshal(nil, _), do: nil
+
+  defp normalize_marshal(false, _), do: false
 
   defp normalize_marshal(value = {_module, _fun, _args}, _), do: value
 
