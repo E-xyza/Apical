@@ -586,7 +586,7 @@ defmodule ApicalTest.Parameters.CookieTest do
                |> json_response(200)
     end
 
-    test "422 with an invalid value", %{conn: conn} do
+    test "400 with an invalid value", %{conn: conn} do
       assert_raise Apical.Exceptions.ParameterError,
                    "Parameter Error in operation cookieParamOptional (in cookie): invalid",
                    fn ->

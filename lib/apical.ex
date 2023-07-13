@@ -223,10 +223,19 @@ defmodule Apical do
     pointed to by the `operationId` in the schema.
 
   - `marshal`: (scoped to `parameters`) overrides the marshaller to use for
-    parameter.  May be `atom` for a local function, `{atom, list}` for a
-    local function with extra parameters, `{module, atom}` for a remote
-    function, or `{module, atom, list}` for a remote function with extra
-    parameters.  Note that the local function must be an exported function.
+    parameter.  May be one of:
+    - `false`: to disable default marshalling and do nothing
+    - `atom`: to call a local function,
+    - `{atom, list}`: to call a local function with extra parameters,
+    - `{module, atom}`: to call a remote function
+    - `{module, atom, list}`: to call a remote function with extra parameters.
+    Note that the local function must be an exported function.
+    The called function must return `{:ok, value}` to marshal the string and
+    substitute the value as the parameter, or `{:error, String.t}` to return
+    a 400 error with the reason as described.
+
+  - `validate`: (scoped to `parameters`, boolean, defaults to `true`) if sets
+    to false, disables validation of the parameter.
   """
 
   alias Apical.Router
