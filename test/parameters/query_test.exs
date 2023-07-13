@@ -158,6 +158,12 @@ defmodule ApicalTest.Parameters.QueryTest do
               - name: allow-reserved
                 in: query
                 allowReserved: true
+              - name: marshal-defined
+                in: query
+                schema:
+                  oneOf:
+                    - type: integer
+                    - type: boolean
             responses:
               "200":
                 description: OK
@@ -175,6 +181,9 @@ defmodule ApicalTest.Parameters.QueryTest do
       parameters: [
         "style-custom-override": [
           styles: [{"x-custom-override", {__MODULE__, :x_custom, ["by parameter"]}}]
+        ],
+        "marshal-defined": [
+          marshal: :defined_marshalling
         ]
       ],
       operation_ids: [
@@ -194,6 +203,10 @@ defmodule ApicalTest.Parameters.QueryTest do
     def x_custom("error_list"), do: {:error, message: "list"}
     def x_custom(_, true), do: {:ok, "explode"}
     def x_custom(_, level), do: {:ok, level}
+
+    def defined_marshalling("true"), do: {:ok, true}
+    def defined_marshalling("47"), do: {:ok, 47}
+    def defined_marshalling(_), do: {:error, "invalid"}
   end
 
   use ApicalTest.EndpointCase
@@ -668,6 +681,26 @@ defmodule ApicalTest.Parameters.QueryTest do
                    fn ->
                      get(conn, "/optional/?schema-string=[")
                    end
+    end
+  end
+
+  describe "for a marshall-defined parameter" do
+    test "works with a valid value", %{conn: conn} do
+      assert %{"marshal-defined" => true} =
+               conn
+               |> get("/optional/?marshal-defined=true")
+               |> json_response(200)
+
+      assert %{"marshal-defined" => 47} =
+               conn
+               |> get("/optional/?marshal-defined=47")
+               |> json_response(200)
+    end
+
+    test "422 with an invalid value", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation queryParamOptional (in query): invalid",
+                   fn -> get(conn, "/optional/?marshal-defined=invalid") end
     end
   end
 end
