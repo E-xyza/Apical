@@ -224,7 +224,8 @@ defmodule Apical do
 
   - `marshal`: (scoped to `parameters`) overrides the marshaller to use for
     parameter.  May be one of:
-    - `false`: to disable default marshalling and do nothing
+    - `false`: to disable default marshalling and do nothing.  Also disables
+      validation of the parameter.
     - `atom`: to call a local function,
     - `{atom, list}`: to call a local function with extra parameters,
     - `{module, atom}`: to call a remote function
@@ -235,7 +236,8 @@ defmodule Apical do
     a 400 error with the reason as described.
 
   - `validate`: (scoped to `parameters`, boolean, defaults to `true`) if sets
-    to false, disables validation of the parameter.
+    to false, disables validation of the parameter.  Note if `marshal: false`
+    is set, validation will automatically be disabled.
   """
 
   alias Apical.Router

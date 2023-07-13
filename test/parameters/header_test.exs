@@ -113,6 +113,14 @@ defmodule ApicalTest.Parameters.HeaderTest do
                   oneOf:
                     - type: integer
                     - type: boolean
+              - name: validate-disabled
+                in: header
+                schema:
+                  type: boolean
+              - name: marshal-disabled
+                in: header
+                schema:
+                  type: integer
         "/override":
           get:
             operationId: headerParamOverride
@@ -133,7 +141,9 @@ defmodule ApicalTest.Parameters.HeaderTest do
         "marshal-defined": [
           # also test `{atom, list}` style here
           marshal: {:defined_marshalling, [:atom]}
-        ]
+        ],
+        "validate-disabled": [validate: false],
+        "marshal-disabled": [marshal: false]
       ],
       operation_ids: [
         headerParamOverride: [
@@ -576,6 +586,31 @@ defmodule ApicalTest.Parameters.HeaderTest do
                      |> Conn.put_req_header("marshal-defined", "invalid")
                      |> get("/optional/")
                    end
+    end
+  end
+
+  describe "disabled validations" do
+    test "happens with validate: false", %{conn: conn} do
+      # note that this is still marshalled
+      assert %{"validate-disabled" => true} =
+               conn
+               |> Conn.put_req_header("validate-disabled", "true")
+               |> get("/optional/")
+               |> json_response(200)
+
+      assert %{"validate-disabled" => "invalid"} =
+               conn
+               |> Conn.put_req_header("validate-disabled", "invalid")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "happens with marshal: false", %{conn: conn} do
+      assert %{"marshal-disabled" => "47"} =
+               conn
+               |> Conn.put_req_header("marshal-disabled", "47")
+               |> get("/optional/")
+               |> json_response(200)
     end
   end
 end

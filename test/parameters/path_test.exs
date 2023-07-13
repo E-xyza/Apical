@@ -308,6 +308,24 @@ defmodule ApicalTest.Parameters.PathTest do
                   oneOf:
                     - type: integer
                     - type: boolean
+        "/validate/disabled/{disabled_validation}":
+          get:
+            operationId: pathParamDisabledValidation
+            parameters:
+              - name: disabled_validation
+                in: path
+                required: true
+                schema:
+                  type: boolean
+        "/marshal/disabled/{disabled_marshal}":
+          get:
+            operationId: pathParamDisabledMarshal
+            parameters:
+              - name: disabled_marshal
+                in: path
+                required: true
+                schema:
+                  type: integer
       """,
       root: "/",
       controller: ApicalTest.Parameters.PathTest,
@@ -320,7 +338,9 @@ defmodule ApicalTest.Parameters.PathTest do
         custom_marshal: [
           # also test `{module, atom}` style here
           marshal: {__MODULE__, :defined_marshalling}
-        ]
+        ],
+        disabled_validation: [validate: false],
+        disabled_marshal: [marshal: false]
       ],
       operation_ids: [
         styleCustomOperationParameter: [
@@ -357,6 +377,7 @@ defmodule ApicalTest.Parameters.PathTest do
       pathParamMarshalObject pathParamMarshalBoolean pathParamMarshalCustom
       pathParamBooleanMatrix pathParamBooleanLabel
       pathParamNumber pathParamMultitype pathParamNullableArray pathParamNullableObject
+      pathParamDisabledValidation pathParamDisabledMarshal
       schemaNumber styleCustom styleCustomExplode styleCustomParameter styleCustomOperationParameter
     )a do
     def unquote(operation)(conn, params) do
@@ -874,6 +895,29 @@ defmodule ApicalTest.Parameters.PathTest do
                    fn ->
                      get(conn, "/marshal/custom/invalid")
                    end
+    end
+  end
+
+
+  describe "disabled validations" do
+    test "happens with validate: false", %{conn: conn} do
+      # note that this is still marshalled
+      assert %{"disabled_validation" => true} =
+               conn
+               |> get("/validate/disabled/true")
+               |> json_response(200)
+
+      assert %{"disabled_validation" => "invalid"} =
+               conn
+               |> get("/validate/disabled/invalid")
+               |> json_response(200)
+    end
+
+    test "happens with marshal: false", %{conn: conn} do
+      assert %{"disabled_marshal" => "47"} =
+               conn
+               |> get("/marshal/disabled/47")
+               |> json_response(200)
     end
   end
 end

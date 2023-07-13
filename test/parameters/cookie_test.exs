@@ -146,12 +146,8 @@ defmodule ApicalTest.Parameters.CookieTest do
           # also test `atom` style here
           marshal: :defined_marshalling
         ],
-        "validate-disabled": [
-          validate: false
-        ],
-        "marshal-disabled": [
-          marshal: false
-        ]
+        "validate-disabled": [validate: false],
+        "marshal-disabled": [marshal: false]
       ],
       operation_ids: [
         cookieParamOverride: [

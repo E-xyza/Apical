@@ -53,7 +53,7 @@ defmodule Apical.Plugs.Parameter do
         |> Keyword.get(:marshal)
         |> normalize_marshal(module)
 
-      should_validate = (marshal_opts !== false) and Keyword.get(plug_opts, :validate, true)
+      should_validate = marshal_opts !== false and Keyword.get(plug_opts, :validate, true)
 
       operations_so_far
       |> Map.update!(:parser_context, &Map.put(&1, name, %{}))
@@ -377,11 +377,17 @@ defmodule Apical.Plugs.Parameter do
 
   defp add_allow_reserved(operations, _), do: operations
 
-  defp add_validations(operations, module, version, operation_id, %{
-         "schema" => _schema,
-         "name" => name
-       }, should_validate) do
-
+  defp add_validations(
+         operations,
+         module,
+         version,
+         operation_id,
+         %{
+           "schema" => _schema,
+           "name" => name
+         },
+         should_validate
+       ) do
     if should_validate do
       fun = {module, validator_name(version, operation_id, name)}
       Map.update(operations, :validations, %{name => fun}, &Map.put(&1, name, fun))
