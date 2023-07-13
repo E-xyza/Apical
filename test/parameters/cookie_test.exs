@@ -135,6 +135,7 @@ defmodule ApicalTest.Parameters.CookieTest do
           styles: [{"x-custom", {__MODULE__, :x_custom, ["by parameter"]}}]
         ],
         "marshal-defined": [
+          # also test `atom` style here
           marshal: :defined_marshalling
         ]
       ],

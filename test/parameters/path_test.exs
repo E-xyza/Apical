@@ -318,7 +318,8 @@ defmodule ApicalTest.Parameters.PathTest do
           styles: [{"x-custom", {__MODULE__, :x_custom, ["parameter"]}}]
         ],
         custom_marshal: [
-          marshal: :defined_marshalling
+          # also test `{module, atom}` style here
+          marshal: {__MODULE__, :defined_marshalling}
         ]
       ],
       operation_ids: [

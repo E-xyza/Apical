@@ -28,6 +28,7 @@
 - support for grouping operationId by "group"
 - support for using Plug only, with no Phoenix dependency
 - support for aliasing operationId
+- support for custom parameter marshalling functions
 
 ## Future planned support 
 

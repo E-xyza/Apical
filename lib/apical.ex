@@ -226,7 +226,7 @@ defmodule Apical do
     parameter.  May be `atom` for a local function, `{atom, list}` for a
     local function with extra parameters, `{module, atom}` for a remote
     function, or `{module, atom, list}` for a remote function with extra
-    parameters.
+    parameters.  Note that the local function must be an exported function.
   """
 
   alias Apical.Router

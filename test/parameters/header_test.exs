@@ -131,7 +131,8 @@ defmodule ApicalTest.Parameters.HeaderTest do
           styles: [{"x-custom", {__MODULE__, :x_custom, ["by parameter"]}}]
         ],
         "marshal-defined": [
-          marshal: :defined_marshalling
+          # also test `{atom, list}` style here
+          marshal: {:defined_marshalling, [:atom]}
         ]
       ],
       operation_ids: [
@@ -151,9 +152,9 @@ defmodule ApicalTest.Parameters.HeaderTest do
     def x_custom(_, true), do: {:ok, "explode"}
     def x_custom(_, level), do: {:ok, level}
 
-    def defined_marshalling("true"), do: {:ok, true}
-    def defined_marshalling("47"), do: {:ok, 47}
-    def defined_marshalling(_), do: {:error, "invalid"}
+    def defined_marshalling("true", :atom), do: {:ok, true}
+    def defined_marshalling("47", :atom), do: {:ok, 47}
+    def defined_marshalling(_, :atom), do: {:error, "invalid"}
   end
 
   use ApicalTest.EndpointCase
