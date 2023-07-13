@@ -39,6 +39,7 @@ defmodule Apical.Plugs.Header do
     |> Parameter.check_required(params, :header, operations)
     |> Map.update!(:params, &Map.merge(&1, params))
     |> Parameter.warn_deprecated(:header, operations)
+    |> Parameter.custom_marshal(:header, operations)
     |> Parameter.validate(:header, operations)
   end
 

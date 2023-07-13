@@ -107,6 +107,12 @@ defmodule ApicalTest.Parameters.HeaderTest do
               - name: style-custom-override
                 in: header
                 style: x-custom
+              - name: marshal-defined
+                in: header
+                schema:
+                  oneOf:
+                    - type: integer
+                    - type: boolean
         "/override":
           get:
             operationId: headerParamOverride
@@ -123,6 +129,9 @@ defmodule ApicalTest.Parameters.HeaderTest do
       parameters: [
         "style-custom-override": [
           styles: [{"x-custom", {__MODULE__, :x_custom, ["by parameter"]}}]
+        ],
+        "marshal-defined": [
+          marshal: :defined_marshalling
         ]
       ],
       operation_ids: [
@@ -141,6 +150,10 @@ defmodule ApicalTest.Parameters.HeaderTest do
     def x_custom("error_list"), do: {:error, message: "list"}
     def x_custom(_, true), do: {:ok, "explode"}
     def x_custom(_, level), do: {:ok, level}
+
+    def defined_marshalling("true"), do: {:ok, true}
+    def defined_marshalling("47"), do: {:ok, 47}
+    def defined_marshalling(_), do: {:error, "invalid"}
   end
 
   use ApicalTest.EndpointCase
@@ -536,6 +549,32 @@ defmodule ApicalTest.Parameters.HeaderTest do
                |> Conn.put_req_header("style-custom-override", "ok")
                |> get("/override/")
                |> json_response(200)
+    end
+  end
+
+  describe "for a marshall-defined parameter" do
+    test "works with a valid value", %{conn: conn} do
+      assert %{"marshal-defined" => true} =
+               conn
+               |> Conn.put_req_header("marshal-defined", "true")
+               |> get("/optional/")
+               |> json_response(200)
+
+      assert %{"marshal-defined" => 47} =
+               conn
+               |> Conn.put_req_header("marshal-defined", "47")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "422 with an invalid value", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation headerParamOptional (in header): invalid",
+                   fn ->
+                     conn
+                     |> Conn.put_req_header("marshal-defined", "invalid")
+                     |> get("/optional/")
+                   end
     end
   end
 end
