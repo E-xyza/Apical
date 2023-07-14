@@ -40,6 +40,8 @@ defmodule Apical.MixProject do
       {:req, "~> 0.3.10", only: :test},
       {:yaml_elixir, "~> 2.7", optional: true},
       {:jason, "~> 1.4", optional: true},
+      {:mox, "~> 1.0", optional: true},
+      {:bypass, "~> 2.1", optional: true},
       {:plug, "~> 1.14"},
       {:json_ptr, "~> 1.2"},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false}

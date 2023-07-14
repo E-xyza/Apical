@@ -898,7 +898,6 @@ defmodule ApicalTest.Parameters.PathTest do
     end
   end
 
-
   describe "disabled validations" do
     test "happens with validate: false", %{conn: conn} do
       # note that this is still marshalled

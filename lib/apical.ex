@@ -84,6 +84,23 @@ defmodule Apical do
     Defaults to `/v{major}` where `major` is the major version of the API, as declared
     under `info.version` in the schema.
 
+  - `testing`: lets you generate additional modules to assist with testing.  This
+    is a keyword list with the following sub-options:
+    - `behaviour`: builds a behaviour module with the behaviour name that has
+      callbacks that match the `operationId`s in the schema.  Defaults to
+      `<router>.Api`. If `false`, skips this step.
+    - `controller`: builds a controller module with the controller name that
+      has functions that match the `operationId`s in the schema.  This controller
+      will delegate its functions to the mock module.  Defaults to
+      `<router>.Controller`.  If `false`, skips this step.
+    - `mock`: builds a mock module using `Mox` that mocks the behaviour.
+      Defaults to `<router>.Mock`.  If `false`, skips this step.
+    - `bypass`: if true, generates a `bypass/1` function that sets up `Bypass`
+      for use in tests.  Defaults to `false`.  Can not be `true` if any of the
+      above options are set to `false`.
+
+    you may also pass `:auto` to `testing` to set everything up automatically.
+
   - `dump`: (For debugging), sends formatted code of the router to stdout.
 
     Defaults to `false`.  If set to `:all`, will also pass `dump: true` to Exonerate.
@@ -276,7 +293,10 @@ defmodule Apical do
   For options see `Apical` module docs.
   """
   defmacro router_from_string(string, opts) do
-    opts = Macro.expand_literals(opts, __CALLER__)
+    opts =
+      opts
+      |> Macro.expand_literals(__CALLER__)
+      |> Keyword.put(:router, __CALLER__.module)
 
     router(string, opts)
   end
@@ -306,6 +326,7 @@ defmodule Apical do
       |> Macro.expand_literals(__CALLER__)
       |> Keyword.merge(file: file)
       |> Keyword.put_new_lazy(:encoding, fn -> find_encoding(file, opts) end)
+      |> Keyword.put(:router, __CALLER__.module)
 
     file
     |> Macro.expand(__CALLER__)

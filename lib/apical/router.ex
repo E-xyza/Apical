@@ -3,6 +3,7 @@ defmodule Apical.Router do
 
   alias Apical.Path
   alias Apical.Schema
+  alias Apical.Testing
   alias Apical.Tools
 
   def build(schema, schema_string, opts) do
@@ -12,11 +13,13 @@ defmodule Apical.Router do
     encode_opts = Keyword.take(opts, ~w(encoding mimetype_mapping)a)
 
     route_opts =
-      Keyword.merge(opts,
+      opts
+      |> Keyword.merge(
         resource: resource,
         root: resolve_root(version, opts),
         version: version
       )
+      |> Testing.set_controller()
 
     routes =
       "/paths"
@@ -25,6 +28,8 @@ defmodule Apical.Router do
       |> Enum.unzip()
       |> paths_to_route
 
+    tests = Testing.build_tests(schema, opts)
+
     quote do
       require Exonerate
       Exonerate.register_resource(unquote(schema_string), unquote(resource), unquote(encode_opts))
@@ -32,6 +37,8 @@ defmodule Apical.Router do
       unquote(external_resource(opts))
 
       unquote(routes)
+
+      unquote(tests)
     end
   end
 
