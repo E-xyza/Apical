@@ -23,47 +23,49 @@ libraries:
 
 ### Installation
 
-1. in your `mix.exs` file, add the following dependencies:
+1. Add dependenciecs:
 
-  ```elixir
-    defp deps do
-      [
-          ...
-        {:apical, "~> 0.2", only: :test},
-        {:mox, "~> 1.0", only: :test},
-        {:bypass, "~> 2.1", only: :test},
-      ]
-    end
-  ```
+    In your `mix.exs` file, add the following dependencies:
+
+    ```elixir
+      defp deps do
+        [
+            ...
+          {:apical, "~> 0.2", only: :test},
+          {:mox, "~> 1.0", only: :test},
+          {:bypass, "~> 2.1", only: :test},
+        ]
+      end
+    ```
 
 2. If you haven't already, set up your elixir compilers to compile to a support directory:
 
-  In `mix.exs`, `project` function
+    In `mix.exs`, `project` function
+    
+    ```elixir
+      def project do
+        [
+          ...
+          elixirc_paths: elixirc_paths(Mix.env()),
+        ]
+      end
+    ```
+
+    In `mix.exs` module top level:
   
-  ```elixir
-    def project do
-      [
-        ...
-        elixirc_paths: elixirc_paths(Mix.env()),
-      ]
-    end
-  ```
-
-  In `mix.exs` module top level:
-
-  ```elixir
-    def elixirc_paths(:test), do: ["lib", "test/support"]
-    def elixirc_paths(_), do: ["lib"]
-  ```
+    ```elixir
+      def elixirc_paths(:test), do: ["lib", "test/support"]
+      def elixirc_paths(_), do: ["lib"]
+    ```
 
 3. Make sure `mox` and `bypass` are running when tests are running:
+    
+    In `test/test_helper.exs`:
 
-  in `test/test_helper.exs`:
-
-  ```elixir
-  Application.ensure_all_started(:bypass)
-  Application.ensure_all_started(:mox)
-  ```
+    ```elixir
+    Application.ensure_all_started(:bypass)
+    Application.ensure_all_started(:mox)
+    ```
 
 ## Router setup
 
@@ -124,48 +126,48 @@ we'll assume that some `ClientModule` has
 
 1. Testing to see that the issued request is compliant (no 400/404 errors)
 
-  In this case, we have function `some_operation` is compliant and doesn't
-  issue a request to an incorrect path or present invalid parameters.
-
-  ```elixir
-  test "someOperation" %{bypass: bypass} do
-    Mox.expect(Mock, :someOperation, fn conn, _params ->
-      send_resp(conn, 200, @dummy_result)
-    end)
-
-    ClientModule.some_operation(host: "localhost:#{bypass.port}")
-  end
-  ```
+    In this case, we have function `some_operation` is compliant and doesn't
+    issue a request to an incorrect path or present invalid parameters.
+  
+    ```elixir
+    test "someOperation" %{bypass: bypass} do
+      Mox.expect(Mock, :someOperation, fn conn, _params ->
+        send_resp(conn, 200, @dummy_result)
+      end)
+  
+      ClientModule.some_operation(host: "localhost:#{bypass.port}")
+    end
+    ```
 
 2. Testing to see that parameters are serialized as expected
 
-  This test is an example verification that content issued through a client
-  module into a OpenAPI operation is serialized as expected. 
+    This test is an example verification that content issued through a client
+    module into a OpenAPI operation is serialized as expected. 
+    
+    > ### Scope of parameters {: .info }
+    >
+    > Keep in mind that parameters can be in cookies, headers, query string, path,
+    > or content serialized from the body of the http request
+    > parameters taken from the body have lower precedence than taken from the 
+    > request, if you could potentially have a collision in keys, use the 
+    > `nest_all_json` option in your Apical router configuration.
   
-  > ### Scope of parameters {: .info }
-  >
-  > Keep in mind that parameters can be in cookies, headers, query string, path,
-  > or content serialized from the body of the http request
-  > parameters taken from the body have lower precedence than taken from the 
-  > request, if you could potentially have a collision in keys, use the 
-  > `nest_all_json` option in your Apical router configuration.
-
-  ```elixir
-  @test_parameter 47
-
-  test "someOperation" %{bypass: bypass} do
-    Mox.expect(Mock, :someOperation, fn conn, %{"parameter-name" => parameter} ->
-      assert parameter == @test_parameter
-      send_resp(conn, 201, @dummy_result)
-    end)
-
-    ClientModule.some_operation(@test_parameter, host: "localhost:#{bypass.port}")
-  end
-  ```
-
-  > ### Json Encoding {: .warning }
-  >
-  > note that your client function input parameter might have atom keys (or might
-  > be a struct), in which case, strict equality might not be the correct test 
-  > inside your mox expectation, as Apical will typically render it as a JSON with 
-  > string keys.
+    ```elixir
+    @test_parameter 47
+  
+    test "someOperation" %{bypass: bypass} do
+      Mox.expect(Mock, :someOperation, fn conn, %{"parameter-name" => parameter} ->
+        assert parameter == @test_parameter
+        send_resp(conn, 201, @dummy_result)
+      end)
+  
+      ClientModule.some_operation(@test_parameter, host: "localhost:#{bypass.port}")
+    end
+    ```
+  
+    > ### Json Encoding {: .warning }
+    >
+    > note that your client function input parameter might have atom keys (or might
+    > be a struct), in which case, strict equality might not be the correct test 
+    > inside your mox expectation, as Apical will typically render it as a JSON with 
+    > string keys.
