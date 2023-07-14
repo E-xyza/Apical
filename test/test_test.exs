@@ -3,14 +3,14 @@ defmodule ApicalTest.TestTest do
 
   use ExUnit.Case, async: true
 
+  alias ApicalTest.TestTest.Router
+  alias ApicalTest.TestTest.Mock
+
   setup do
     bypass = Bypass.open()
     Router.bypass(bypass)
     {:ok, bypass: bypass}
   end
-
-  alias ApicalTest.TestTest.Router
-  alias ApicalTest.TestTest.Mock
 
   test "content can be served", %{bypass: bypass} do
     Mox.expect(Mock, :testGet, fn conn, _params ->
