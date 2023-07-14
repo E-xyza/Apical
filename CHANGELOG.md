@@ -27,8 +27,10 @@
 
 - support for grouping operationId by "group"
 - support for using Plug only, with no Phoenix dependency
-- support for aliasing operationId
+- support for aliasing operationId to functions
 - support for custom parameter marshalling functions
+- support for disabling marshalling or validation
+- support for using Apical to test requests against OpenAPI schemas
 
 ## Future planned support 
 
