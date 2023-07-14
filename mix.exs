@@ -53,6 +53,7 @@ defmodule Apical.MixProject do
       main: "Apical",
       source_ref: "main",
       extra_section: "GUIDES",
+      extras: ["guides/Apical for testing.md"],
       groups_for_modules: [
         Behaviours: [
           Apical.Plugs.RequestBody.Source

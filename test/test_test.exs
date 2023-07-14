@@ -5,6 +5,7 @@ defmodule ApicalTest.TestTest do
 
   setup do
     bypass = Bypass.open()
+    Router.bypass(bypass)
     {:ok, bypass: bypass}
   end
 
@@ -12,8 +13,6 @@ defmodule ApicalTest.TestTest do
   alias ApicalTest.TestTest.Mock
 
   test "content can be served", %{bypass: bypass} do
-    Router.bypass(bypass)
-
     Mox.expect(Mock, :testGet, fn conn, _params ->
       Plug.Conn.send_resp(conn, 200, "OK")
     end)
@@ -22,8 +21,6 @@ defmodule ApicalTest.TestTest do
   end
 
   test "content can be rejected", %{bypass: bypass} do
-    Router.bypass(bypass)
-
     # this one should never reach because it's filtered out as a 400 before it gets
     # to the controller.
 
