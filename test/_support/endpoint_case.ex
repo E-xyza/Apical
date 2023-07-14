@@ -1,7 +1,32 @@
 defmodule ApicalTest.EndpointCase do
   use ExUnit.CaseTemplate
 
-  using do
+  using opts do
+    opts
+    |> Keyword.get(:with, Phoenix)
+    |> Macro.expand(__ENV__)
+    |> case do
+      Plug ->
+        port = Enum.random(2000..3000)
+        plug_endpoint(port)
+
+      Phoenix ->
+        phoenix_endpoint()
+    end
+  end
+
+  defp plug_endpoint(port) do
+    quote do
+      @port unquote(port)
+
+      setup_all do
+        start_supervised({Bandit, plug: __MODULE__.Router, port: @port})
+        :ok
+      end
+    end
+  end
+
+  defp phoenix_endpoint do
     quote do
       # Use the endpoint module as the endpoint
       @endpoint __MODULE__.Endpoint

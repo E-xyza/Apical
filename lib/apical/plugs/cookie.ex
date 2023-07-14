@@ -75,8 +75,9 @@ defmodule Apical.Plugs.Cookie do
     conn
     |> Parameter.check_required(params, :cookie, operations)
     |> Map.update!(:params, &Map.merge(&1, params))
-    |> Parameter.warn_deprecated(params, :cookie, operations)
-    |> Parameter.validate(params, :cookie, operations)
+    |> Parameter.warn_deprecated(:cookie, operations)
+    |> Parameter.custom_marshal(:cookie, operations)
+    |> Parameter.validate(:cookie, operations)
   end
 
   @impl Apical.Plugs.Parameter

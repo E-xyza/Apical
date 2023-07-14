@@ -158,6 +158,20 @@ defmodule ApicalTest.Parameters.QueryTest do
               - name: allow-reserved
                 in: query
                 allowReserved: true
+              - name: marshal-defined
+                in: query
+                schema:
+                  oneOf:
+                    - type: integer
+                    - type: boolean
+              - name: validate-disabled
+                in: query
+                schema:
+                  type: boolean
+              - name: marshal-disabled
+                in: query
+                schema:
+                  type: integer
             responses:
               "200":
                 description: OK
@@ -175,7 +189,13 @@ defmodule ApicalTest.Parameters.QueryTest do
       parameters: [
         "style-custom-override": [
           styles: [{"x-custom-override", {__MODULE__, :x_custom, ["by parameter"]}}]
-        ]
+        ],
+        "marshal-defined": [
+          # also test `{module, atom, list}` style here
+          marshal: {__MODULE__, :defined_marshalling, [:atom]}
+        ],
+        "validate-disabled": [validate: false],
+        "marshal-disabled": [marshal: false]
       ],
       operation_ids: [
         queryParamStyleByOperationParameter: [
@@ -194,6 +214,10 @@ defmodule ApicalTest.Parameters.QueryTest do
     def x_custom("error_list"), do: {:error, message: "list"}
     def x_custom(_, true), do: {:ok, "explode"}
     def x_custom(_, level), do: {:ok, level}
+
+    def defined_marshalling("true", :atom), do: {:ok, true}
+    def defined_marshalling("47", :atom), do: {:ok, 47}
+    def defined_marshalling(_, :atom), do: {:error, "invalid"}
   end
 
   use ApicalTest.EndpointCase
@@ -668,6 +692,48 @@ defmodule ApicalTest.Parameters.QueryTest do
                    fn ->
                      get(conn, "/optional/?schema-string=[")
                    end
+    end
+  end
+
+  describe "for a marshall-defined parameter" do
+    test "works with a valid value", %{conn: conn} do
+      assert %{"marshal-defined" => true} =
+               conn
+               |> get("/optional/?marshal-defined=true")
+               |> json_response(200)
+
+      assert %{"marshal-defined" => 47} =
+               conn
+               |> get("/optional/?marshal-defined=47")
+               |> json_response(200)
+    end
+
+    test "400 with an invalid value", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation queryParamOptional (in query): invalid",
+                   fn -> get(conn, "/optional/?marshal-defined=invalid") end
+    end
+  end
+
+  describe "disabled validations" do
+    test "happens with validate: false", %{conn: conn} do
+      # note that this is still marshalled
+      assert %{"validate-disabled" => true} =
+               conn
+               |> get("/optional/?validate-disabled=true")
+               |> json_response(200)
+
+      assert %{"validate-disabled" => "invalid"} =
+               conn
+               |> get("/optional/?validate-disabled=invalid")
+               |> json_response(200)
+    end
+
+    test "happens with marshal: false", %{conn: conn} do
+      assert %{"marshal-disabled" => "47"} =
+               conn
+               |> get("/optional/?marshal-disabled=47")
+               |> json_response(200)
     end
   end
 end

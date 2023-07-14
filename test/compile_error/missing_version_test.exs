@@ -1,6 +1,7 @@
 defmodule ApicalTest.CompileError.MissingVersionTest do
   use ExUnit.Case, async: true
-  use ExUnit.Case, async: true
+
+  import ApicalTest.Support.Error
 
   fails =
     quote do
@@ -34,7 +35,9 @@ defmodule ApicalTest.CompileError.MissingVersionTest do
 
   test "missing the openapi section triggers compile failure" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement that the schema `info` field has a `version` key",
+                 error_message(
+                   "Your schema violates the OpenAPI requirement that the schema `info` field has a `version` key"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

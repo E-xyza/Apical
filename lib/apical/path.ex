@@ -1,4 +1,4 @@
-defmodule Apical.Paths do
+defmodule Apical.Path do
   @moduledoc false
 
   # module which handles the `pathsObject` and `pathItemObject` from the
@@ -14,23 +14,30 @@ defmodule Apical.Paths do
 
   @routes {[], MapSet.new()}
 
-  def to_routes(_pointer, path, %{"$ref" => ref}, schema, opts) do
+  # to make passing into the adapter easier we're going to make the parameters
+  # a struct.
+  @enforce_keys ~w(parameter_validators body_validators extra_plugs version
+  operation_id parameter_plugs body_plugs root verb canonical_path controller
+  function)a
+  defstruct @enforce_keys
+
+  def to_plug_routes(_pointer, path, %{"$ref" => ref}, schema, opts) do
     # for now, don't handle the remote ref scenario, or the id scenario.
     new_pointer = JsonPtr.from_uri(ref)
     subschema = JsonPtr.resolve_json!(schema, new_pointer)
-    to_routes(new_pointer, path, subschema, schema, opts)
+    to_plug_routes(new_pointer, path, subschema, schema, opts)
   end
 
-  def to_routes(pointer, path, _subschema, schema, opts) do
+  def to_plug_routes(pointer, path, _subschema, schema, opts) do
     # each route contains a map of verbs to operations.
     # map over that content to generate routes.
-    JsonPtr.reduce(pointer, schema, @routes, &to_route(&1, &2, &3, &4, schema, path, opts))
+    JsonPtr.reduce(pointer, schema, @routes, &to_plug_route(&1, &2, &3, &4, schema, path, opts))
   end
 
   @verb_mapping Map.new(~w(get put post delete options head patch trace)a, &{"#{&1}", &1})
   @verbs Map.keys(@verb_mapping)
 
-  defp to_route(
+  defp to_plug_route(
          pointer,
          verb,
          operation,
@@ -59,13 +66,16 @@ defmodule Apical.Paths do
     verb = Map.fetch!(@verb_mapping, verb)
 
     tags = Map.get(operation, "tags", [])
-    opts = fold_opts(opts, tags, operation_id)
+
+    opts =
+      opts
+      |> fold_tag_opts(tags)
+      |> fold_group_opts(operation_id)
+      |> fold_operation_id_opts(operation_id)
+
     version = Keyword.fetch!(opts, :version)
     root = Keyword.fetch!(opts, :root)
-
-    operation_pipeline = :"#{version}-#{operation_id}"
-    # TODO: resolve function using operationId options
-    function = String.to_atom(operation_id)
+    function = Keyword.get(opts, :alias, String.to_atom(operation_id))
 
     plug_opts =
       opts
@@ -108,49 +118,59 @@ defmodule Apical.Paths do
 
     {body_plugs, body_validators} = RequestBody.make(pointer, schema, operation_id, plug_opts)
 
+    framework = opts |> Keyword.get(:for, Phoenix) |> Macro.expand(%Macro.Env{})
+    adapter = Module.concat(Apical.Adapters, framework)
+
     route =
-      quote do
-        # TODO: make these functions
-        unquote(parameter_validators)
-        unquote(body_validators)
-
-        pipeline unquote(operation_pipeline) do
-          unquote(extra_plugs)
-
-          plug(Apical.Plugs.SetVersion, unquote(version))
-          plug(Apical.Plugs.SetOperationId, unquote(operation_id))
-          unquote(parameter_plugs)
-
-          unquote(body_plugs)
-        end
-
-        scope unquote(root) do
-          pipe_through(unquote(operation_pipeline))
-          unquote(verb)(unquote(canonical_path), unquote(controller), unquote(function))
-        end
-      end
+      __MODULE__
+      |> struct(Keyword.take(binding(), @enforce_keys))
+      |> adapter.build_path()
 
     {[route | routes_so_far], MapSet.put(operation_ids_so_far, operation_id)}
   end
 
   @folded_opts ~w(controller styles parameters extra_plugs nest_all_json content_sources dump dump_validator)a
 
-  defp fold_opts(opts, tags, operation_id) do
-    # NB it's totally okay if this process is unoptimized since it
+  defp fold_tag_opts(opts, tags) do
+    # NB it's totallgroup_opts(operation_id)y okay if this process is unoptimized since it
     # should be running at compile time.
     tags
     |> Enum.reverse()
     |> Enum.reduce(opts, &merge_opts(&2, &1, :tags))
-    |> merge_opts(operation_id, :operation_ids)
   end
 
+  defp fold_group_opts(opts, operation_id) do
+    group_opts =
+      opts
+      |> Keyword.get(:groups, [])
+      |> Enum.find_value(fn group_spec ->
+        {ids, opts} = Enum.split_while(group_spec, &is_atom/1)
+
+        if Enum.any?(ids, &(Atom.to_string(&1) == operation_id)) do
+          opts
+        end
+      end)
+      |> List.wrap()
+
+    Tools.deepmerge(opts, group_opts)
+  end
+
+  defp fold_operation_id_opts(opts, operation_id),
+    do: merge_opts(opts, operation_id, :operation_ids)
+
   defp merge_opts(opts, key, class) do
+    opts_to_fold =
+      case class do
+        :operation_ids -> [:alias | @folded_opts]
+        _ -> @folded_opts
+      end
+
     merge_opts =
       opts
       |> Keyword.get(class, [])
       |> Enum.find_value(&if Atom.to_string(elem(&1, 0)) == key, do: elem(&1, 1))
       |> List.wrap()
-      |> Keyword.take(@folded_opts)
+      |> Keyword.take(opts_to_fold)
 
     Tools.deepmerge(opts, merge_opts)
   end

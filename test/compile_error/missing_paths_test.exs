@@ -1,6 +1,8 @@
 defmodule ApicalTest.CompileError.MissingPathsTest do
   use ExUnit.Case, async: true
 
+  import ApicalTest.Support.Error
+
   fails =
     quote do
       defmodule MissingPaths do
@@ -24,7 +26,9 @@ defmodule ApicalTest.CompileError.MissingPathsTest do
 
   test "missing the paths section triggers compile failure" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement that the schema has a `paths` key",
+                 error_message(
+                   "Your schema violates the OpenAPI requirement that the schema has a `paths` key"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

@@ -1,6 +1,8 @@
 defmodule ApicalTest.CompileError.FormEncodedNonObjectTest do
   use ExUnit.Case, async: true
 
+  import ApicalTest.Support.Error
+
   fails =
     quote do
       defmodule FormEncodedNonObject do
@@ -36,7 +38,9 @@ defmodule ApicalTest.CompileError.FormEncodedNonObjectTest do
 
   test "request body fails when it's form-encoded and the type is not \"object\"" do
     assert_raise CompileError,
-                 " media type `application/x-www-form-urlencoded` does not support types other than object, found `\"integer\"` in operation `fails`",
+                 error_message(
+                   "media type `application/x-www-form-urlencoded` does not support types other than object, found `\"integer\"` in operation `fails`"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

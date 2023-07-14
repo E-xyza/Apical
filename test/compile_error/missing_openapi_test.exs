@@ -1,6 +1,8 @@
 defmodule ApicalTest.CompileError.MissingOpenApiTest do
   use ExUnit.Case, async: true
 
+  import ApicalTest.Support.Error
+
   fails =
     quote do
       defmodule MissingOpenApi do
@@ -33,7 +35,9 @@ defmodule ApicalTest.CompileError.MissingOpenApiTest do
 
   test "missing the openapi section triggers compile failure" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement that the schema has an `openapi` key",
+                 error_message(
+                   "Your schema violates the OpenAPI requirement that the schema has an `openapi` key"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

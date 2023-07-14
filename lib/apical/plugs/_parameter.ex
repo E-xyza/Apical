@@ -27,13 +27,13 @@ defmodule Apical.Plugs.Parameter do
       |> Map.put(:parser_context, %{})
 
     Enum.reduce(parameters, operations, fn parameter = %{"name" => name}, operations_so_far ->
-      merge_opts =
+      merged_opts =
         plug_opts
         |> Keyword.get(:parameters, [])
-        |> Enum.find(&(Atom.to_string(elem(&1, 0)) == name))
+        |> Enum.find_value(&if Atom.to_string(elem(&1, 0)) == name, do: elem(&1, 1))
         |> List.wrap()
 
-      plug_opts = Tools.deepmerge(plug_opts, merge_opts)
+      plug_opts = Tools.deepmerge(plug_opts, merged_opts)
 
       Tools.assert(
         !parameter["allowEmptyValue"],
@@ -48,15 +48,23 @@ defmodule Apical.Plugs.Parameter do
 
       version = Keyword.fetch!(plug_opts, :version)
 
+      marshal_opts =
+        plug_opts
+        |> Keyword.get(:marshal)
+        |> normalize_marshal(module)
+
+      should_validate = marshal_opts !== false and Keyword.get(plug_opts, :validate, true)
+
       operations_so_far
       |> Map.update!(:parser_context, &Map.put(&1, name, %{}))
       |> add_if_required(parameter)
       |> add_if_deprecated(parameter)
-      |> add_type(parameter)
+      |> add_type(parameter, marshal_opts)
       |> add_style(in_, parameter, plug_opts)
-      |> add_inner_marshal(parameter)
+      |> add_inner_marshal(parameter, marshal_opts)
       |> add_allow_reserved(parameter)
-      |> add_validations(module, version, operation_id, parameter)
+      |> add_validations(module, version, operation_id, parameter, should_validate)
+      |> add_custom_marshal(name, marshal_opts)
     end)
   end
 
@@ -83,16 +91,23 @@ defmodule Apical.Plugs.Parameter do
 
   defp add_if_deprecated(operations, _parameters), do: operations
 
-  defp add_type(operations, %{"name" => name, "schema" => %{"type" => type}}) do
+  defp add_type(operations, %{"name" => name, "schema" => %{"type" => type}}, nil) do
     types = to_type_list(type)
+    parser_context = Map.update!(operations.parser_context, name, &Map.put(&1, :type, types))
 
-    %{
-      operations
-      | parser_context: Map.update!(operations.parser_context, name, &Map.put(&1, :type, types))
-    }
+    %{operations | parser_context: parser_context}
   end
 
-  defp add_type(operations, _), do: operations
+  defp add_type(operations, %{"name" => name}, marshal) do
+    if marshal do
+      parser_context =
+        Map.update!(operations.parser_context, name, &Map.put(&1, :type, [:string]))
+
+      %{operations | parser_context: parser_context}
+    else
+      operations
+    end
+  end
 
   @types ~w(null boolean integer number string array object)a
   @type_class Map.new(@types, &{"#{&1}", &1})
@@ -277,10 +292,14 @@ defmodule Apical.Plugs.Parameter do
     end
   end
 
-  defp add_inner_marshal(operations = %{parser_context: context}, %{
-         "schema" => schema,
-         "name" => key
-       })
+  defp add_inner_marshal(
+         operations = %{parser_context: context},
+         %{
+           "schema" => schema,
+           "name" => key
+         },
+         nil
+       )
        when is_map_key(context, key) do
     outer_type = Map.get(context[key], :type, [])
 
@@ -350,7 +369,7 @@ defmodule Apical.Plugs.Parameter do
     end
   end
 
-  defp add_inner_marshal(operations, _), do: operations
+  defp add_inner_marshal(operations, _, _), do: operations
 
   defp add_allow_reserved(operations, %{"name" => name, "allowReserved" => true}) do
     put_in(operations, [:parser_context, name, :allow_reserved], true)
@@ -358,16 +377,34 @@ defmodule Apical.Plugs.Parameter do
 
   defp add_allow_reserved(operations, _), do: operations
 
-  defp add_validations(operations, module, version, operation_id, %{
-         "schema" => _schema,
-         "name" => name
-       }) do
-    fun = {module, validator_name(version, operation_id, name)}
-
-    Map.update(operations, :validations, %{name => fun}, &Map.put(&1, name, fun))
+  defp add_validations(
+         operations,
+         module,
+         version,
+         operation_id,
+         %{
+           "schema" => _schema,
+           "name" => name
+         },
+         should_validate
+       ) do
+    if should_validate do
+      fun = {module, validator_name(version, operation_id, name)}
+      Map.update(operations, :validations, %{name => fun}, &Map.put(&1, name, fun))
+    else
+      operations
+    end
   end
 
-  defp add_validations(operations, _, _, _, _), do: operations
+  defp add_validations(operations, _, _, _, _, _), do: operations
+
+  defp add_custom_marshal(operations, name, marshal) do
+    if marshal do
+      Map.update(operations, :custom_marshal, %{name => marshal}, &Map.put(&1, name, marshal))
+    else
+      operations
+    end
+  end
 
   # REQUIRED PARAMETERS
 
@@ -391,7 +428,7 @@ defmodule Apical.Plugs.Parameter do
 
   # DEPRECATED PARAMETERS
 
-  def warn_deprecated(conn, params, in_, %{deprecated: deprecated}) do
+  def warn_deprecated(conn = %{params: params}, in_, %{deprecated: deprecated}) do
     Enum.reduce(deprecated, conn, fn param, conn ->
       if is_map_key(params, param) do
         Conn.put_resp_header(
@@ -405,11 +442,33 @@ defmodule Apical.Plugs.Parameter do
     end)
   end
 
-  def warn_deprecated(conn, _, _, _), do: conn
+  def warn_deprecated(conn, _, _), do: conn
+
+  # CUSTOM MARSHAL STEP
+  def custom_marshal(conn = %{params: params}, in_, %{custom_marshal: marshal_map}) do
+    Enum.reduce(marshal_map, conn, fn
+      {parameter, {mod, fun, args}}, conn ->
+        with {:ok, content} <- Map.fetch(params, parameter),
+             {:ok, marshalled} <- apply(mod, fun, [content | args]) do
+          %{conn | params: %{params | parameter => marshalled}}
+        else
+          :error ->
+            conn
+
+          {:error, reason} ->
+            raise Apical.Exceptions.ParameterError,
+              operation_id: conn.private.operation_id,
+              in: in_,
+              reason: reason
+        end
+    end)
+  end
+
+  def custom_marshal(conn, _, _), do: conn
 
   # VALIDATION STEP
 
-  def validate(conn, params, in_, %{validations: validation_map}) do
+  def validate(conn = %{params: params}, in_, %{validations: validation_map}) do
     Enum.reduce(validation_map, conn, fn
       {param, {mod, fun}}, conn ->
         with {:ok, content} <- Map.fetch(params, param),
@@ -426,7 +485,7 @@ defmodule Apical.Plugs.Parameter do
     end)
   end
 
-  def validate(conn, _, _, _), do: conn
+  def validate(conn, _, _), do: conn
 
   # REFLECTION
 
@@ -574,4 +633,16 @@ defmodule Apical.Plugs.Parameter do
     fn_name = validator_name(version, operation_id, name)
     Validators.make_quoted(subschema, pointer, fn_name, plug_opts)
   end
+
+  defp normalize_marshal(nil, _), do: nil
+
+  defp normalize_marshal(false, _), do: false
+
+  defp normalize_marshal(value = {_module, _fun, _args}, _), do: value
+
+  defp normalize_marshal({fun, args}, module) when is_list(args), do: {module, fun, args}
+
+  defp normalize_marshal({module, fun}, _), do: {module, fun, []}
+
+  defp normalize_marshal(fun, module) when is_atom(fun), do: {module, fun, []}
 end

@@ -1,6 +1,8 @@
 defmodule ApicalTest.CompileError.DuplicateOperationIdTest do
   use ExUnit.Case, async: true
 
+  import ApicalTest.Support.Error
+
   fails =
     quote do
       defmodule DuplicateOperationId do
@@ -43,7 +45,9 @@ defmodule ApicalTest.CompileError.DuplicateOperationIdTest do
 
   test "nonunique operation ids compile error" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement that operationIds are unique: (got more than one `fails`)",
+                 error_message(
+                   "Your schema violates the OpenAPI requirement that operationIds are unique: (got more than one `fails`)"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

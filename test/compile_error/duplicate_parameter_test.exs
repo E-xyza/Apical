@@ -1,6 +1,8 @@
 defmodule ApicalTest.CompileError.DuplicateParameterTest do
   use ExUnit.Case, async: true
 
+  import ApicalTest.Support.Error
+
   fails =
     quote do
       defmodule DuplicateParameter do
@@ -36,7 +38,9 @@ defmodule ApicalTest.CompileError.DuplicateParameterTest do
 
   test "duplicate parameter raises compile error" do
     assert_raise CompileError,
-                 " Your schema violates the OpenAPI requirement for unique parameters: the parameter `parameter` is not unique (in operation `fails`)",
+                 error_message(
+                   "Your schema violates the OpenAPI requirement for unique parameters: the parameter `parameter` is not unique (in operation `fails`)"
+                 ),
                  fn ->
                    Code.eval_quoted(@attempt_compile)
                  end

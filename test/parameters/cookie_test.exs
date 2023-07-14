@@ -112,6 +112,20 @@ defmodule ApicalTest.Parameters.CookieTest do
               - name: style-custom-override
                 in: cookie
                 style: x-custom
+              - name: marshal-defined
+                in: cookie
+                schema:
+                  oneOf:
+                    - type: integer
+                    - type: boolean
+              - name: validate-disabled
+                in: cookie
+                schema:
+                  type: boolean
+              - name: marshal-disabled
+                in: cookie
+                schema:
+                  type: integer
         "/override":
           get:
             operationId: cookieParamOverride
@@ -127,7 +141,13 @@ defmodule ApicalTest.Parameters.CookieTest do
       parameters: [
         "style-custom-override": [
           styles: [{"x-custom", {__MODULE__, :x_custom, ["by parameter"]}}]
-        ]
+        ],
+        "marshal-defined": [
+          # also test `atom` style here
+          marshal: :defined_marshalling
+        ],
+        "validate-disabled": [validate: false],
+        "marshal-disabled": [marshal: false]
       ],
       operation_ids: [
         cookieParamOverride: [
@@ -145,6 +165,10 @@ defmodule ApicalTest.Parameters.CookieTest do
     def x_custom("error_list"), do: {:error, message: "list"}
     def x_custom(_, true), do: {:ok, "explode"}
     def x_custom(_, level), do: {:ok, level}
+
+    def defined_marshalling("true"), do: {:ok, true}
+    def defined_marshalling("47"), do: {:ok, 47}
+    def defined_marshalling(_), do: {:error, "invalid"}
   end
 
   use ApicalTest.EndpointCase
@@ -539,6 +563,57 @@ defmodule ApicalTest.Parameters.CookieTest do
                conn
                |> put_req_cookie("style-custom-override", "ok")
                |> get("/override/")
+               |> json_response(200)
+    end
+  end
+
+  describe "for a marshall-defined parameter" do
+    test "works with a valid value", %{conn: conn} do
+      assert %{"marshal-defined" => true} =
+               conn
+               |> put_req_cookie("marshal-defined", "true")
+               |> get("/optional/")
+               |> json_response(200)
+
+      assert %{"marshal-defined" => 47} =
+               conn
+               |> put_req_cookie("marshal-defined", "47")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "400 with an invalid value", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation cookieParamOptional (in cookie): invalid",
+                   fn ->
+                     conn
+                     |> put_req_cookie("marshal-defined", "invalid")
+                     |> get("/optional/")
+                   end
+    end
+  end
+
+  describe "disabled validations" do
+    test "happens with validate: false", %{conn: conn} do
+      # note that this is still marshalled
+      assert %{"validate-disabled" => true} =
+               conn
+               |> put_req_cookie("validate-disabled", "true")
+               |> get("/optional/")
+               |> json_response(200)
+
+      assert %{"validate-disabled" => "invalid"} =
+               conn
+               |> put_req_cookie("validate-disabled", "invalid")
+               |> get("/optional/")
+               |> json_response(200)
+    end
+
+    test "happens with marshal: false", %{conn: conn} do
+      assert %{"marshal-disabled" => "47"} =
+               conn
+               |> put_req_cookie("marshal-disabled", "47")
+               |> get("/optional/")
                |> json_response(200)
     end
   end
