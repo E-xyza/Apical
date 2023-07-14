@@ -150,7 +150,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
   end
 
   describe "when content-type is declared by operation_id" do
-    test "the fully generic conent-type is accepted when it doesn't match", %{conn: conn} do
+    test "the fully generic content-type is accepted when it doesn't match", %{conn: conn} do
       assert "application specific" =
                do_post(conn, "/operation-parser", "foo", "application/x-foo")
     end
