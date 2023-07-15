@@ -8,7 +8,7 @@
 - supports injecting extra plugs
 - supports versioning 
   - by matching on assigns `api_version` field
-  - by targetting controllers
+  - by targeting controllers
   - by chaining routers
 - parameter marshalling support
   - path
