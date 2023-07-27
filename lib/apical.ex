@@ -113,7 +113,7 @@ defmodule Apical do
   - `controller`:  Plug module which contains code implementing the API.
 
     It is recommended to `use Phoenix.Controller` in this plug module, or the
-    functions may or may not be targetted as expected.
+    functions may or may not be targeted as expected.
 
     Controller modules should implement public functions corresponding to the
     `operationId` of each operation in the schema.  These functions must be
@@ -127,7 +127,7 @@ defmodule Apical do
     > ### Important {: .warning }
     >
     > Unlike standard Phoenix controller functions, parameters declared in the
-    > `parameters` list of the operation are made avaliable in the `params`
+    > `parameters` list of the operation are made available in the `params`
     > argument as well as in `conn.params`.  These parameters will overwrite
     > any fields present in body parameters that happen to have the same name.
 
