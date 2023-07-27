@@ -83,6 +83,13 @@ defmodule MyProjectWeb.ApiRouter do
 end
 ```
 
+## Using it in tests:
+
+If you're using OpenAPI as a client, you can use Apical to test that your
+request wrapper conforms to the client schema:
+
+https://hexdocs.pm/apical/apical-for-testing.html
+
 ## Advanced usage
 
 For more advanced usage, consult the tests in the test directory.

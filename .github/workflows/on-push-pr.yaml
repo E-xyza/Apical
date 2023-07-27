@@ -41,10 +41,7 @@ jobs:
           key: ${{ runner.os }}-build-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Install dependencies
-        run: |
-          mix deps.clean --all
-          mix deps.get
+        run: mix deps.get
 
       - name: Run tests
-        run: |
-          MIX_ENV=test mix test
+        run: mix test
