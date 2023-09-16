@@ -4,7 +4,7 @@ defmodule Apical.MixProject do
   def project do
     [
       app: :apical,
-      version: "0.2.0",
+      version: "0.2.1",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -31,8 +31,8 @@ defmodule Apical.MixProject do
 
   defp deps do
     [
-      {:pegasus, "~> 0.2", runtime: false},
-      {:exonerate, "~> 1.1.1", runtime: false},
+      {:pegasus, "~> 0.2.4", runtime: false},
+      {:exonerate, "~> 1.1.2", runtime: false},
       {:bandit, ">= 0.7.6", only: :test},
       # note that phoenix is an optional dependency.
       {:phoenix, "~> 1.7.2", only: [:test, :dev], optional: true},

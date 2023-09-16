@@ -32,11 +32,13 @@
 - support for disabling marshalling or validation
 - support for using Apical to test requests against OpenAPI schemas
 
+## 0.2.1
+- fixes issue with nested refs
+
 ## Future planned support 
 
 ### These features are in approximate order of priority
 
-- support for plug-only (no phoenix use)
 - more sophisticated parsing and marshalling in request_body
 - support for json libraries besides Jason
 - data egress checking (conditional, compile-time)
