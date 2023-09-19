@@ -83,6 +83,31 @@ defmodule MyProjectWeb.ApiRouter do
 end
 ```
 
+### Embedding inside of an existing router
+
+You may also embed apical inside of an existing phoenix router:
+
+```elixir
+scope "/api", MyProjectWeb.Api do
+  require Apical
+
+  Apical.router_from_file("priv/assets/api/openapi.v1.yaml",
+    controller: MyProjectWeb.ApiController)
+end
+```
+ 
+If you are embedding Apical in an existing router, be sure to delete
+the following lines from the phoenix *endpoint*:
+
+```elixir
+plug Plug.Parsers,
+  parsers: [:urlencoded, :multipart, :json],
+  pass: ["*/*"],
+  json_decoder: Phoenix.json_library()
+``` 
+
+As Apical will do its own parsing.
+
 ## Using it in tests:
 
 If you're using OpenAPI as a client, you can use Apical to test that your
