@@ -8,13 +8,20 @@ Elixir Routers from OpenAPI schemas
 
 This package can be installed by adding `apical` to your list of dependencies in `mix.exs`:
 
+Exonerate is a compile-time dependency.  If you don't include this in your Mix.exs, there will
+be unwanted compiler warnings.
+
 ```elixir
 def deps do
   [
-    {:apical, "~> 0.1.0"}
+     {:apical, "~> 0.2.1"},
+     {:exonerate, "~> 1.1.2", runtime: Mix.env() != :prod}
   ]
 end
 ```
+
+If you think you might need to recompile your router in production, remove the runtime option
+on Exonerate.
 
 ## Basic use
 
