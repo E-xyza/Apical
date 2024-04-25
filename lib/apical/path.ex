@@ -75,7 +75,6 @@ defmodule Apical.Path do
 
     version = Keyword.fetch!(opts, :version)
     root = Keyword.fetch!(opts, :root)
-    function = Keyword.get(opts, :alias, String.to_atom(operation_id))
 
     plug_opts =
       opts
@@ -84,10 +83,22 @@ defmodule Apical.Path do
       )
       |> Keyword.merge(path_parameters: path_parameters, path: path)
 
-    controller =
+    {controller, function} =
       case Keyword.fetch(opts, :controller) do
         {:ok, controller} when is_atom(controller) ->
-          controller
+          case Keyword.get(opts, :alias) do
+            nil -> 
+              case String.split(operation_id, ".", trim: true) do
+                [operation_id] -> {controller, String.to_atom(operation_id)}
+                parts -> 
+                  {alias_fun, module_parts} = List.pop_at(parts, -1)
+                  
+                  {Module.concat([controller] ++ module_parts), String.to_atom(alias_fun)}
+                end
+
+            alias_fun -> 
+              {controller, alias_fun}
+          end
 
         {:ok, controller} ->
           raise CompileError,
