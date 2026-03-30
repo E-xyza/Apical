@@ -85,7 +85,7 @@ defmodule Apical.Path do
     plug_opts =
       opts
       |> Keyword.take(
-        ~w(styles parameters request_body nest_all_json content_sources version resource dump dump_validator)a
+        ~w(styles parameters request_body nest_all_json content_sources version resource dump dump_validator validate)a
       )
       |> Keyword.merge(path_parameters: path_parameters, path: path)
 
@@ -148,7 +148,7 @@ defmodule Apical.Path do
     {[route | routes_so_far], MapSet.put(operation_ids_so_far, operation_id)}
   end
 
-  @folded_opts ~w(controller styles parameters request_body extra_plugs nest_all_json content_sources dump dump_validator)a
+  @folded_opts ~w(controller styles parameters request_body extra_plugs nest_all_json content_sources dump dump_validator validate)a
 
   defp fold_tag_opts(opts, tags) do
     # NB it's totallgroup_opts(operation_id)y okay if this process is unoptimized since it
