@@ -230,19 +230,40 @@ defmodule Apical.Plugs.RequestBody do
          %{"schema" => _schema},
          plug_opts
        ) do
-    # Check if validation is disabled via request_body: [validate: false]
+    # Check for custom validator or disable via request_body: [validate: ...]
     request_body_opts = Keyword.get(plug_opts, :request_body, [])
-    should_validate = Keyword.get(request_body_opts, :validate, true)
+    validate_opt = Keyword.get(request_body_opts, :validate, true)
 
-    if should_validate do
-      fun = {module, validator_name(version, operation_id, media_type_string)}
-      Map.put(operations, :validator, fun)
-    else
-      operations
+    case normalize_validator(validate_opt, module) do
+      false ->
+        # Validation disabled
+        operations
+
+      validator when is_tuple(validator) ->
+        # Custom validator function
+        Map.put(operations, :validator, validator)
+
+      true ->
+        # Default schema validation
+        fun = {module, validator_name(version, operation_id, media_type_string)}
+        Map.put(operations, :validator, fun)
     end
   end
 
   defp add_validation(operations, _, _, _, _, _, _), do: operations
+
+  # Normalize validator option to a consistent format
+  defp normalize_validator(false, _), do: false
+  defp normalize_validator(true, _), do: true
+
+  defp normalize_validator({module, fun}, _) when is_atom(module) and is_atom(fun),
+    do: {module, fun}
+
+  defp normalize_validator({module, fun, args}, _)
+       when is_atom(module) and is_atom(fun) and is_list(args),
+       do: {module, fun, args}
+
+  defp normalize_validator(fun, module) when is_atom(fun), do: {module, fun}
 
   @impl Plug
 
