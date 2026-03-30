@@ -83,6 +83,7 @@ defmodule Apical.Plugs.RequestBody do
     |> Map.take(~w(source path)a)
     |> add_content_type(parsed_media_type)
     |> add_marshal_context(parameters)
+    |> add_property_validators(plug_opts)
     |> add_validation(
       module,
       version,
@@ -217,6 +218,37 @@ defmodule Apical.Plugs.RequestBody do
 
   defp build_property_marshal_context(_), do: [:string]
 
+  # Build property validators from plug_opts
+  defp add_property_validators(operations, plug_opts) do
+    request_body_opts = Keyword.get(plug_opts, :request_body, [])
+    properties_config = Keyword.get(request_body_opts, :properties, [])
+
+    property_validators =
+      properties_config
+      |> Enum.filter(fn {_name, opts} -> Keyword.has_key?(opts, :validate) end)
+      |> Enum.map(fn {name, opts} ->
+        validator = Keyword.get(opts, :validate)
+        {Atom.to_string(name), normalize_property_validator(validator)}
+      end)
+      |> Map.new()
+
+    if map_size(property_validators) > 0 do
+      Map.put(operations, :property_validators, property_validators)
+    else
+      operations
+    end
+  end
+
+  defp normalize_property_validator({module, fun})
+       when is_atom(module) and is_atom(fun),
+       do: {module, fun}
+
+  defp normalize_property_validator({module, fun, args})
+       when is_atom(module) and is_atom(fun) and is_list(args),
+       do: {module, fun, args}
+
+  defp normalize_property_validator(other), do: other
+
   def validator_name(version, operation_id, mimetype) do
     :"#{version}-body-#{operation_id}-#{mimetype}"
   end
@@ -289,7 +321,9 @@ defmodule Apical.Plugs.RequestBody do
          {source, opts} = operations.source,
          marshal_context = Map.get(operations, :marshal_context),
          validator = Map.get(operations, :validator),
-         {:ok, conn} <- source.fetch(conn, validator, marshal_context, opts) do
+         {:ok, conn} <- source.fetch(conn, validator, marshal_context, opts),
+         property_validators = Map.get(operations, :property_validators),
+         :ok <- apply_property_validators(conn.params, property_validators) do
       Conn.put_private(conn, :apical_content_type_matched, true)
     else
       false ->
@@ -307,6 +341,35 @@ defmodule Apical.Plugs.RequestBody do
 
         raise Apical.Exceptions.ParameterError, params
     end
+  end
+
+  # Apply property-level validators to request body params
+  defp apply_property_validators(_params, nil), do: :ok
+
+  defp apply_property_validators(params, property_validators) when is_map(params) do
+    Enum.reduce_while(property_validators, :ok, fn {property_name, validator}, :ok ->
+      case Map.fetch(params, property_name) do
+        {:ok, value} ->
+          case apply_single_validator(value, validator) do
+            :ok -> {:cont, :ok}
+            {:error, reason} -> {:halt, {:error, reason}}
+          end
+
+        :error ->
+          # Property not present, skip validation (optional property)
+          {:cont, :ok}
+      end
+    end)
+  end
+
+  defp apply_property_validators(_params, _), do: :ok
+
+  defp apply_single_validator(value, {module, fun}) do
+    apply(module, fun, [value])
+  end
+
+  defp apply_single_validator(value, {module, fun, args}) do
+    apply(module, fun, [value | args])
   end
 
   defp fetch_content_type!(conn) do
