@@ -20,7 +20,7 @@ defmodule ApicalTest.Verbs.TraceTest do
       """,
       root: "/",
       controller: ApicalTest.Verbs.TraceTest,
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

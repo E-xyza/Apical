@@ -40,7 +40,7 @@ defmodule ApicalTest.Parameters.ByOperationIdTest do
       tags: [
         tag: [controller: ApicalTest.Parameters.ByOperationIdTest.Unimplemented]
       ],
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

@@ -52,7 +52,7 @@ defmodule ApicalTest.Parameters.ByTagTest do
         tag: [controller: ApicalTest.Parameters.ByTagTest.Tagged],
         other: [controller: ApicalTest.Parameters.ByTagTest.Unimplemented]
       ],
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

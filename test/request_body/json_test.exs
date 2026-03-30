@@ -44,7 +44,7 @@ defmodule ApicalTest.RequestBody.JsonTest do
       """,
       root: "/",
       controller: ApicalTest.RequestBody.JsonTest,
-      encoding: "application/yaml",
+      content_type: "application/yaml",
       operation_ids: [
         nest_all_json: [nest_all_json: true]
       ]

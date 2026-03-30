@@ -20,7 +20,7 @@ defmodule ApicalTest.Verbs.PatchTest do
       """,
       root: "/",
       controller: ApicalTest.Verbs.PatchTest,
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

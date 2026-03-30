@@ -38,6 +38,6 @@ defmodule ApicalTest.Plug.Operation.Module.Router do
     for: Plug,
     root: "/",
     controller: ApicalTest.Plug.Operation,
-    encoding: "application/yaml"
+    content_type: "application/yaml"
   )
 end

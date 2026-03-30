@@ -30,7 +30,7 @@ defmodule ApicalTest.Regression.RefNotFoundErrorTest do
         Leaf:
           type: string
     """,
-    encoding: "application/yaml",
+    content_type: "application/yaml",
     controller: __MODULE__
   )
 

@@ -38,6 +38,6 @@ defmodule ApicalTest.Plug.GetTest.Router do
     for: Plug,
     root: "/",
     controller: ApicalTest.Plug.GetTest,
-    encoding: "application/yaml"
+    content_type: "application/yaml"
   )
 end

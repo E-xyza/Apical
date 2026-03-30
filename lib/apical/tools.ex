@@ -5,7 +5,7 @@ defmodule Apical.Tools do
 
   @default_content_mapping [{"application/yaml", YamlElixir}, {"application/json", Jason}]
   def decode(string, opts) do
-    encoding = Keyword.fetch!(opts, :encoding)
+    encoding = Keyword.fetch!(opts, :content_type)
 
     opts
     |> Keyword.get(:decoders, [])

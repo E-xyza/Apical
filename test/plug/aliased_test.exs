@@ -39,6 +39,6 @@ defmodule ApicalTest.Plug.AliasedTest.Router do
     root: "/",
     operation_ids: [testGet: [alias: :aliased]],
     controller: ApicalTest.Plug.AliasedTest,
-    encoding: "application/yaml"
+    content_type: "application/yaml"
   )
 end

@@ -39,7 +39,7 @@ defmodule ApicalTest.Refs.SchemaObjectTest do
       """,
       root: "/",
       controller: ApicalTest.Refs.SchemaObjectTest,
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

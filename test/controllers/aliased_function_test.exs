@@ -21,7 +21,7 @@ defmodule ApicalTest.Controllers.AliasedFunctionTest do
       root: "/",
       controller: ApicalTest.Controllers.AliasedFunctionTest,
       operation_ids: [testGet: [alias: :aliased]],
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

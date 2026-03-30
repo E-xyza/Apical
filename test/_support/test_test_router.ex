@@ -25,7 +25,7 @@ defmodule ApicalTest.TestTest.Router do
               description: OK
     """,
     root: "/",
-    encoding: "application/yaml",
+    content_type: "application/yaml",
     testing: [
       behaviour: ApicalTest.TestTest.Api,
       controller: ApicalTest.TestTest.Controller,

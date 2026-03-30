@@ -329,7 +329,7 @@ defmodule ApicalTest.Parameters.PathTest do
       """,
       root: "/",
       controller: ApicalTest.Parameters.PathTest,
-      encoding: "application/yaml",
+      content_type: "application/yaml",
       styles: [{"x-custom", {__MODULE__, :x_custom}}],
       parameters: [
         custom: [

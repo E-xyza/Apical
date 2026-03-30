@@ -24,7 +24,7 @@ defmodule ApicalTest.CompileError.MissingInfoTest do
                     description: OK
           """,
           controller: Undefined,
-          encoding: "application/yaml"
+          content_type: "application/yaml"
         )
       end
     end

@@ -44,7 +44,7 @@ defmodule ApicalTest.ExtraPlug.ByTagTest do
         ApicalTest.ExtraPlug,
         {ApicalTest.ExtraPlug, ["module option"]}
       ],
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
 
     def local_plug(conn, []) do

@@ -132,7 +132,7 @@ defmodule ApicalTest.Parameters.HeaderTest do
       """,
       root: "/",
       controller: ApicalTest.Parameters.HeaderTest,
-      encoding: "application/yaml",
+      content_type: "application/yaml",
       styles: [{"x-custom", {__MODULE__, :x_custom}}],
       parameters: [
         "style-custom-override": [

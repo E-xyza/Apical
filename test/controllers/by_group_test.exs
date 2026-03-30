@@ -49,7 +49,7 @@ defmodule ApicalTest.Parameters.ByGroupTest do
       tags: [
         tag: [controller: ApicalTest.Parameters.ByGroupTest.Unimplemented]
       ],
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

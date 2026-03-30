@@ -61,7 +61,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
       """,
       root: "/",
       controller: ApicalTest.RequestBody.OtherTest,
-      encoding: "application/yaml",
+      content_type: "application/yaml",
       content_sources: [
         {"*/*", GenericSource},
         {"application/*", {GenericSource, tag: "application generic"}},

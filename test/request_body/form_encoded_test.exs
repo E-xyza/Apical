@@ -22,7 +22,7 @@ defmodule ApicalTest.RequestBody.FormEncodedTest do
       """,
       root: "/",
       controller: ApicalTest.RequestBody.FormEncodedTest,
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

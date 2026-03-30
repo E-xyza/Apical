@@ -67,7 +67,7 @@ defmodule Apical do
       > The `Apical.Plug.Router` module does not have the same interface as
       > `Plug.Router`, though it is a plug.
 
-  - `encoding`: mimetype which describes how the schema is encoded.
+  - `content_type`: mimetype which describes how the schema is encoded.
 
     required in `router_from_string/2`, deduced from filename in `router_from_file/2`.
 
@@ -285,7 +285,7 @@ defmodule Apical do
                 description: OK
       \""",
       controller: MyProjectWeb.ApiController,
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
   ```
@@ -325,7 +325,7 @@ defmodule Apical do
       opts
       |> Macro.expand_literals(__CALLER__)
       |> Keyword.merge(file: file)
-      |> Keyword.put_new_lazy(:encoding, fn -> find_encoding(file, opts) end)
+      |> Keyword.put_new_lazy(:content_type, fn -> find_encoding(file, opts) end)
       |> Keyword.put(:router, __CALLER__.module)
 
     file

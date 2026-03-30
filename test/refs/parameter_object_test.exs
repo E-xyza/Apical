@@ -31,7 +31,7 @@ defmodule ApicalTest.Refs.ParameterObjectTest do
       """,
       root: "/",
       controller: ApicalTest.Refs.ParameterObjectTest,
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

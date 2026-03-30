@@ -26,7 +26,7 @@ defmodule ApicalTest.Refs.RequestBodyObjectTest do
       """,
       root: "/",
       controller: ApicalTest.Refs.RequestBodyObjectTest,
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

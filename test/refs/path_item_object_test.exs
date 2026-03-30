@@ -24,7 +24,7 @@ defmodule ApicalTest.Refs.PathItemObjectTest do
       """,
       root: "/",
       controller: ApicalTest.Refs.PathItemObjectTest,
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
   end
 

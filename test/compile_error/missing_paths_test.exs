@@ -17,7 +17,7 @@ defmodule ApicalTest.CompileError.MissingPathsTest do
             version: 1.0.0
           """,
           controller: Undefined,
-          encoding: "application/yaml"
+          content_type: "application/yaml"
         )
       end
     end

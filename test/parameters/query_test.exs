@@ -206,7 +206,7 @@ defmodule ApicalTest.Parameters.QueryTest do
           ]
         ]
       ],
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
 
     def x_custom("ok"), do: {:ok, 47}
