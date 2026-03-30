@@ -507,23 +507,86 @@ defmodule Apical.Plugs.Parameter do
   @spec make(JsonPtr.t(), subschema :: map(), operation_id :: String.t(), plug_opts :: keyword()) ::
           {plugs :: [Macro.t()], validations :: [Macro.t()]}
   def make(operation_pointer, subschema, operation_id, plug_opts) do
-    case JsonPtr.resolve_json!(subschema, operation_pointer) do
-      %{"parameters" => _} ->
+    # Get path-level parameters (defined at path item level, inherited by all operations)
+    {path_pointer, _verb} = JsonPtr.pop(operation_pointer)
+
+    path_params =
+      case JsonPtr.resolve_json!(subschema, path_pointer) do
+        %{"parameters" => params} when is_list(params) -> params
+        _ -> []
+      end
+
+    # Get operation-level parameters
+    operation_params =
+      case JsonPtr.resolve_json!(subschema, operation_pointer) do
+        %{"parameters" => params} when is_list(params) -> params
+        _ -> []
+      end
+
+    # Merge parameters: operation-level overrides path-level by (name, in) tuple
+    merged_params =
+      merge_parameters(path_params, operation_params, path_pointer, operation_pointer, subschema)
+
+    case merged_params do
+      [] ->
+        @no_parameters
+
+      params ->
         %{plugs: plugs, validators: validators} =
-          operation_pointer
-          |> JsonPtr.join("parameters")
-          |> JsonPtr.reduce(
-            subschema,
-            @accumulator,
-            &do_make(&2, &1, &3, subschema, operation_id, plug_opts)
-          )
+          Enum.reduce(params, @accumulator, fn {param, pointer}, acc ->
+            do_make(param, pointer, acc, subschema, operation_id, plug_opts)
+          end)
 
         {Enum.map(plugs, &make_parameter_plug(&1, operation_id, plug_opts)),
          List.flatten(validators)}
-
-      _ ->
-        @no_parameters
     end
+  end
+
+  # Merges path-level parameters with operation-level parameters.
+  # Operation-level parameters override path-level parameters when they have
+  # the same name and location (in).
+  defp merge_parameters(path_params, operation_params, path_pointer, operation_pointer, schema) do
+    # Resolve $ref for each parameter and build lookup key (name, in)
+    resolve_param = fn param, base_pointer, idx ->
+      case param do
+        %{"$ref" => ref} ->
+          pointer = JsonPtr.from_uri(ref)
+          {JsonPtr.resolve_json!(schema, pointer), pointer}
+
+        _ ->
+          # For inline params, construct the proper pointer
+          pointer = JsonPtr.join(base_pointer, ["parameters", "#{idx}"])
+          {param, pointer}
+      end
+    end
+
+    param_key = fn {resolved, _pointer} ->
+      {resolved["name"], resolved["in"]}
+    end
+
+    # Build a map of path-level parameters by (name, in)
+    path_map =
+      path_params
+      |> Enum.with_index()
+      |> Map.new(fn {param, idx} ->
+        resolved = resolve_param.(param, path_pointer, idx)
+        {param_key.(resolved), resolved}
+      end)
+
+    # Build operation parameters with their actual pointers
+    operation_map =
+      operation_params
+      |> Enum.with_index()
+      |> Map.new(fn {param, idx} ->
+        resolved = resolve_param.(param, operation_pointer, idx)
+        {param_key.(resolved), resolved}
+      end)
+
+    # Merge: operation params override path params
+    merged_map = Map.merge(path_map, operation_map)
+
+    # Return as list of {resolved_param, pointer} tuples
+    Map.values(merged_map)
   end
 
   @location_modules %{

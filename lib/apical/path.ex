@@ -37,6 +37,12 @@ defmodule Apical.Path do
   @verb_mapping Map.new(~w(get put post delete options head patch trace)a, &{"#{&1}", &1})
   @verbs Map.keys(@verb_mapping)
 
+  # Ignore non-verb keys in path item object (parameters, summary, description, servers, etc.)
+  # These are handled separately or are informational only.
+  defp to_plug_route(_pointer, key, _value, acc, _schema, _path, _opts) when key not in @verbs do
+    acc
+  end
+
   defp to_plug_route(
          pointer,
          verb,
@@ -87,16 +93,18 @@ defmodule Apical.Path do
       case Keyword.fetch(opts, :controller) do
         {:ok, controller} when is_atom(controller) ->
           case Keyword.get(opts, :alias) do
-            nil -> 
+            nil ->
               case String.split(operation_id, ".", trim: true) do
-                [operation_id] -> {controller, String.to_atom(operation_id)}
-                parts -> 
-                  {alias_fun, module_parts} = List.pop_at(parts, -1)
-                  
-                  {Module.concat([controller] ++ module_parts), String.to_atom(alias_fun)}
-                end
+                [operation_id] ->
+                  {controller, String.to_atom(operation_id)}
 
-            alias_fun -> 
+                parts ->
+                  {alias_fun, module_parts} = List.pop_at(parts, -1)
+
+                  {Module.concat([controller] ++ module_parts), String.to_atom(alias_fun)}
+              end
+
+            alias_fun ->
               {controller, alias_fun}
           end
 

@@ -62,11 +62,12 @@ defmodule Apical.Parser.Marshal do
         types = Map.get(property_types, key) ->
           {key, as_type(value, types)}
 
-        types = Enum.find_value(pattern_types, fn {pattern, types} ->
-          # Pattern is stored as string, compile at runtime
-          regex = if is_binary(pattern), do: Regex.compile!(pattern), else: pattern
-          Regex.match?(regex, key) and types
-        end) ->
+        types =
+            Enum.find_value(pattern_types, fn {pattern, types} ->
+              # Pattern is stored as string, compile at runtime
+              regex = if is_binary(pattern), do: Regex.compile!(pattern), else: pattern
+              Regex.match?(regex, key) and types
+            end) ->
           {key, as_type(value, types)}
 
         true ->

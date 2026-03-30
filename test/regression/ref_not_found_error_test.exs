@@ -34,7 +34,7 @@ defmodule ApicalTest.Regression.RefNotFoundErrorTest do
     controller: __MODULE__
   )
 
-  def init(_), do: raise "not called"
+  def init(_), do: raise("not called")
 
   # this schema used to trigger a compilation error
   test "works", do: :ok
