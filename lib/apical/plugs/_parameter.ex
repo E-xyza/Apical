@@ -342,11 +342,16 @@ defmodule Apical.Plugs.Parameter do
             {name, to_type_list(property["type"])}
           end)
 
+        # Store regex patterns as strings to avoid reference escaping issues.
+        # They will be compiled at runtime in Marshal.object_marshal/2.
         pattern_types =
           schema
           |> Map.get("patternProperties", %{})
           |> Map.new(fn {regex, property} ->
-            {Regex.compile!(regex), to_type_list(property["type"])}
+            # Validate the regex at compile time
+            Regex.compile!(regex)
+            # But store as string for serialization
+            {regex, to_type_list(property["type"])}
           end)
 
         additional_types =

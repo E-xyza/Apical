@@ -26,6 +26,9 @@ defmodule ApicalTest.RequestBody.FormEncodedTest do
     )
   end
 
+  require ApicalTest.EndpointCase
+  ApicalTest.EndpointCase.define_endpoint()
+
   use ApicalTest.EndpointCase
 
   alias ApicalTest.RequestBody.FormEncodedTest.Endpoint

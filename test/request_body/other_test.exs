@@ -81,6 +81,9 @@ defmodule ApicalTest.RequestBody.OtherTest do
     )
   end
 
+  require ApicalTest.EndpointCase
+  ApicalTest.EndpointCase.define_endpoint()
+
   use ApicalTest.EndpointCase
 
   alias Apical.Exceptions.InvalidContentTypeError

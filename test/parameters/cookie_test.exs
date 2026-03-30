@@ -171,6 +171,9 @@ defmodule ApicalTest.Parameters.CookieTest do
     def defined_marshalling(_), do: {:error, "invalid"}
   end
 
+  require ApicalTest.EndpointCase
+  ApicalTest.EndpointCase.define_endpoint()
+
   use ApicalTest.EndpointCase
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError

@@ -1,6 +1,19 @@
 defmodule ApicalTest.EndpointCase do
   use ExUnit.CaseTemplate
 
+  @doc """
+  Macro to define the endpoint module. Must be called after the Router is defined.
+  """
+  defmacro define_endpoint do
+    quote do
+      defmodule Endpoint do
+        use Phoenix.Endpoint, otp_app: :apical
+
+        plug(unquote(__CALLER__.module).Router)
+      end
+    end
+  end
+
   using opts do
     opts
     |> Keyword.get(:with, Phoenix)
@@ -30,32 +43,15 @@ defmodule ApicalTest.EndpointCase do
     quote do
       # Use the endpoint module as the endpoint
       @endpoint __MODULE__.Endpoint
-      @after_compile __MODULE__
       use Phoenix.Controller
 
       # Import conveniences for testing with connections
       import Phoenix.ConnTest
 
-      Application.put_env(:apical, @endpoint, adapter: Bandit.PhoenixAdapter)
-
       setup_all do
+        Application.put_env(:apical, @endpoint, adapter: Bandit.PhoenixAdapter)
         __MODULE__.Endpoint.start_link()
         :ok
-      end
-
-      def __after_compile__(_, _) do
-        router = Module.concat(__MODULE__, Router)
-        endpoint = Module.concat(__MODULE__, Endpoint)
-
-        Code.eval_quoted(
-          quote do
-            defmodule unquote(endpoint) do
-              use Phoenix.Endpoint, otp_app: :apical
-
-              plug(unquote(router))
-            end
-          end
-        )
       end
     end
   end

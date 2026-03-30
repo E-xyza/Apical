@@ -220,6 +220,9 @@ defmodule ApicalTest.Parameters.QueryTest do
     def defined_marshalling(_, :atom), do: {:error, "invalid"}
   end
 
+  require ApicalTest.EndpointCase
+  ApicalTest.EndpointCase.define_endpoint()
+
   use ApicalTest.EndpointCase
   alias Plug.Conn
   alias Apical.Exceptions.ParameterError

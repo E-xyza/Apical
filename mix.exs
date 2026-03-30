@@ -5,7 +5,7 @@ defmodule Apical.MixProject do
     [
       app: :apical,
       version: "0.2.1",
-      elixir: "~> 1.14",
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       package: [
@@ -31,20 +31,20 @@ defmodule Apical.MixProject do
 
   defp deps do
     [
-      {:pegasus, "~> 0.2.4", runtime: false},
-      {:exonerate, "~> 1.1.2", runtime: false},
-      {:bandit, ">= 0.7.6", only: :test},
+      {:pegasus, "~> 1.0", runtime: false},
+      {:exonerate, "~> 1.2", runtime: false},
+      {:bandit, "~> 1.6", only: :test},
       # note that phoenix is an optional dependency.
-      {:phoenix, "~> 1.7.2", only: [:test, :dev], optional: true},
-      {:phoenix_html, "~> 3.3.1", only: :test, optional: true},
-      {:req, "~> 0.3.10", only: :test},
-      {:yaml_elixir, "~> 2.7", optional: true},
+      {:phoenix, "~> 1.7", only: [:test, :dev], optional: true},
+      {:phoenix_html, "~> 4.1", only: :test, optional: true},
+      {:req, "~> 0.5", only: :test},
+      {:yaml_elixir, "~> 2.9", optional: true},
       {:jason, "~> 1.4", optional: true},
-      {:mox, "~> 1.0", optional: true},
+      {:mox, "~> 1.1", optional: true},
       {:bypass, "~> 2.1", optional: true},
-      {:plug, "~> 1.14"},
+      {:plug, "~> 1.19"},
       {:json_ptr, "~> 1.2"},
-      {:ex_doc, "~> 0.27", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end
 

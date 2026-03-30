@@ -86,6 +86,9 @@ defmodule ApicalTest.Versioning.ByControllerTest do
     end
   end
 
+  require ApicalTest.EndpointCase
+  ApicalTest.EndpointCase.define_endpoint()
+
   use ApicalTest.EndpointCase
 
   describe "for shared routes" do

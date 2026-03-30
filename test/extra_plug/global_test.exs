@@ -40,6 +40,9 @@ defmodule ApicalTest.ExtraPlug.GlobalTest do
     end
   end
 
+  require ApicalTest.EndpointCase
+  ApicalTest.EndpointCase.define_endpoint()
+
   use ApicalTest.EndpointCase
 
   alias Plug.Conn

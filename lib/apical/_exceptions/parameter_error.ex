@@ -14,6 +14,7 @@ defmodule Apical.Exceptions.ParameterError do
   instance_location
   errors
   error_value
+  expected
   matches
   reason
   required
