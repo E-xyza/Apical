@@ -4,7 +4,7 @@ defmodule ApicalTest.RequestBody.OtherTest do
     alias Plug.Conn
 
     @impl true
-    def fetch(conn, _, opts) do
+    def fetch(conn, _validator, _marshal_context, opts) do
       response = Keyword.get(opts, :tag, "generic")
 
       {:ok, Conn.put_private(conn, :response, response)}

@@ -21,9 +21,20 @@ defmodule Apical.Plugs.RequestBody.Source do
   """
   @type validator :: nil | {module, atom} | {module, atom, keyword}
 
-  @doc """
+  @typedoc """
+  Type for marshal context that contains type information for marshalling
+  request body values from strings to their proper types.
   """
-  @callback fetch(Conn.t(), validator, opts :: keyword) :: {:ok, Conn.t()} | {:error, keyword}
+  @type marshal_context :: map | nil
+
+  @doc """
+  Fetches and processes the request body.
+
+  The marshal_context parameter contains type information extracted from the schema
+  that can be used to convert string values to their proper types (e.g., "42" to 42).
+  """
+  @callback fetch(Conn.t(), validator, marshal_context, opts :: keyword) ::
+              {:ok, Conn.t()} | {:error, keyword}
 
   @doc """
   Compile-time check to see if the validator is valid for the given requestBody
@@ -106,4 +117,25 @@ defmodule Apical.Plugs.RequestBody.Source do
   def apply_validator(content, {module, fun, args}) do
     apply(module, fun, [content | args])
   end
+
+  alias Apical.Parser.Marshal
+
+  @doc false
+  # Apply marshalling to convert string values to proper types based on schema
+  def apply_marshal(content, nil), do: {:ok, content}
+
+  def apply_marshal(content, marshal_context) when is_map(content) do
+    Marshal.marshal(content, marshal_context, marshal_context[:type])
+  end
+
+  def apply_marshal(content, marshal_context) when is_list(content) do
+    Marshal.marshal(content, marshal_context, marshal_context[:type])
+  end
+
+  def apply_marshal(content, marshal_context) when is_binary(content) do
+    # For primitive types, use as_type directly
+    {:ok, Marshal.as_type(content, marshal_context[:type] || [:string])}
+  end
+
+  def apply_marshal(content, _), do: {:ok, content}
 end

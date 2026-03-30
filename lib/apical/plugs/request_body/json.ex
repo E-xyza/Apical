@@ -1,12 +1,18 @@
 defmodule Apical.Plugs.RequestBody.Json do
   @moduledoc """
+  Source handler for `application/json` request bodies.
+
+  JSON bodies already have proper types from JSON decoding, so marshalling
+  is not needed. This handler decodes JSON and validates against the schema.
   """
 
   alias Apical.Plugs.RequestBody.Source
   @behaviour Source
 
   @impl true
-  def fetch(conn, validator, opts) do
+  def fetch(conn, validator, _marshal_context, opts) do
+    # Note: marshal_context is ignored for JSON since Jason.decode
+    # already produces proper types (integers, booleans, null, etc.)
     with {:ok, str, conn} <- Source.fetch_body(conn, []),
          {:ok, json} <- Jason.decode(str),
          :ok <- Source.apply_validator(json, validator) do

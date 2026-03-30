@@ -82,6 +82,7 @@ defmodule Apical.Plugs.RequestBody do
     |> Map.new()
     |> Map.take(~w(source path)a)
     |> add_content_type(parsed_media_type)
+    |> add_marshal_context(parameters)
     |> add_validation(
       module,
       version,
@@ -113,6 +114,107 @@ defmodule Apical.Plugs.RequestBody do
 
   defp add_content_type(operations, parsed_media_type),
     do: Map.put(operations, :media_type, parsed_media_type)
+
+  # Build marshal context from the schema to enable type conversion
+  # for form-encoded request bodies (which come as strings)
+  defp add_marshal_context(operations, %{"schema" => schema}) do
+    marshal_context = build_marshal_context(schema)
+    Map.put(operations, :marshal_context, marshal_context)
+  end
+
+  defp add_marshal_context(operations, _), do: operations
+
+  @types ~w(null boolean integer number string array object)a
+  @type_class Map.new(@types, &{"#{&1}", &1})
+  @type_order Map.new(Enum.with_index(@types))
+
+  defp to_type_list(nil), do: [:string]
+
+  defp to_type_list(type) do
+    type
+    |> List.wrap()
+    |> Enum.map(&Map.fetch!(@type_class, &1))
+    |> Enum.sort_by(&Map.fetch!(@type_order, &1))
+  end
+
+  defp build_marshal_context(%{"type" => type} = schema) when type in ["object", ["object"]] do
+    property_types =
+      schema
+      |> Map.get("properties", %{})
+      |> Map.new(fn {name, property} ->
+        {name, build_property_marshal_context(property)}
+      end)
+
+    # Store regex patterns as strings to avoid reference escaping issues
+    pattern_types =
+      schema
+      |> Map.get("patternProperties", %{})
+      |> Map.new(fn {regex, property} ->
+        Regex.compile!(regex)
+        {regex, to_type_list(property["type"])}
+      end)
+
+    additional_types =
+      schema
+      |> get_in(["additionalProperties", "type"])
+      |> Kernel.||("string")
+      |> to_type_list()
+
+    %{
+      type: [:object],
+      properties: {property_types, pattern_types, additional_types}
+    }
+  end
+
+  defp build_marshal_context(%{"type" => type} = schema) when type in ["array", ["array"]] do
+    prefix_items_type =
+      case schema do
+        %{"prefixItems" => prefix_items} ->
+          Enum.map(prefix_items, &to_type_list(&1["type"]))
+
+        _ ->
+          []
+      end
+
+    items_type =
+      case schema do
+        %{"items" => items} when is_map(items) ->
+          to_type_list(items["type"])
+
+        _ ->
+          [:string]
+      end
+
+    %{
+      type: [:array],
+      elements: {prefix_items_type, items_type}
+    }
+  end
+
+  defp build_marshal_context(%{"type" => type}) do
+    %{type: to_type_list(type)}
+  end
+
+  defp build_marshal_context(_), do: nil
+
+  # Build context for a single property, handling nested objects/arrays
+  defp build_property_marshal_context(%{"type" => type} = property)
+       when type in ["object", ["object"]] do
+    # Recursively build context for nested objects
+    build_marshal_context(property)
+  end
+
+  defp build_property_marshal_context(%{"type" => type} = property)
+       when type in ["array", ["array"]] do
+    # Recursively build context for nested arrays
+    build_marshal_context(property)
+  end
+
+  defp build_property_marshal_context(%{"type" => type}) do
+    to_type_list(type)
+  end
+
+  defp build_property_marshal_context(_), do: [:string]
 
   def validator_name(version, operation_id, mimetype) do
     :"#{version}-body-#{operation_id}-#{mimetype}"
@@ -149,7 +251,9 @@ defmodule Apical.Plugs.RequestBody do
   def call(conn, operations) do
     with true <- matches_req_header?(conn.private.content_type, operations.media_type),
          {source, opts} = operations.source,
-         {:ok, conn} <- source.fetch(conn, Map.get(operations, :validator), opts) do
+         marshal_context = Map.get(operations, :marshal_context),
+         validator = Map.get(operations, :validator),
+         {:ok, conn} <- source.fetch(conn, validator, marshal_context, opts) do
       Conn.put_private(conn, :apical_content_type_matched, true)
     else
       false ->

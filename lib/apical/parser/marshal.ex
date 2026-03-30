@@ -36,12 +36,31 @@ defmodule Apical.Parser.Marshal do
   defp array_marshal([], _, _, so_far), do: Enum.reverse(so_far)
 
   defp array_marshal([first | rest], [], tail_type, so_far) do
-    array_marshal(rest, [], tail_type, [as_type(first, tail_type) | so_far])
+    array_marshal(rest, [], tail_type, [marshal_element(first, tail_type) | so_far])
   end
 
   defp array_marshal([first | rest], [first_type | rest_type], tail_type, so_far) do
-    array_marshal(rest, rest_type, tail_type, [as_type(first, first_type) | so_far])
+    array_marshal(rest, rest_type, tail_type, [marshal_element(first, first_type) | so_far])
   end
+
+  # Marshal an array element based on its type context
+  defp marshal_element(value, context) when is_map(context) and is_map(value) do
+    object(value, context)
+  end
+
+  defp marshal_element(value, context) when is_map(context) and is_list(value) do
+    array(value, context)
+  end
+
+  defp marshal_element(value, context) when is_map(context) do
+    as_type(value, context[:type] || [:string])
+  end
+
+  defp marshal_element(value, types) when is_list(types) do
+    as_type(value, types)
+  end
+
+  defp marshal_element(value, _), do: value
 
   def object(object, %{properties: {property_types, pattern_types, additional_type}}) do
     object_marshal(object, {property_types, pattern_types, additional_type})
@@ -59,8 +78,8 @@ defmodule Apical.Parser.Marshal do
   defp object_marshal(object, {property_types, pattern_types, additional_type}) do
     Map.new(object, fn {key, value} ->
       cond do
-        types = Map.get(property_types, key) ->
-          {key, as_type(value, types)}
+        prop_context = Map.get(property_types, key) ->
+          {key, marshal_property(value, prop_context)}
 
         types =
             Enum.find_value(pattern_types, fn {pattern, types} ->
@@ -75,6 +94,31 @@ defmodule Apical.Parser.Marshal do
       end
     end)
   end
+
+  # Marshal a property value based on its context
+  # If the context is a map with :type, :properties, or :elements, it's a nested context
+  # Otherwise, it's a simple type list
+  defp marshal_property(value, context) when is_map(context) and is_map(value) do
+    # Nested object - recursively marshal
+    object(value, context)
+  end
+
+  defp marshal_property(value, context) when is_map(context) and is_list(value) do
+    # Nested array - recursively marshal
+    array(value, context)
+  end
+
+  defp marshal_property(value, context) when is_map(context) do
+    # Primitive with nested context - use the type from context
+    as_type(value, context[:type] || [:string])
+  end
+
+  defp marshal_property(value, types) when is_list(types) do
+    # Simple type list
+    as_type(value, types)
+  end
+
+  defp marshal_property(value, _), do: value
 
   def as_type("", [:null | _]), do: nil
   def as_type("null", [:null | _rest]), do: nil
