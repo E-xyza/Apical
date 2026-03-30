@@ -88,7 +88,8 @@ defmodule Apical.Plugs.RequestBody do
       version,
       operation_id,
       media_type_string,
-      parameters
+      parameters,
+      plug_opts
     )
     |> add_source(source, plug_opts)
   end
@@ -220,14 +221,28 @@ defmodule Apical.Plugs.RequestBody do
     :"#{version}-body-#{operation_id}-#{mimetype}"
   end
 
-  defp add_validation(operations, module, version, operation_id, media_type_string, %{
-         "schema" => _schema
-       }) do
-    fun = {module, validator_name(version, operation_id, media_type_string)}
-    Map.put(operations, :validator, fun)
+  defp add_validation(
+         operations,
+         module,
+         version,
+         operation_id,
+         media_type_string,
+         %{"schema" => _schema},
+         plug_opts
+       ) do
+    # Check if validation is disabled via request_body: [validate: false]
+    request_body_opts = Keyword.get(plug_opts, :request_body, [])
+    should_validate = Keyword.get(request_body_opts, :validate, true)
+
+    if should_validate do
+      fun = {module, validator_name(version, operation_id, media_type_string)}
+      Map.put(operations, :validator, fun)
+    else
+      operations
+    end
   end
 
-  defp add_validation(operations, _, _, _, _, _), do: operations
+  defp add_validation(operations, _, _, _, _, _, _), do: operations
 
   @impl Plug
 
