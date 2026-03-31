@@ -335,10 +335,29 @@ defmodule Apical do
   end
 
   defp router(string, opts) do
-    string
-    |> Tools.decode(opts)
-    |> Router.build(string, opts)
-    |> Tools.maybe_dump(opts)
+    schema = Tools.decode(string, opts)
+
+    {resolved_schema, resolved_string, resolved_opts} =
+      maybe_resolve_remote_refs(schema, string, opts)
+
+    resolved_schema
+    |> Router.build(resolved_string, resolved_opts)
+    |> Tools.maybe_dump(resolved_opts)
+  end
+
+  defp maybe_resolve_remote_refs(schema, original_string, opts) do
+    {resolved, _loaded} = Apical.RemoteRefs.resolve(schema, opts)
+
+    # If schema was modified, re-encode to string for Exonerate
+    if resolved != schema do
+      # Re-encode as JSON (Exonerate can handle JSON)
+      resolved_string = Jason.encode!(resolved)
+      # Update content_type since we're now JSON
+      new_opts = Keyword.put(opts, :content_type, "application/json")
+      {resolved, resolved_string, new_opts}
+    else
+      {schema, original_string, opts}
+    end
   end
 
   defp find_encoding(filename, _opts) do

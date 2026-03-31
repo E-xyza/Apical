@@ -1,0 +1,12 @@
+{
+  "parameters": {
+    "UserId": {
+      "name": "user_id",
+      "in": "query",
+      "required": true,
+      "schema": {
+        "type": "integer"
+      }
+    }
+  }
+}
