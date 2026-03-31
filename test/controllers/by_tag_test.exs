@@ -57,7 +57,7 @@ defmodule ApicalTest.Parameters.ByTagTest do
   end
 
   defmodule Tagged do
-    use Phoenix.Controller
+    use Phoenix.Controller, formats: [:json]
     alias Plug.Conn
 
     for operation <- ~w(tagged emptyFirst tagFirst prioritized) do

@@ -60,7 +60,7 @@ defmodule ApicalTest.Versioning.ByControllerTest do
   end
 
   defmodule SharedController do
-    use Phoenix.Controller
+    use Phoenix.Controller, formats: [:json]
     alias Plug.Conn
 
     def sharedOp(conn, _param) do
@@ -69,7 +69,7 @@ defmodule ApicalTest.Versioning.ByControllerTest do
   end
 
   defmodule V1.Controller do
-    use Phoenix.Controller
+    use Phoenix.Controller, formats: [:json]
     alias Plug.Conn
 
     def forkedOp(conn, _param) do
@@ -78,7 +78,7 @@ defmodule ApicalTest.Versioning.ByControllerTest do
   end
 
   defmodule V2.Controller do
-    use Phoenix.Controller
+    use Phoenix.Controller, formats: [:json]
     alias Plug.Conn
 
     def forkedOp(conn, _param) do

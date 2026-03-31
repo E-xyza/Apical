@@ -45,7 +45,7 @@ defmodule ApicalTest.Parameters.ByOperationIdTest do
   end
 
   defmodule OperationId do
-    use Phoenix.Controller
+    use Phoenix.Controller, formats: [:json]
     alias Plug.Conn
 
     for operation <- ~w(tagged untagged) do

@@ -43,7 +43,7 @@ defmodule ApicalTest.EndpointCase do
     quote do
       # Use the endpoint module as the endpoint
       @endpoint __MODULE__.Endpoint
-      use Phoenix.Controller
+      use Phoenix.Controller, formats: [:json]
 
       # Import conveniences for testing with connections
       import Phoenix.ConnTest

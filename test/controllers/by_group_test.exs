@@ -54,7 +54,7 @@ defmodule ApicalTest.Parameters.ByGroupTest do
   end
 
   defmodule OperationId do
-    use Phoenix.Controller
+    use Phoenix.Controller, formats: [:json]
     alias Plug.Conn
 
     for operation <- ~w(tagged untagged grouped) do
