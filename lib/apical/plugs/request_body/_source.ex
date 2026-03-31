@@ -71,18 +71,26 @@ defmodule Apical.Plugs.RequestBody.Source do
     content_length = conn.private.content_length
     max_length = Keyword.get(opts, :length, 8_000_000)
     string? = Keyword.get(opts, :string, true)
-
-    if content_length > max_length do
-      raise Apical.Exceptions.RequestBodyTooLargeError,
-        max_length: max_length,
-        content_length: content_length
-    end
-
     chunk_opts = [length: Keyword.get(opts, :read_length, 1_000_000)]
-    fetch_body(conn, [], content_length, string?, chunk_opts)
+
+    case content_length do
+      :chunked ->
+        # For chunked encoding, read until done with max_length safety limit
+        fetch_body_chunked(conn, [], 0, max_length, string?, chunk_opts)
+
+      content_length when is_integer(content_length) ->
+        if content_length > max_length do
+          raise Apical.Exceptions.RequestBodyTooLargeError,
+            max_length: max_length,
+            content_length: content_length
+        end
+
+        fetch_body_fixed(conn, [], content_length, string?, chunk_opts)
+    end
   end
 
-  defp fetch_body(conn, so_far, length, string?, chunk_opts) do
+  # Fixed content-length body reading
+  defp fetch_body_fixed(conn, so_far, length, string?, chunk_opts) do
     case Conn.read_body(conn, chunk_opts) do
       {:ok, last, conn} when :erlang.byte_size(last) == length ->
         full_iodata = [so_far | last]
@@ -98,7 +106,50 @@ defmodule Apical.Plugs.RequestBody.Source do
 
       {:more, chunk, conn} ->
         new_size = length - :erlang.byte_size(chunk)
-        fetch_body(conn, [so_far | chunk], new_size, string?, chunk_opts)
+        fetch_body_fixed(conn, [so_far | chunk], new_size, string?, chunk_opts)
+
+      error = {:error, _} ->
+        error
+    end
+  end
+
+  # Chunked transfer-encoding body reading
+  defp fetch_body_chunked(conn, so_far, bytes_read, max_length, string?, chunk_opts) do
+    case Conn.read_body(conn, chunk_opts) do
+      {:ok, last, conn} ->
+        total_bytes = bytes_read + byte_size(last)
+
+        if total_bytes > max_length do
+          raise Apical.Exceptions.RequestBodyTooLargeError,
+            max_length: max_length,
+            content_length: total_bytes
+        end
+
+        full_iodata = [so_far | last]
+
+        if string? do
+          {:ok, IO.iodata_to_binary(full_iodata), conn}
+        else
+          {:ok, full_iodata, conn}
+        end
+
+      {:more, chunk, conn} ->
+        new_bytes_read = bytes_read + byte_size(chunk)
+
+        if new_bytes_read > max_length do
+          raise Apical.Exceptions.RequestBodyTooLargeError,
+            max_length: max_length,
+            content_length: new_bytes_read
+        end
+
+        fetch_body_chunked(
+          conn,
+          [so_far | chunk],
+          new_bytes_read,
+          max_length,
+          string?,
+          chunk_opts
+        )
 
       error = {:error, _} ->
         error

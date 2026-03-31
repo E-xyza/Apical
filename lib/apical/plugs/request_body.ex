@@ -390,19 +390,33 @@ defmodule Apical.Plugs.RequestBody do
   end
 
   defp fetch_content_length!(conn) do
-    content_length_string =
-      case Conn.get_req_header(conn, "content-length") do
-        [content_length] -> content_length
-        [] -> raise Apical.Exceptions.MissingContentLengthError
-        [_ | _] -> raise Apical.Exceptions.MultipleContentLengthError
-      end
+    case Conn.get_req_header(conn, "content-length") do
+      [content_length_string] ->
+        case Integer.parse(content_length_string) do
+          {content_length, ""} ->
+            content_length
 
-    case Integer.parse(content_length_string) do
-      {content_length, ""} ->
-        content_length
+          _ ->
+            raise Apical.Exceptions.InvalidContentLengthError,
+              invalid_string: content_length_string
+        end
 
-      _ ->
-        raise Apical.Exceptions.InvalidContentLengthError, invalid_string: content_length_string
+      [] ->
+        # Check for chunked transfer-encoding
+        case Conn.get_req_header(conn, "transfer-encoding") do
+          encodings when is_list(encodings) ->
+            if Enum.any?(encodings, &String.contains?(&1, "chunked")) do
+              :chunked
+            else
+              raise Apical.Exceptions.MissingContentLengthError
+            end
+
+          _ ->
+            raise Apical.Exceptions.MissingContentLengthError
+        end
+
+      [_ | _] ->
+        raise Apical.Exceptions.MultipleContentLengthError
     end
   end
 
