@@ -8,6 +8,7 @@ defmodule Apical.Path do
   #
   # see: https://spec.openapis.org/oas/v3.1.0#paths-object
 
+  alias Apical.Plugs.Accept
   alias Apical.Plugs.Parameter
   alias Apical.Plugs.RequestBody
   alias Apical.Tools
@@ -17,7 +18,7 @@ defmodule Apical.Path do
   # to make passing into the adapter easier we're going to make the parameters
   # a struct.
   @enforce_keys ~w(parameter_validators body_validators extra_plugs version
-  operation_id parameter_plugs body_plugs root verb canonical_path controller
+  operation_id parameter_plugs body_plugs accept_plug root verb canonical_path controller
   function)a
   defstruct @enforce_keys
 
@@ -85,7 +86,7 @@ defmodule Apical.Path do
     plug_opts =
       opts
       |> Keyword.take(
-        ~w(styles parameters request_body nest_all_json content_sources version resource dump dump_validator validate)a
+        ~w(styles parameters request_body nest_all_json content_sources version resource dump dump_validator validate validate_accept)a
       )
       |> Keyword.merge(path_parameters: path_parameters, path: path)
 
@@ -137,6 +138,8 @@ defmodule Apical.Path do
 
     {body_plugs, body_validators} = RequestBody.make(pointer, schema, operation_id, plug_opts)
 
+    accept_plug = Accept.make(pointer, schema, operation_id, plug_opts)
+
     framework = opts |> Keyword.get(:for, Phoenix) |> Macro.expand(%Macro.Env{})
     adapter = Module.concat(Apical.Adapters, framework)
 
@@ -148,7 +151,7 @@ defmodule Apical.Path do
     {[route | routes_so_far], MapSet.put(operation_ids_so_far, operation_id)}
   end
 
-  @folded_opts ~w(controller styles parameters request_body extra_plugs nest_all_json content_sources dump dump_validator validate)a
+  @folded_opts ~w(controller styles parameters request_body extra_plugs nest_all_json content_sources dump dump_validator validate validate_accept)a
 
   defp fold_tag_opts(opts, tags) do
     # NB it's totallgroup_opts(operation_id)y okay if this process is unoptimized since it

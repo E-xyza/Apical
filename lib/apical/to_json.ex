@@ -147,3 +147,16 @@ defimpl Apical.ToJson, for: Apical.Exceptions.RequestBodyTooLargeError do
     }
   end
 end
+
+defimpl Apical.ToJson, for: Apical.Exceptions.NotAcceptableError do
+  def to_json(error) do
+    %{
+      error: "not_acceptable",
+      status: error.plug_status,
+      message: Exception.message(error),
+      operation_id: error.operation_id,
+      accept: error.accept,
+      available: error.available
+    }
+  end
+end

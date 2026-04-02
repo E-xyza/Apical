@@ -12,6 +12,7 @@ defmodule Apical.Adapters.Phoenix do
 
         plug(Apical.Plugs.SetVersion, unquote(path.version))
         plug(Apical.Plugs.SetOperationId, unquote(path.operation_id))
+        unquote(path.accept_plug)
         unquote(path.parameter_plugs)
 
         unquote(path.body_plugs)
