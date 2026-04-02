@@ -1,0 +1,32 @@
+{
+  "callbacks": {
+    "WebhookCallback": {
+      "{$request.body#/webhookUrl}": {
+        "post": {
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Callback acknowledged"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "X-Request-Id": {
+      "description": "Unique request identifier",
+      "schema": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "X-Rate-Limit": {
+      "description": "Rate limit remaining",
+      "schema": {
+        "type": "integer"
+      }
+    }
+  }
+}

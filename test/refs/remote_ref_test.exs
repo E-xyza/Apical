@@ -134,8 +134,136 @@ defmodule ApicalTest.Refs.RemoteRefTest do
     end
   end
 
+  describe "remote refs in headers, security schemes, and callbacks (Issue #28 v2)" do
+    test "resolves remote $ref in response headers" do
+      defmodule RemoteHeaderRefRouter do
+        use Phoenix.Router
+
+        require Apical
+
+        Apical.router_from_string(
+          """
+          openapi: 3.1.0
+          info:
+            title: RemoteHeaderRefTest
+            version: 1.0.0
+          paths:
+            "/test":
+              get:
+                operationId: testEndpoint
+                responses:
+                  "200":
+                    description: Success
+                    headers:
+                      X-Request-Id:
+                        $ref: "https://example.com/components/headers.json#/headers/X-Request-Id"
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+          """,
+          root: "/",
+          controller: ApicalTest.Refs.RemoteRefTest,
+          content_type: "application/yaml",
+          remote_refs_cache: unquote(@cache_dir)
+        )
+      end
+
+      # If we got here, the router compiled successfully with the remote header ref
+      assert true
+    end
+
+    test "resolves remote $ref in security schemes" do
+      defmodule RemoteSecurityRefRouter do
+        use Phoenix.Router
+
+        require Apical
+
+        Apical.router_from_string(
+          """
+          openapi: 3.1.0
+          info:
+            title: RemoteSecurityRefTest
+            version: 1.0.0
+          components:
+            securitySchemes:
+              BearerAuth:
+                $ref: "https://example.com/components/security.json#/securitySchemes/BearerAuth"
+          paths:
+            "/secure":
+              get:
+                operationId: secureEndpoint
+                security:
+                  - BearerAuth: []
+                responses:
+                  "200":
+                    description: Success
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+          """,
+          root: "/",
+          controller: ApicalTest.Refs.RemoteRefTest,
+          content_type: "application/yaml",
+          remote_refs_cache: unquote(@cache_dir)
+        )
+      end
+
+      assert true
+    end
+
+    test "resolves remote $ref in callbacks" do
+      defmodule RemoteCallbackRefRouter do
+        use Phoenix.Router
+
+        require Apical
+
+        Apical.router_from_string(
+          """
+          openapi: 3.1.0
+          info:
+            title: RemoteCallbackRefTest
+            version: 1.0.0
+          paths:
+            "/subscribe":
+              post:
+                operationId: subscribe
+                requestBody:
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          webhookUrl:
+                            type: string
+                callbacks:
+                  onEvent:
+                    $ref: "https://example.com/components/callbacks.json#/callbacks/WebhookCallback"
+                responses:
+                  "200":
+                    description: Subscribed
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+          """,
+          root: "/",
+          controller: ApicalTest.Refs.RemoteRefTest,
+          content_type: "application/yaml",
+          remote_refs_cache: unquote(@cache_dir)
+        )
+      end
+
+      assert true
+    end
+  end
+
   # Dummy controller functions
   def createUser(conn, _params), do: Plug.Conn.send_resp(conn, 200, "ok")
   def getUser(conn, _params), do: Plug.Conn.send_resp(conn, 200, "ok")
   def test(conn, _params), do: Plug.Conn.send_resp(conn, 200, "ok")
+  def testEndpoint(conn, _params), do: Plug.Conn.send_resp(conn, 200, "ok")
+  def secureEndpoint(conn, _params), do: Plug.Conn.send_resp(conn, 200, "ok")
+  def subscribe(conn, _params), do: Plug.Conn.send_resp(conn, 200, "ok")
 end
