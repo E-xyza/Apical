@@ -35,17 +35,52 @@
 ## 0.2.1
 - fixes issue with nested refs
 
-## Future planned support 
+## 0.3.0
+
+### New Features
+
+- **Accept header validation** (Issue #45)
+  - Validates incoming Accept headers against response content types defined in OpenAPI schema
+  - Returns 406 Not Acceptable if client's Accept preferences don't match
+  - Supports quality factors (q=X) and wildcards (*/* and type/*)
+  - Can be disabled globally or per-operation with `validate_accept: false`
+
+- **Remote $ref resolution** (Issue #31)
+  - Support for resolving $refs to external URLs from a local cache
+  - Configure with `remote_refs_cache: "path/to/cache"` option
+  - Supports JSON and YAML files with fragment resolution
+
+- **Chunked transfer-encoding support** (Issue #36)
+  - Request bodies with `Transfer-Encoding: chunked` are now accepted
+  - No Content-Length header required for chunked requests
+
+- **Common parameters** (Issue #58)
+  - Path-level parameters are now inherited by all operations on that path
+  - Operation-level parameters can override path-level parameters
+
+- **Complete $ref resolution** (Issue #28)
+  - Added $ref support for Response, Header, SecurityScheme, and Callback objects
+  - Both local and remote refs are fully supported
+
+- **Documentation guides** (Issue #38)
+  - Added comprehensive guides for Getting Started, Parameter Validation,
+    Request Body Handling, Remote References, and Testing
+
+### Improvements
+
+- Custom validators for request body properties
+- Option to disable request body validation with `validate: false`
+- ToJson protocol for converting errors to JSON-compatible maps
+
+## Future planned support
 
 ### These features are in approximate order of priority
 
 - more sophisticated parsing and marshalling in request_body
 - support for json libraries besides Jason
 - data egress checking (conditional, compile-time)
-- support for auto-rejecting based on accept: information
 - multipart/form-data support
 - authorization schema support (use `extra_plugs:` for now)
-- remote $ref support
 - $id-based $ref support
-- Openapi 3.0 support
-- Openapi 4.0 support
+- OpenAPI 3.0 support
+- OpenAPI 4.0 support
