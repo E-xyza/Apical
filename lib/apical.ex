@@ -105,6 +105,17 @@ defmodule Apical do
 
     Defaults to `false`.  If set to `:all`, will also pass `dump: true` to Exonerate.
 
+  - `remote_refs_cache`: Path to a directory containing cached remote `$ref` schemas.
+
+    When your OpenAPI document references external URLs (e.g.,
+    `$ref: "https://example.com/schemas/user.json"`), Apical resolves them from
+    this local cache directory instead of fetching them at compile time.
+
+    The URL path is mapped to the cache directory structure:
+    `https://example.com/schemas/user.json` -> `{cache_dir}/example.com/schemas/user.json`
+
+    See the Remote References guide for more details.
+
   #### Scopable options
 
   The following options are *scopable*.  They may be placed as top-level options
@@ -150,7 +161,7 @@ defmodule Apical do
     > ### Global plugs {: .tip }
     >
     > if you need plugs to be executed for all routes, declare those plugs
-    > in the router module before the macro `Exonerate.router_from_*`.
+    > in the router module before the macro `Apical.router_from_*`.
 
     > ### Post-pipeline plugs {: .tip }
     >
@@ -202,6 +213,14 @@ defmodule Apical do
   - `nest_all_json`: Analogous to the option in `Plug.Parsers.JSON`, this
     option will nest all json request body payloads under the `"_json"` key.
     if this is not true, objects payloads will be merged into `conn.params`.
+
+  - `validate_accept`: (boolean, defaults to `true`) When enabled, validates
+    that incoming `Accept` headers match at least one of the response content
+    types defined in the OpenAPI schema. Returns 406 Not Acceptable if the
+    client's Accept preferences don't match any defined response type.
+
+    Supports quality factors (q=X) and wildcards (`*/*` and `type/*`).
+    Per RFC 7231, requests without an Accept header are allowed to pass.
 
   #### Available scopes
 

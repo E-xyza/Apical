@@ -31,7 +31,8 @@ libraries:
       defp deps do
         [
             ...
-          {:apical, "~> 0.2", only: :test},
+          {:apical, "~> 0.3", only: :test},
+          {:exonerate, "~> 1.2", runtime: false},
           {:mox, "~> 1.0", only: :test},
           {:bypass, "~> 2.1", only: :test},
         ]
@@ -79,7 +80,7 @@ defmodule MyAppTest.SomeSAAS do
 
   require Apical
 
-  Apical.router_from_file("path/to/some_saas.yaml", encoding: "application/yaml", testing: :auto)
+  Apical.router_from_file("path/to/some_saas.yaml", content_type: "application/yaml", testing: :auto)
 end
 ```
 

@@ -14,8 +14,8 @@ be unwanted compiler warnings.
 ```elixir
 def deps do
   [
-     {:apical, "~> 0.2.1"},
-     {:exonerate, "~> 1.1.2", runtime: Mix.env() != :prod}
+     {:apical, "~> 0.3.0"},
+     {:exonerate, "~> 1.2", runtime: false}
   ]
 end
 ```
@@ -46,7 +46,7 @@ defmodule MyProjectWeb.ApiRouter do
                 description: OK
       """,
       controller: MyProjectWeb.ApiController,
-      encoding: "application/yaml"
+      content_type: "application/yaml"
     )
 end
 ```
@@ -124,8 +124,7 @@ https://hexdocs.pm/apical/apical-for-testing.html
 
 ## Advanced usage
 
-For more advanced usage, consult the tests in the test directory.
-Guides will be provided in the next version of apical
+For more advanced usage, see the [guides](https://hexdocs.pm/apical) or consult the tests in the test directory.
 
 ## Documentation
 

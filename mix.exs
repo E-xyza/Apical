@@ -65,6 +65,7 @@ defmodule Apical.MixProject do
           Apical.Plugs.RequestBody.Source
         ],
         Plugs: [
+          Apical.Plugs.Accept,
           Apical.Plugs.Cookie,
           Apical.Plugs.Header,
           Apical.Plugs.Path,

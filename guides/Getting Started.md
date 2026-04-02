@@ -11,9 +11,10 @@ Add `apical` to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:apical, "~> 0.2"},
-    {:jason, "~> 1.4"},        # for JSON parsing
-    {:yaml_elixir, "~> 2.9"}   # for YAML parsing (optional)
+    {:apical, "~> 0.3"},
+    {:exonerate, "~> 1.2", runtime: false},  # compile-time JSON schema validation
+    {:jason, "~> 1.4"},                       # for JSON parsing
+    {:yaml_elixir, "~> 2.9"}                  # for YAML parsing (optional)
   ]
 end
 ```
