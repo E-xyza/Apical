@@ -156,11 +156,20 @@ defmodule Apical.Plugs.RequestBody do
         {regex, to_type_list(property["type"])}
       end)
 
-    additional_types =
-      schema
-      |> get_in(["additionalProperties", "type"])
-      |> Kernel.||("string")
-      |> to_type_list()
+    # `additionalProperties` may be a boolean (`true`/`false`) or a schema object
+    # in OpenAPI 3.1. Only a schema object declares a `type` to marshal extra keys
+    # to; for a boolean (or absent) there is no declared type, so default to
+    # "string" (leave the value as received).
+    additional_properties = Map.get(schema, "additionalProperties")
+
+    additional_type =
+      if is_map(additional_properties) do
+        Map.get(additional_properties, "type", "string")
+      else
+        "string"
+      end
+
+    additional_types = to_type_list(additional_type)
 
     %{
       type: [:object],

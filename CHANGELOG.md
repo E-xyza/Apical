@@ -12,6 +12,9 @@
   module's cache. Previously any operation with a `requestBody`/parameter schema
   failed to compile with `resource ... not found in cache` (the Phoenix adapter
   is unaffected — it emits validators in the router module).
+- request body marshalling: handle a boolean `additionalProperties` (`true`/
+  `false`), valid in OpenAPI 3.1. Previously it assumed a schema object and did
+  `get_in(true, ["type"])`, crashing at compile time on both adapters.
 
 ## 0.1.0
 
