@@ -7,6 +7,11 @@
 - Plug adapter: prefix the per-operation module name with `Op` so a hex digest
   starting with a digit still forms a valid alias segment (previously raised
   `:as, expected an alias` at compile time for ~40% of operations).
+- Plug adapter: re-register the Exonerate resource inside each operation's nested
+  module so its parameter/body validators resolve the resource against their own
+  module's cache. Previously any operation with a `requestBody`/parameter schema
+  failed to compile with `resource ... not found in cache` (the Phoenix adapter
+  is unaffected — it emits validators in the router module).
 
 ## 0.1.0
 

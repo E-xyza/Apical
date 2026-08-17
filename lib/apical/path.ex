@@ -20,7 +20,10 @@ defmodule Apical.Path do
   @enforce_keys ~w(parameter_validators body_validators extra_plugs version
   operation_id parameter_plugs body_plugs accept_plug root verb canonical_path controller
   function)a
-  defstruct @enforce_keys
+  # schema_string/encode_opts let the Plug adapter re-register the Exonerate
+  # resource inside each nested operation module (its validators resolve the
+  # resource against their own module's cache — see Apical.Adapters.Plug).
+  defstruct @enforce_keys ++ ~w(resource schema_string encode_opts)a
 
   def to_plug_routes(_pointer, path, %{"$ref" => ref}, schema, opts) do
     # for now, don't handle the remote ref scenario, or the id scenario.
@@ -143,9 +146,16 @@ defmodule Apical.Path do
     framework = opts |> Keyword.get(:for, Phoenix) |> Macro.expand(%Macro.Env{})
     adapter = Module.concat(Apical.Adapters, framework)
 
+    # threaded through so the Plug adapter can re-register the Exonerate resource
+    # inside each nested operation module (its validators resolve the resource
+    # against their own module's cache).
+    resource = Keyword.get(opts, :resource)
+    schema_string = Keyword.get(opts, :schema_string)
+    encode_opts = Keyword.get(opts, :encode_opts, [])
+
     route =
       __MODULE__
-      |> struct(Keyword.take(binding(), @enforce_keys))
+      |> struct(Keyword.take(binding(), @enforce_keys ++ ~w(resource schema_string encode_opts)a))
       |> adapter.build_path()
 
     {[route | routes_so_far], MapSet.put(operation_ids_so_far, operation_id)}
