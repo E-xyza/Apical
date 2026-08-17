@@ -1,5 +1,13 @@
 # Apical Changelog
 
+## 0.3.1
+
+### bugfix
+
+- Plug adapter: prefix the per-operation module name with `Op` so a hex digest
+  starting with a digit still forms a valid alias segment (previously raised
+  `:as, expected an alias` at compile time for ~40% of operations).
+
 ## 0.1.0
 
 ### initial release

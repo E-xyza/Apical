@@ -8,10 +8,12 @@ defmodule Apical.Adapters.Plug do
   def build_path(path) do
     # to get proper plug segregation, we have to create a module for each
     # operation.  In order to name these plugs, we'll use a hash of the
-    # version and the operation id.
+    # version and the operation id.  The hash is prefixed with "Op" because a
+    # hex digest can start with a digit, which is not a valid alias segment
+    # (aliases must begin with an uppercase letter).
 
     module_name =
-      :sha256 |> :crypto.hash("#{path.version}-#{path.operation_id}") |> Base.encode16()
+      "Op" <> (:sha256 |> :crypto.hash("#{path.version}-#{path.operation_id}") |> Base.encode16())
 
     module_alias = {:__aliases__, [alias: false], [String.to_atom(module_name)]}
 
