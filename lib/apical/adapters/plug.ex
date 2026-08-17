@@ -8,10 +8,12 @@ defmodule Apical.Adapters.Plug do
   def build_path(path) do
     # to get proper plug segregation, we have to create a module for each
     # operation.  In order to name these plugs, we'll use a hash of the
-    # version and the operation id.
+    # version and the operation id.  The hash is prefixed with "Op" because a
+    # hex digest can start with a digit, which is not a valid alias segment
+    # (aliases must begin with an uppercase letter).
 
     module_name =
-      :sha256 |> :crypto.hash("#{path.version}-#{path.operation_id}") |> Base.encode16()
+      "Op" <> (:sha256 |> :crypto.hash("#{path.version}-#{path.operation_id}") |> Base.encode16())
 
     module_alias = {:__aliases__, [alias: false], [String.to_atom(module_name)]}
 
@@ -34,6 +36,12 @@ defmodule Apical.Adapters.Plug do
 
       defmodule unquote(module_alias) do
         use Plug.Builder
+
+        # Each operation is its own module, so its parameter/body validators
+        # resolve the Exonerate resource against THIS module's cache. Re-register
+        # the resource here (it is also registered in the parent router module for
+        # the Phoenix path) so `function_from_resource` finds it.
+        unquote(register_resource(path))
 
         unquote(path.parameter_validators)
         unquote(path.body_validators)
@@ -63,6 +71,26 @@ defmodule Apical.Adapters.Plug do
 
         def call(conn, _opts), do: conn
       end
+    end
+  end
+
+  # Re-register the Exonerate resource inside the operation module so its
+  # validators (which resolve against this module's cache) can find it. The
+  # router always threads schema_string/resource through, so this fires for every
+  # Plug operation.
+  defp register_resource(%{
+         schema_string: schema_string,
+         resource: resource,
+         encode_opts: encode_opts
+       }) do
+    quote do
+      require Exonerate
+
+      Exonerate.register_resource(
+        unquote(schema_string),
+        unquote(resource),
+        unquote(encode_opts || [])
+      )
     end
   end
 

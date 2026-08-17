@@ -17,7 +17,11 @@ defmodule Apical.Router do
       |> Keyword.merge(
         resource: resource,
         root: resolve_root(version, opts),
-        version: version
+        version: version,
+        # threaded so the Plug adapter can re-register the Exonerate resource
+        # inside each nested operation module (see Apical.Adapters.Plug).
+        schema_string: schema_string,
+        encode_opts: encode_opts
       )
       |> Testing.set_controller()
 
