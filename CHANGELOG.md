@@ -1,5 +1,20 @@
 # Apical Changelog
 
+## 0.3.2
+
+### feature
+
+- `router_from_string/2`: new opt-in `eval: true` option. The spec argument is
+  evaluated at compile time in the caller's context (via `Code.eval_quoted/3`)
+  instead of being required to be a bare string literal, so the OpenAPI document
+  can be composed from string literals and helper-module function calls — e.g.
+  `router_from_string("...\n#{for m <- Registry.variants(), do: m.paths()}", eval: true, ...)`.
+  Defaults to `false` (literal-only, unchanged). Opt-in because evaluating an
+  expression at compile time is a sharper tool than accepting a literal.
+- `router_from_string/2` now stashes the resolved spec string on the calling
+  module as `@apical_spec_string`, so a router can serve or introspect its own
+  OpenAPI document at runtime (e.g. `def spec, do: @apical_spec_string`).
+
 ## 0.3.1
 
 ### bugfix

@@ -4,7 +4,7 @@ defmodule Apical.MixProject do
   def project do
     [
       app: :apical,
-      version: "0.3.1",
+      version: "0.3.2",
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
