@@ -317,6 +317,35 @@ defmodule Apical do
       |> Macro.expand_literals(__CALLER__)
       |> Keyword.put(:router, __CALLER__.module)
 
+    {eval?, opts} = Keyword.pop(opts, :eval, false)
+
+    # With `eval: true`, the spec argument is evaluated at compile time in the
+    # caller's context (via `Code.eval_quoted/3`) instead of being required to be a
+    # bare string literal. This lets the document be COMPOSED at compile time from
+    # already-compiled code — string literals and helper-module calls, e.g.
+    # `router_from_string("...\n\#{for m <- Registry.variants(), do: m.paths()}", eval: true, ...)`.
+    # (Caller-local module attributes/variables are NOT visible here — the attribute
+    # table isn't committed mid-body — so compose from other modules' functions.)
+    #
+    # SECURITY: this evaluates the given expression at compile time. It is opt-in
+    # (default `eval: false` keeps the literal-only behavior) precisely because
+    # evaluating an expression is a sharper tool than accepting a literal. Only enable
+    # it for specs you author; never route untrusted input through it.
+    string =
+      if eval? do
+        {value, _binding} = Code.eval_quoted(string, [], __CALLER__)
+        value
+      else
+        string
+      end
+
+    # Stash the resolved spec on the caller module as `@apical_spec_string`, so a
+    # router can serve/introspect its own document at runtime (expose it however you
+    # like, e.g. `def spec, do: @apical_spec_string`).
+    if is_binary(string) do
+      Module.put_attribute(__CALLER__.module, :apical_spec_string, string)
+    end
+
     router(string, opts)
   end
 
