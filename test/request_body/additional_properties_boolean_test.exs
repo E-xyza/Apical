@@ -39,7 +39,6 @@ defmodule ApicalTest.RequestBody.AdditionalPropertiesBooleanTest do
   use ApicalTest.EndpointCase
 
   alias Plug.Conn
-  alias ApicalTest.RequestBody.AdditionalPropertiesBooleanTest.Endpoint
 
   def openBody(conn, params) do
     conn
