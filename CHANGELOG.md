@@ -58,13 +58,22 @@
   `plug_crypto`).  `plug` was the only affected *runtime* dependency, so it
   was the only one whose advisories reached consumers.
 
-  One advisory remains: `cowlib` EEF-CVE-2026-43966 (MEDIUM), which has no
-  published fix -- 2.21.0 is the latest version.  It arrives transitively via
-  `bypass` -> `plug_cowboy` -> `cowboy`; bypass is hard-wired to cowboy (its
-  own `mix.exs` requires `plug_cowboy` unconditionally and it has had no
-  release since 2020), so the cowboy stack is unavoidable while bypass is a
-  dependency.  With bypass now `only: :test` it no longer reaches `dev` or
-  `prod` builds.
+  `cowboy` and `cowlib` are pinned (`~> 2.18.0` / `~> 2.19.0`, `only: :test`,
+  `override: true`) rather than taken at latest.  `cowlib` 2.20.0 introduced a
+  `maybe ... ?=` expression in `cow_capsule.erl`, which is an OTP-27 feature,
+  so 2.20.0+ cannot compile on OTP 26 -- still part of the supported matrix
+  for `elixir: "~> 1.17"`.  Upstream now targets OTP 27+ only
+  (`AUTO_CI_OTP ?= OTP-LATEST-27+`).  2.19.0 is the last OTP-26-safe release,
+  and cowboy 2.18.0 the newest release whose requirement it satisfies.
+
+  Three advisories therefore remain, all in `cowlib` 2.19.0 and none with a
+  fix available on OTP 26: EEF-CVE-2026-43966 (MEDIUM), -43971 (MEDIUM) and
+  -43969 (LOW).  They arrive transitively via `bypass` -> `plug_cowboy` ->
+  `cowboy`; bypass is hard-wired to cowboy (its own `mix.exs` requires
+  `plug_cowboy` unconditionally, it depends on `ranch` directly, and it has
+  had no release since 2020), so the cowboy stack is unavoidable while bypass
+  is a dependency.  With bypass now `only: :test`, none of it reaches `dev` or
+  `prod` builds or any consumer of this library.
 
   No version requirements in `mix.exs` needed to change; all updates were
   already permitted by the existing constraints.

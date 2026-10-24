@@ -48,6 +48,14 @@ defmodule Apical.MixProject do
       # test environment.
       {:mox, "~> 1.1", only: :test, optional: true},
       {:bypass, "~> 2.1", only: :test, optional: true},
+      # bypass hard-depends on plug_cowboy -> cowboy -> cowlib.  cowlib 2.20.0+
+      # uses an OTP-27 `maybe ... ?=` expression in cow_capsule.erl and will not
+      # compile on OTP 26, which we still support, so cap cowboy at the newest
+      # release whose cowlib requirement is satisfiable there (cowboy 2.18.0
+      # needs cowlib >= 2.19.0; cowlib 2.19.0 is the last OTP-26-safe version).
+      # Test-only, via bypass.
+      {:cowboy, "~> 2.18.0", only: :test, override: true},
+      {:cowlib, "~> 2.19.0", only: :test, override: true},
       {:plug, "~> 1.19"},
       {:json_ptr, "~> 1.2"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
