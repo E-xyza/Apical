@@ -41,6 +41,20 @@
 
 ### maintenance
 
+- Updated dependencies, clearing 46 of 47 security advisories reported by
+  `mix hex.audit` (`plug` 1.19.1 -> 1.20.3, `phoenix` 1.8.5 -> 1.8.16,
+  `bandit` 1.10.4 -> 1.13.1, `req` 0.5.17 -> 0.7.5, `exonerate` 1.2.1 ->
+  1.3.0, plus transitives including `cowboy`, `cowlib`, `hpax`, `mint` and
+  `plug_crypto`).  `plug` was the only affected *runtime* dependency, so it
+  was the only one whose advisories reached consumers.
+
+  One advisory remains: `cowlib` EEF-CVE-2026-43966 (MEDIUM), which has no
+  published fix -- 2.21.0 is the latest version.  It arrives transitively via
+  `bypass` -> `plug_cowboy` -> `cowboy`, which is test-only tooling.
+
+  No version requirements in `mix.exs` needed to change; all updates were
+  already permitted by the existing constraints.
+
 - Resolved all seven outstanding `TODO`s in `lib/`.  Three described work
   already done or that would have made the code less idiomatic and were
   removed; `content_sources` is no longer embedded in full in every generated
