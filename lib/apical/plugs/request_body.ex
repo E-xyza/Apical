@@ -544,20 +544,19 @@ defmodule Apical.Plugs.RequestBody do
   end
 
   defp do_make(%{"content" => content}, pointer, _schema, operation_id, plug_opts) do
-    # TODO: filter out content_sources. and pass that into the plug without sending it
-    # to the plug
-
     version = Keyword.fetch!(plug_opts, :version)
 
     content
     |> Enum.sort_by(&Conn.Utils.media_type(elem(&1, 0)), Apical.Plugs.RequestBody)
     |> Enum.map(fn {media_type, content_schema} ->
+      media_type_opts = narrow_content_sources(plug_opts, media_type)
+
       {
         quote do
           plug(
             Apical.Plugs.RequestBody,
             [__MODULE__] ++
-              unquote([operation_id, media_type, Macro.escape(content_schema), plug_opts])
+              unquote([operation_id, media_type, Macro.escape(content_schema), media_type_opts])
           )
         end,
         Validators.make_quoted(
@@ -569,5 +568,23 @@ defmodule Apical.Plugs.RequestBody do
       }
     end)
     |> Enum.unzip()
+  end
+
+  # `content_sources` is only ever read by `init/1`, which resolves the single
+  # source matching this plug's own media type.  Embedding the whole proplist in
+  # the generated `plug/2` call would bake every operation's sources into the
+  # router for every media type, so keep just the entry this plug can use (and
+  # drop the key entirely when none matches).
+  defp narrow_content_sources(plug_opts, media_type) do
+    case Keyword.fetch(plug_opts, :content_sources) do
+      {:ok, content_sources} ->
+        case List.keyfind(content_sources, media_type, 0) do
+          nil -> Keyword.delete(plug_opts, :content_sources)
+          entry -> Keyword.put(plug_opts, :content_sources, [entry])
+        end
+
+      :error ->
+        plug_opts
+    end
   end
 end

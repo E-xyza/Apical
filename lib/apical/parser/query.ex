@@ -145,7 +145,14 @@ defmodule Apical.Parser.Query do
         {:error, :misparse, char}
     end
   catch
-    # TODO: assess if this can be done without a catch
+    # thrown by `parse_kv/3` when a custom style parser rejects a value.  The
+    # throw is deliberate: `parse_kv/3`'s result is spliced straight into the
+    # parser accumulator (`{key, parse_kv(...)}`), so it has no error channel of
+    # its own — returning an error tuple would store it *as* the parsed value.
+    # Threading a failure out instead would have to pass through every
+    # `handle_query_part/5` clause, the exploded-array accumulator and the
+    # context map, to replace a non-local exit that is already caught here at
+    # the module boundary and never escapes.
     custom_error = {:error, :custom, _, _} -> custom_error
   end
 

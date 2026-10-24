@@ -59,7 +59,6 @@ defmodule Apical.Exceptions.ParameterError do
     )
   end
 
-  # TODO: improve this error by turning
   def describe_exonerate(exception) do
     etc =
       exception
