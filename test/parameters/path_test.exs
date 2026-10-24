@@ -448,6 +448,14 @@ defmodule ApicalTest.Parameters.PathTest do
                    end
     end
 
+    test "matrix raises 400 on malformed values", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMatrixArray (in path): matrix object parameter `;array=foo=bar` for parameter `array` has a malformed entry: `array=foo=bar`",
+                   fn ->
+                     get(conn, "/style/matrix-array/;array=foo=bar")
+                   end
+    end
+
     test "exploded matrix works", %{conn: conn} do
       assert %{"array" => ["foo", "bar"]} =
                conn
@@ -534,6 +542,14 @@ defmodule ApicalTest.Parameters.PathTest do
                    end
     end
 
+    test "matrix raises 400 on malformed values", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMatrixObject (in path): matrix object parameter `;object=foo=bar` for parameter `object` has a malformed entry: `object=foo=bar`",
+                   fn ->
+                     get(conn, "/style/matrix-object/;object=foo=bar")
+                   end
+    end
+
     test "matrix exploded works", %{conn: conn} do
       assert %{"object" => %{"foo" => "bar", "baz" => "quux"}} =
                conn
@@ -553,6 +569,14 @@ defmodule ApicalTest.Parameters.PathTest do
                conn
                |> get("/style/matrix-object-explode/;foo=bar;baz")
                |> json_response(200)
+    end
+
+    test "matrix exploded raises 400 on malformed values", %{conn: conn} do
+      assert_raise Apical.Exceptions.ParameterError,
+                   "Parameter Error in operation pathParamMatrixObjectExplode (in path): matrix object parameter `;foo=bar=baz` for parameter `object` has a malformed entry: `foo=bar=baz`",
+                   fn ->
+                     get(conn, "/style/matrix-object-explode/;foo=bar=baz")
+                   end
     end
 
     test "label works", %{conn: conn} do

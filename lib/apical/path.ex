@@ -17,9 +17,9 @@ defmodule Apical.Path do
 
   # to make passing into the adapter easier we're going to make the parameters
   # a struct.
-  @enforce_keys ~w(parameter_validators body_validators extra_plugs version
-  operation_id parameter_plugs body_plugs accept_plug root verb canonical_path controller
-  function)a
+  @enforce_keys ~w(parameter_validators body_validators egress_validators extra_plugs version
+  operation_id parameter_plugs body_plugs accept_plug egress_plug root verb canonical_path
+  controller function)a
   # schema_string/encode_opts let the Plug adapter re-register the Exonerate
   # resource inside each nested operation module (its validators resolve the
   # resource against their own module's cache — see Apical.Adapters.Plug).
@@ -143,6 +143,8 @@ defmodule Apical.Path do
 
     accept_plug = Accept.make(pointer, schema, operation_id, plug_opts)
 
+    {egress_plug, egress_validators} = egress(pointer, schema, operation_id, plug_opts)
+
     framework = opts |> Keyword.get(:for, Phoenix) |> Macro.expand(%Macro.Env{})
     adapter = Module.concat(Apical.Adapters, framework)
 
@@ -159,6 +161,17 @@ defmodule Apical.Path do
       |> adapter.build_path()
 
     {[route | routes_so_far], MapSet.put(operation_ids_so_far, operation_id)}
+  end
+
+  # Egress (response) validation is compiled in only when
+  # `config :apical, egress_testing: true`.  When it is false this emits no plug
+  # and no validators, so a router carries nothing of the feature at all.
+  if Application.compile_env(:apical, :egress_testing, false) do
+    defp egress(pointer, schema, operation_id, plug_opts) do
+      Apical.Plugs.Egress.make(pointer, schema, operation_id, plug_opts)
+    end
+  else
+    defp egress(_pointer, _schema, _operation_id, _plug_opts), do: {nil, []}
   end
 
   @folded_opts ~w(controller styles parameters request_body extra_plugs nest_all_json content_sources dump dump_validator validate validate_accept)a

@@ -413,7 +413,6 @@ defmodule Apical.Plugs.Parameter do
 
   # REQUIRED PARAMETERS
 
-  # TODO: refactor this into a recursive call
   def check_required(conn, params, in_, %{required: required}) do
     Enum.each(required, fn
       parameter when is_map_key(params, parameter) ->

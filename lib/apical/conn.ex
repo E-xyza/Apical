@@ -71,8 +71,6 @@ defmodule Apical.Conn do
     Map.new(conn.path_params, &fetch_kv(&1, conn.private.operation_id, :path, settings))
   end
 
-  # TODO: make this recursive
-
   def fetch_header_params!(conn, settings) do
     conn.req_headers
     |> Enum.filter(&is_map_key(settings, elem(&1, 0)))

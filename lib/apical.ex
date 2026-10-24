@@ -51,6 +51,7 @@ defmodule Apical do
     - matching content-type with request body plugs
     - Automatic json and `form-encoded` request body parsing
     - Parameter marshalling for `form-encoded` requests
+  - Response body validation (opt-in, see `egress_testing` below)
 
   ### Options
 
@@ -104,6 +105,41 @@ defmodule Apical do
   - `dump`: (For debugging), sends formatted code of the router to stdout.
 
     Defaults to `false`.  If set to `:all`, will also pass `dump: true` to Exonerate.
+
+  - `egress_testing`: (application environment, not an option) validates
+    *response* bodies against the schemas declared for them in the OpenAPI
+    document.
+
+    This is enabled through the application environment rather than a macro
+    option, because it is read with `Application.compile_env/3`:
+
+    ```elixir
+    # config/test.exs
+    config :apical, egress_testing: true
+    ```
+
+    When it is false (the default) no part of the feature is compiled: the
+    router emits no egress plug and no response validators, and neither
+    `Apical.Plugs.Egress` nor `Apical.Exceptions.EgressError` exists in the
+    build.  Changing the setting requires recompiling `:apical` and any module
+    that generated a router.
+
+    > #### Use this in `:test` {: .warning }
+    >
+    > Validating responses costs a schema check on every request, and a
+    > response that does not conform raises `Apical.Exceptions.EgressError`,
+    > which carries a **500** status.  The status is 5xx and not 4xx on purpose:
+    > responses are validated after the operation has run, so any side effects
+    > it had (database writes, for example) have already happened.  Telling the
+    > client their request was rejected would not be true -- the fault is the
+    > server's, for producing a response its own schema forbids.
+    >
+    > If you do enable it in production, be aware that a schema mistake turns a
+    > working endpoint into a 500.
+
+    Responses are matched by status code and response content type, falling
+    back to the `default` response object.  A response with no schema declared,
+    or a body that is not JSON, passes through unvalidated.
 
   - `remote_refs_cache`: Path to a directory containing cached remote `$ref` schemas.
 

@@ -4,7 +4,7 @@ defmodule Apical.MixProject do
   def project do
     [
       app: :apical,
-      version: "0.3.2",
+      version: "1.0.0",
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -40,8 +40,22 @@ defmodule Apical.MixProject do
       {:req, "~> 0.5", only: :test},
       {:yaml_elixir, "~> 2.9", optional: true},
       {:jason, "~> 1.4", optional: true},
-      {:mox, "~> 1.1", optional: true},
-      {:bypass, "~> 2.1", optional: true},
+      # `optional: true` keeps these from being forced on consumers; `only: :test`
+      # keeps them (and, for bypass, the whole cowboy stack it hard-depends on)
+      # out of apical's own dev/prod builds.  Both are referenced only inside
+      # `quote` blocks in Apical.Testing, so they are never resolved when this
+      # library itself compiles -- the generated code needs them in the *user's*
+      # test environment.
+      {:mox, "~> 1.1", only: :test, optional: true},
+      {:bypass, "~> 2.1", only: :test, optional: true},
+      # bypass hard-depends on plug_cowboy -> cowboy -> cowlib.  cowlib 2.20.0+
+      # uses an OTP-27 `maybe ... ?=` expression in cow_capsule.erl and will not
+      # compile on OTP 26, which we still support, so cap cowboy at the newest
+      # release whose cowlib requirement is satisfiable there (cowboy 2.18.0
+      # needs cowlib >= 2.19.0; cowlib 2.19.0 is the last OTP-26-safe version).
+      # Test-only, via bypass.
+      {:cowboy, "~> 2.18.0", only: :test, override: true},
+      {:cowlib, "~> 2.19.0", only: :test, override: true},
       {:plug, "~> 1.19"},
       {:json_ptr, "~> 1.2"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
@@ -57,6 +71,7 @@ defmodule Apical.MixProject do
         "guides/Getting Started.md",
         "guides/Parameter Validation.md",
         "guides/Request Body Handling.md",
+        "guides/Response Validation.md",
         "guides/Remote References.md",
         "guides/Apical for testing.md"
       ],
@@ -67,6 +82,7 @@ defmodule Apical.MixProject do
         Plugs: [
           Apical.Plugs.Accept,
           Apical.Plugs.Cookie,
+          Apical.Plugs.Egress,
           Apical.Plugs.Header,
           Apical.Plugs.Path,
           Apical.Plugs.Query,

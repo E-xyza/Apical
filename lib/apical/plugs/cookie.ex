@@ -70,8 +70,6 @@ defmodule Apical.Plugs.Cookie do
         nil -> %{}
       end
 
-    # TODO: make this recursive
-
     conn
     |> Parameter.check_required(params, :cookie, operations)
     |> Map.update!(:params, &Map.merge(&1, params))

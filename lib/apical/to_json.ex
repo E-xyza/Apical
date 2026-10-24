@@ -160,3 +160,18 @@ defimpl Apical.ToJson, for: Apical.Exceptions.NotAcceptableError do
     }
   end
 end
+
+if Application.compile_env(:apical, :egress_testing, false) do
+  defimpl Apical.ToJson, for: Apical.Exceptions.EgressError do
+    def to_json(error) do
+      %{
+        error: "egress_error",
+        status: error.plug_status,
+        message: Exception.message(error),
+        operation_id: error.operation_id,
+        response_status: error.status,
+        media_type: error.media_type
+      }
+    end
+  end
+end
