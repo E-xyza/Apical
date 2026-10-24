@@ -1,6 +1,6 @@
 # Apical Changelog
 
-## 1.0.0 (unreleased)
+## 1.0.0
 
 ### feature
 
@@ -92,41 +92,6 @@
   `false`), valid in OpenAPI 3.1. Previously it assumed a schema object and did
   `get_in(true, ["type"])`, crashing at compile time on both adapters.
 
-## 0.1.0
-
-### initial release
-
-- supports from file or from string
-- supports injecting extra plugs
-- supports versioning 
-  - by matching on assigns `api_version` field
-  - by targeting controllers
-  - by chaining routers
-- parameter marshalling support
-  - path
-  - query
-  - headers
-  - cookies
-- validation of parameters using Exonerate (https://github.com/E-xyza/Exonerate)
-- generates routes into phoenix header
-- inbound request body payloads into params
-  - application/json
-  - application/form-encoded
-- options targettable by tag or operation_id
-- supports internal $refs
-
-## 0.2.0
-
-- support for grouping operationId by "group"
-- support for using Plug only, with no Phoenix dependency
-- support for aliasing operationId to functions
-- support for custom parameter marshalling functions
-- support for disabling marshalling or validation
-- support for using Apical to test requests against OpenAPI schemas
-
-## 0.2.1
-- fixes issue with nested refs
-
 ## 0.3.0
 
 ### New Features
@@ -163,6 +128,41 @@
 - Custom validators for request body properties
 - Option to disable request body validation with `validate: false`
 - ToJson protocol for converting errors to JSON-compatible maps
+
+## 0.2.1
+- fixes issue with nested refs
+
+## 0.2.0
+
+- support for grouping operationId by "group"
+- support for using Plug only, with no Phoenix dependency
+- support for aliasing operationId to functions
+- support for custom parameter marshalling functions
+- support for disabling marshalling or validation
+- support for using Apical to test requests against OpenAPI schemas
+
+## 0.1.0
+
+### initial release
+
+- supports from file or from string
+- supports injecting extra plugs
+- supports versioning 
+  - by matching on assigns `api_version` field
+  - by targeting controllers
+  - by chaining routers
+- parameter marshalling support
+  - path
+  - query
+  - headers
+  - cookies
+- validation of parameters using Exonerate (https://github.com/E-xyza/Exonerate)
+- generates routes into phoenix header
+- inbound request body payloads into params
+  - application/json
+  - application/form-encoded
+- options targettable by tag or operation_id
+- supports internal $refs
 
 ## Future planned support
 

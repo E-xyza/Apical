@@ -14,7 +14,7 @@ be unwanted compiler warnings.
 ```elixir
 def deps do
   [
-     {:apical, "~> 0.3.0"},
+     {:apical, "~> 1.0"},
      {:exonerate, "~> 1.2", runtime: false}
   ]
 end
