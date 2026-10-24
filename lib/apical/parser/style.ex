@@ -89,21 +89,61 @@ defmodule Apical.Parser.Style do
   end
 
   def parse(";" <> value, key, :matrix, type, explode) do
-    split =
-      value
-      |> String.split(";")
-      |> Enum.map(fn
-        part ->
-          case String.split(part, "=") do
-            [subkey] ->
-              {subkey, []}
+    case split_matrix(value) do
+      {:ok, split} ->
+        parse_matrix(split, value, key, type, explode)
 
-            [subkey, subvalue] ->
-              {subkey, String.split(subvalue, ",")}
-              # TODO: error when something strange happens
-          end
-      end)
+      {:error, part} ->
+        {:error,
+         "matrix object parameter `;#{value}` for parameter `#{key}` has a malformed entry: `#{part}`"}
+    end
+  end
 
+  def parse(value, key, :matrix, _, _explode) do
+    {:error,
+     "matrix style `#{value}` for parameter `#{key}` is missing a leading semicolon, use format: `;#{key}=...`"}
+  end
+
+  def parse(value, key, {m, f, a}, _, _explode) do
+    result = apply(m, f, [value | a])
+
+    case result do
+      ok = {:ok, _} ->
+        ok
+
+      {:error, msg} ->
+        {:error, :custom, key, msg}
+    end
+  end
+
+  def parse(value, _, _, _, _?), do: {:ok, value}
+
+  # a matrix segment is `name=value`; a segment carrying more than one `=`
+  # (e.g. `;a=b=c`) is malformed.  Report it the way the `simple` and `label`
+  # styles already do, instead of letting the split fall through to a
+  # CaseClauseError (which surfaced as a 500 rather than a 400).
+  defp split_matrix(value) do
+    value
+    |> String.split(";")
+    |> Enum.reduce_while({:ok, []}, fn part, {:ok, so_far} ->
+      case String.split(part, "=") do
+        [subkey] ->
+          {:cont, {:ok, [{subkey, []} | so_far]}}
+
+        [subkey, subvalue] ->
+          {:cont, {:ok, [{subkey, String.split(subvalue, ",")} | so_far]}}
+
+        _ ->
+          {:halt, {:error, part}}
+      end
+    end)
+    |> case do
+      {:ok, split} -> {:ok, Enum.reverse(split)}
+      error = {:error, _} -> error
+    end
+  end
+
+  defp parse_matrix(split, value, key, type, explode) do
     cond do
       :null in type and value === key ->
         {:ok, nil}
@@ -147,25 +187,6 @@ defmodule Apical.Parser.Style do
          "matrix style `#{value}` for parameter `#{key}` is malformed, use format: `;#{key}=...`"}
     end
   end
-
-  def parse(value, key, :matrix, _, _explode) do
-    {:error,
-     "matrix style `#{value}` for parameter `#{key}` is missing a leading semicolon, use format: `;#{key}=...`"}
-  end
-
-  def parse(value, key, {m, f, a}, _, _explode) do
-    result = apply(m, f, [value | a])
-
-    case result do
-      ok = {:ok, _} ->
-        ok
-
-      {:error, msg} ->
-        {:error, :custom, key, msg}
-    end
-  end
-
-  def parse(value, _, _, _, _?), do: {:ok, value}
 
   defp matrix_array_parse(split, key, explode) do
     if explode do
