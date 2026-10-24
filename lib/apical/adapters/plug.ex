@@ -45,12 +45,14 @@ defmodule Apical.Adapters.Plug do
 
         unquote(path.parameter_validators)
         unquote(path.body_validators)
+        unquote(path.egress_validators)
 
         unquote(path.extra_plugs)
 
         plug(Apical.Plugs.SetVersion, unquote(path.version))
         plug(Apical.Plugs.SetOperationId, unquote(path.operation_id))
         unquote(path.accept_plug)
+        unquote(path.egress_plug)
         unquote(path.parameter_plugs)
 
         unquote(path.body_plugs)

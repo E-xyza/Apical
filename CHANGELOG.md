@@ -1,5 +1,52 @@
 # Apical Changelog
 
+## 1.0.0 (unreleased)
+
+### feature
+
+- **Egress (response) schema validation.**  Response bodies can be validated
+  against the schemas declared for them under `responses` in the OpenAPI
+  document.  Enable it through the application environment:
+
+  ```elixir
+  # config/test.exs
+  config :apical, egress_testing: true
+  ```
+
+  It is read with `Application.compile_env/3`, so when it is false (the
+  default) nothing of the feature is compiled: no egress plug, no response
+  validators, and neither `Apical.Plugs.Egress` nor
+  `Apical.Exceptions.EgressError` exists in the build.
+
+  A nonconforming response raises `Apical.Exceptions.EgressError`, which
+  carries a **500** status.  The status is 5xx rather than 4xx deliberately:
+  responses are validated after the operation has run, so its side effects
+  have already happened, and a 4xx would wrongly tell the client that their
+  request was rejected and nothing occurred.  The fault is the server's.
+
+  Validation happens in a `Plug.Conn.register_before_send/2` callback, so a
+  failure cannot produce a half-sent response.  Responses are matched on
+  status code and content type, falling back to the `default` response
+  object; a response with no schema, or a body that is not JSON, passes
+  through unvalidated.  Works on both the Phoenix and Plug adapters.
+
+### bugfix
+
+- Malformed `matrix`-style parameters now return a 400 instead of a 500.  A
+  segment carrying more than one `=` (e.g. `;a=b=c`) fell through an
+  incomplete `case` and raised `CaseClauseError`, which carries no
+  `plug_status`.  This affected all four matrix shapes -- array, object,
+  exploded object and primitive -- since the split runs before the type
+  dispatch.
+
+### maintenance
+
+- Resolved all seven outstanding `TODO`s in `lib/`.  Three described work
+  already done or that would have made the code less idiomatic and were
+  removed; `content_sources` is no longer embedded in full in every generated
+  request-body plug; the `catch` in the query parser is now documented as
+  deliberate.
+
 ## 0.3.2
 
 ### feature
@@ -109,7 +156,6 @@
 
 - more sophisticated parsing and marshalling in request_body
 - support for json libraries besides Jason
-- data egress checking (conditional, compile-time)
 - multipart/form-data support
 - authorization schema support (use `extra_plugs:` for now)
 - $id-based $ref support

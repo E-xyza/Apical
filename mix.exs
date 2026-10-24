@@ -57,6 +57,7 @@ defmodule Apical.MixProject do
         "guides/Getting Started.md",
         "guides/Parameter Validation.md",
         "guides/Request Body Handling.md",
+        "guides/Response Validation.md",
         "guides/Remote References.md",
         "guides/Apical for testing.md"
       ],
@@ -67,6 +68,7 @@ defmodule Apical.MixProject do
         Plugs: [
           Apical.Plugs.Accept,
           Apical.Plugs.Cookie,
+          Apical.Plugs.Egress,
           Apical.Plugs.Header,
           Apical.Plugs.Path,
           Apical.Plugs.Query,
