@@ -41,6 +41,16 @@
 
 ### maintenance
 
+- `mox` and `bypass` are now scoped `only: :test` in addition to
+  `optional: true`.  They were previously only `optional: true`, which governs
+  whether *consumers* are forced to install them but does not scope them by
+  environment -- so Apical's own `dev` and `prod` builds compiled bypass and
+  the entire cowboy stack it hard-depends on (`plug_cowboy`, `cowboy`,
+  `cowlib`, `ranch`), including the one package with an unfixed advisory.
+  Both are referenced only inside `quote` blocks in `Apical.Testing`, so they
+  are never resolved when this library compiles; the generated code needs them
+  in the *user's* test environment, which is what `optional: true` is for.
+
 - Updated dependencies, clearing 46 of 47 security advisories reported by
   `mix hex.audit` (`plug` 1.19.1 -> 1.20.3, `phoenix` 1.8.5 -> 1.8.16,
   `bandit` 1.10.4 -> 1.13.1, `req` 0.5.17 -> 0.7.5, `exonerate` 1.2.1 ->
@@ -50,7 +60,11 @@
 
   One advisory remains: `cowlib` EEF-CVE-2026-43966 (MEDIUM), which has no
   published fix -- 2.21.0 is the latest version.  It arrives transitively via
-  `bypass` -> `plug_cowboy` -> `cowboy`, which is test-only tooling.
+  `bypass` -> `plug_cowboy` -> `cowboy`; bypass is hard-wired to cowboy (its
+  own `mix.exs` requires `plug_cowboy` unconditionally and it has had no
+  release since 2020), so the cowboy stack is unavoidable while bypass is a
+  dependency.  With bypass now `only: :test` it no longer reaches `dev` or
+  `prod` builds.
 
   No version requirements in `mix.exs` needed to change; all updates were
   already permitted by the existing constraints.

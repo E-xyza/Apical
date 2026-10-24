@@ -40,8 +40,14 @@ defmodule Apical.MixProject do
       {:req, "~> 0.5", only: :test},
       {:yaml_elixir, "~> 2.9", optional: true},
       {:jason, "~> 1.4", optional: true},
-      {:mox, "~> 1.1", optional: true},
-      {:bypass, "~> 2.1", optional: true},
+      # `optional: true` keeps these from being forced on consumers; `only: :test`
+      # keeps them (and, for bypass, the whole cowboy stack it hard-depends on)
+      # out of apical's own dev/prod builds.  Both are referenced only inside
+      # `quote` blocks in Apical.Testing, so they are never resolved when this
+      # library itself compiles -- the generated code needs them in the *user's*
+      # test environment.
+      {:mox, "~> 1.1", only: :test, optional: true},
+      {:bypass, "~> 2.1", only: :test, optional: true},
       {:plug, "~> 1.19"},
       {:json_ptr, "~> 1.2"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
